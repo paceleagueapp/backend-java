@@ -1,23 +1,30 @@
 #!/bin/bash
 set -e
 
-cd /opt/paceleague
+APP_DIR=/opt/paceleague
+cd "$APP_DIR"
 
-# jar 위치를 우선 build/libs에서 찾고, 없으면 현재 폴더도 확인
-JAR=$(ls -1 build/libs/*.jar 2>/dev/null | head -n 1 || true)
+# 1) 실행 가능한 fat jar 우선 (plain 제외)
+JAR=$(ls -1 *SNAPSHOT.jar 2>/dev/null | grep -v -- '-plain\.jar' | head -n 1 || true)
+
+# 2) 혹시 없으면, build/libs에서도 찾아보고
+if [ -z "$JAR" ] && [ -d build/libs ]; then
+  JAR=$(ls -1 build/libs/*SNAPSHOT.jar 2>/dev/null | grep -v -- '-plain\.jar' | head -n 1 || true)
+fi
+
+# 3) 그래도 없으면 "가장 큰 jar" 선택 (plain 제외)
 if [ -z "$JAR" ]; then
-  JAR=$(ls -1 *.jar 2>/dev/null | head -n 1 || true)
+  JAR=$(ls -S1 *.jar 2>/dev/null | grep -v -- '-plain\.jar' | head -n 1 || true)
 fi
 
 if [ -z "$JAR" ]; then
-  echo "No jar found under /opt/paceleague (checked build/libs and current dir)"
+  echo "No executable jar found in $APP_DIR"
   ls -al
-  ls -al build || true
-  ls -al build/libs || true
   exit 1
 fi
 
-cp -f "$JAR" /opt/paceleague/app.jar
-chown ec2-user:ec2-user /opt/paceleague/app.jar
+echo "Using jar: $JAR"
+cp -f "$JAR" "$APP_DIR/app.jar"
+chown ec2-user:ec2-user "$APP_DIR/app.jar"
 
-systemctl start paceleague
+systemctl restart paceleague
