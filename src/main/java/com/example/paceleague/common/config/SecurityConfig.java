@@ -1,5 +1,7 @@
 package com.example.paceleague.common.config;
 
+import com.example.paceleague.common.security.JwtAuthenticationFilter;
+import com.example.paceleague.member.service.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -7,6 +9,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -15,16 +18,16 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // 지금은 join/login만이므로 permitAll. (JWT 필터는 다음 단계에서 붙이면 됨)
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtTokenProvider jwtTokenProvider) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .httpBasic(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/members/**").permitAll()
-                        .anyRequest().permitAll()
+                        .requestMatchers("/api/member/**").permitAll()
+                        .anyRequest().authenticated()
                 )
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 }

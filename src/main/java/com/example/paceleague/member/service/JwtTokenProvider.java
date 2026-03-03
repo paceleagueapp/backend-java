@@ -1,6 +1,8 @@
 package com.example.paceleague.member.service;
 
 import com.example.paceleague.common.config.JwtProperties;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
@@ -30,5 +32,13 @@ public class JwtTokenProvider {
                 .expiration(Date.from(exp))
                 .signWith(key)
                 .compact();
+    }
+
+    public Jws<Claims> parseAndValidate(String token) {
+        return Jwts.parser()
+                .verifyWith(key)
+                .requireIssuer(props.issuer())
+                .build()
+                .parseSignedClaims(token);
     }
 }
