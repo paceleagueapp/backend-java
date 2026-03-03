@@ -23,7 +23,7 @@ spring:
 
   data:
     redis:
-      host: paceleague-cache.vi34fu.ng.0001.apn2.cache.amazonaws.com
+      host: 127.0.0.1
       port: 6379
 
 app:
