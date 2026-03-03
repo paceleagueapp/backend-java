@@ -22,7 +22,7 @@ public class RefreshTokenService {
         String token = RandomStringUtils.randomAlphanumeric(64);
 
         String key = "refresh:" + token;
-        redis.opsForValue().set(key, String.valueOf(memberSno), Duration.ofSeconds(props.refreshTtlSeconds()));
+        redis.opsForValue().set(key, String.valueOf(memberSno), Duration.ofSeconds(props.refreshTokenTtlSeconds()));
 
         return token;
     }

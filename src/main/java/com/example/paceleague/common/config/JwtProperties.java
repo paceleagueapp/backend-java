@@ -6,6 +6,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record JwtProperties (
     String issuer,
     String secret,
-    long accessTtlSeconds,
-    long refreshTtlSeconds
+    long accessTokenTtlSeconds,
+    long refreshTokenTtlSeconds
 ){}

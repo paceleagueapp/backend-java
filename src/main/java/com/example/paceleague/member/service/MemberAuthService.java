@@ -57,9 +57,9 @@ public class MemberAuthService {
         return new TokenResponse(
                 "Bearer",
                 access,
-                props.accessTtlSeconds(),
+                props.accessTokenTtlSeconds(),
                 refresh,
-                props.refreshTtlSeconds()
+                props.refreshTokenTtlSeconds()
         );
     }
 }

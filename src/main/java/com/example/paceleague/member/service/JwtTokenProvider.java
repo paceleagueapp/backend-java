@@ -20,7 +20,7 @@ public class JwtTokenProvider {
 
     public String createAccessToken(long memberSno, String memberId) {
         Instant now = Instant.now();
-        Instant exp = now.plusSeconds(props.accessTtlSeconds());
+        Instant exp = now.plusSeconds(props.accessTokenTtlSeconds());
 
         return Jwts.builder()
                 .issuer(props.issuer())
