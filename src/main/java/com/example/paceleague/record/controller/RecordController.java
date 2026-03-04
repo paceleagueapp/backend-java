@@ -3,22 +3,28 @@ package com.example.paceleague.record.controller;
 import com.example.paceleague.common.security.JwtAuthenticationFilter;
 import com.example.paceleague.record.dto.RecordCreateRequest;
 import com.example.paceleague.record.dto.RecordCreateResponse;
+import com.example.paceleague.record.dto.RecordResponse;
+import com.example.paceleague.record.service.RecordQueryService;
 import com.example.paceleague.record.service.RecordService;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/record")
 public class RecordController {
     private final RecordService recordService;
+    private final RecordQueryService recordQueryService;
 
-    public RecordController(RecordService recordService) {
+    public RecordController(RecordService recordService, RecordQueryService recordQueryService) {
+
         this.recordService = recordService;
+        this.recordQueryService = recordQueryService;
+
     }
 
     @PostMapping("/save")
@@ -32,5 +38,44 @@ public class RecordController {
 
         Long sno = recordService.create(uno, req);
         return ResponseEntity.ok(new RecordCreateResponse(sno));
+    }
+
+    private long uno(Authentication authentication) {
+        var p = (JwtAuthenticationFilter.AuthPrincipal) authentication.getPrincipal();
+        return p.memberSno();
+    }
+
+    // 1) 한 개 조회
+    @GetMapping("/dataOne/{sno}")
+    public ResponseEntity<RecordResponse> getOne(Authentication authentication, @PathVariable Long sno) {
+        var record = recordQueryService.getOne(uno(authentication), sno);
+        return ResponseEntity.ok(RecordResponse.from(record));
+    }
+
+    // 2) 10개씩 페이징 조회 (기본 size=10)
+    @GetMapping("/dataPage")
+    public ResponseEntity<Page<RecordResponse>> getPage(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        var result = recordQueryService.getPage(uno(authentication), page, size)
+                .map(RecordResponse::from);
+        return ResponseEntity.ok(result);
+    }
+
+    // 3) 한 달치 전체 조회
+    @GetMapping("/dataMonth")
+    public ResponseEntity<List<RecordResponse>> getMonthAll(
+            Authentication authentication,
+            @RequestParam int year,
+            @RequestParam int month
+    ) {
+        var list = recordQueryService.getMonthAll(uno(authentication), year, month)
+                .stream()
+                .map(RecordResponse::from)
+                .toList();
+
+        return ResponseEntity.ok(list);
     }
 }
