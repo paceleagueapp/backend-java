@@ -27,6 +27,7 @@ public class RecordController {
 
     }
 
+    // 단건 저장
     @PostMapping("/save")
     public ResponseEntity<RecordCreateResponse> create(Authentication authentication,
                                                        @RequestBody RecordCreateRequest req) {
@@ -39,6 +40,16 @@ public class RecordController {
         Long sno = recordService.create(uno, req);
         return ResponseEntity.ok(new RecordCreateResponse(sno));
     }
+
+    // 여러 건 저장 (배열로 받음)
+    @PostMapping("/bulk")
+    public ResponseEntity<BulkCreateResponse> createBulk(Authentication authentication,
+                                                         @RequestBody List<RecordCreateRequest> reqList) {
+        List<Long> ids = recordService.createBulk(uno(authentication), reqList);
+        return ResponseEntity.ok(new BulkCreateResponse(ids));
+    }
+
+    public record BulkCreateResponse(List<Long> savedSnos) {}
 
     private long uno(Authentication authentication) {
         var p = (JwtAuthenticationFilter.AuthPrincipal) authentication.getPrincipal();

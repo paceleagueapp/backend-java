@@ -42,6 +42,17 @@ public class Record {
         this.updateAt = LocalDateTime.now();
     }
 
+    public static Record create(Long uno, BigDecimal distanceRecord, LocalDateTime startTime, LocalDateTime endTime) {
+        Record r = new Record();
+        r.uno = uno;
+        r.distanceRecord = distanceRecord;
+        r.startTime = startTime;
+        r.endTime = endTime;
+        r.createAt = LocalDateTime.now();
+        r.updateAt = LocalDateTime.now();
+        return r;
+    }
+
     @PreUpdate
     public void preUpdate() {
         this.updateAt = LocalDateTime.now();
