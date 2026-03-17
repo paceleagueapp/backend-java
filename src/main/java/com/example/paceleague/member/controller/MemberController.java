@@ -22,7 +22,7 @@ public class MemberController {
 
     @PostMapping("/join")
     public ResponseEntity<Void> join(@Valid @RequestBody JoinRequest req) {
-        authService.join(req.memberId(), req.password(), req.name(), req.email());
+        authService.join(req.memberId(), req.password(), req.nickname(), req.email());
         return ResponseEntity.ok().build();
     }
 

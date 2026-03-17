@@ -16,6 +16,9 @@ public class Record {
     @Column(name = "uno", nullable = false)
     private Long uno;
 
+    @Column(name = "season", nullable = false)
+    private Long season;
+
     @Column(name = "distance_record")
     private BigDecimal distanceRecord;
 
@@ -33,8 +36,9 @@ public class Record {
 
     protected Record() {}
 
-    public Record(Long uno, BigDecimal distanceRecord, LocalDateTime startTime, LocalDateTime endTime) {
+    public Record(Long uno, Long season, BigDecimal distanceRecord, LocalDateTime startTime, LocalDateTime endTime) {
         this.uno = uno;
+        this.season = season;
         this.distanceRecord = distanceRecord;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -42,9 +46,10 @@ public class Record {
         this.updateAt = LocalDateTime.now();
     }
 
-    public static Record create(Long uno, BigDecimal distanceRecord, LocalDateTime startTime, LocalDateTime endTime) {
+    public static Record create(Long uno, Long season, BigDecimal distanceRecord, LocalDateTime startTime, LocalDateTime endTime) {
         Record r = new Record();
         r.uno = uno;
+        r.season = season;
         r.distanceRecord = distanceRecord;
         r.startTime = startTime;
         r.endTime = endTime;

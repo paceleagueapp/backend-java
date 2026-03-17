@@ -19,7 +19,7 @@ public class Member {
         private String passwordHash;
 
         @Column(length = 50)
-        private String name;
+        private String nickname;
 
         @Column(length = 50)
         private String email;
@@ -32,10 +32,10 @@ public class Member {
 
         protected Member() {}
 
-        public Member(String memberId, String passwordHash, String name, String email) {
+        public Member(String memberId, String passwordHash, String nickname, String email) {
                 this.memberId = memberId;
                 this.passwordHash = passwordHash;
-                this.name = name;
+                this.nickname = nickname;
                 this.email = email;
                 this.createdAt = Instant.now();
                 this.updatedAt = this.createdAt;

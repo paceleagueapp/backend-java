@@ -3,6 +3,7 @@ package com.example.paceleague.record.controller;
 import com.example.paceleague.common.security.JwtAuthenticationFilter;
 import com.example.paceleague.record.dto.RecordCreateRequest;
 import com.example.paceleague.record.dto.RecordCreateResponse;
+import com.example.paceleague.record.dto.RecordMonthResponse;
 import com.example.paceleague.record.dto.RecordResponse;
 import com.example.paceleague.record.service.RecordQueryService;
 import com.example.paceleague.record.service.RecordService;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -77,16 +79,16 @@ public class RecordController {
 
     // 3) 한 달치 전체 조회
     @GetMapping("/dataMonth")
-    public ResponseEntity<List<RecordResponse>> getMonthAll(
+    public ResponseEntity<RecordMonthResponse> getMonthAll(
             Authentication authentication,
             @RequestParam int year,
             @RequestParam int month
     ) {
-        var list = recordQueryService.getMonthAll(uno(authentication), year, month)
-                .stream()
-                .map(RecordResponse::from)
-                .toList();
+        var principal = (JwtAuthenticationFilter.AuthPrincipal) authentication.getPrincipal();
+        long uno = principal.memberSno();
 
-        return ResponseEntity.ok(list);
+        BigDecimal weightKg = BigDecimal.valueOf(70); // TODO 실제 회원 체중 조회
+
+        return ResponseEntity.ok(recordQueryService.getMonthAll(uno, year, month, weightKg));
     }
 }

@@ -1,10 +1,12 @@
 package com.example.paceleague.record.repository;
 
+import com.example.paceleague.record.dto.RecordSummaryProjection;
 import com.example.paceleague.record.entity.Record;
+import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import com.example.paceleague.record.entity.Record;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,5 +24,33 @@ public interface RecordRepository extends JpaRepository<Record, Long> {
             Long uno,
             LocalDateTime fromInclusive,
             LocalDateTime toExclusive
+    );
+
+    @Query(value = """
+            SELECT
+                COALESCE(SUM(distance_record), 0) AS totalDistance,
+                COALESCE(SUM(TIMESTAMPDIFF(SECOND, start_time, end_time)), 0) AS totalDurationSeconds
+            FROM record
+            WHERE uno = :uno
+            """, nativeQuery = true)
+    RecordSummaryProjection findMemberSummary(@Param("uno") Long uno);
+
+    @Query(value = """
+            SELECT
+                COALESCE(SUM(distance_record), 0) AS totalDistance,
+                COALESCE(SUM(TIMESTAMPDIFF(SECOND, start_time, end_time)), 0) AS totalDurationSeconds
+            FROM record
+            WHERE uno = :uno
+              AND start_time >= :fromDt
+              AND start_time < :toDt
+            """, nativeQuery = true)
+    RecordSummaryProjection findMonthSummary(
+            @Param("uno") Long uno,
+            @Param("fromDt") LocalDateTime fromDt,
+            @Param("toDt") LocalDateTime toDt
+    );
+
+    long countByUnoAndStartTimeGreaterThanEqualAndStartTimeLessThan(
+            Long uno, LocalDateTime fromInclusive, LocalDateTime toExclusive
     );
 }

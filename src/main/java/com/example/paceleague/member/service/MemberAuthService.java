@@ -29,14 +29,14 @@ public class MemberAuthService {
     }
 
     @Transactional
-    public void join(String memberId, String rawPassword, String name, String email) {
+    public void join(String memberId, String rawPassword, String nickname, String email) {
 
         if (memberRepository.existsByMemberId(memberId)) {
             throw new IllegalArgumentException("이미 존재하는 아이디입니다.");
         }
 
         String hash = passwordEncoder.encode(rawPassword);
-        Member member = new Member(memberId, hash, name, email);
+        Member member = new Member(memberId, hash, nickname, email);
 
         memberRepository.save(member);
     }
