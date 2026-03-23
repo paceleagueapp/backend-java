@@ -28,6 +28,22 @@ public class JwtTokenProvider {
                 .issuer(props.issuer())
                 .subject(String.valueOf(memberSno))
                 .claim("memberId", memberId)
+                .claim("type", "access")
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(exp))
+                .signWith(key)
+                .compact();
+    }
+
+    public String createRefreshToken(long memberSno, String memberId) {
+        Instant now = Instant.now();
+        Instant exp = now.plusSeconds(props.refreshTokenTtlSeconds());
+
+        return Jwts.builder()
+                .issuer(props.issuer())
+                .subject(String.valueOf(memberSno))
+                .claim("memberId", memberId)
+                .claim("type", "refresh")
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(exp))
                 .signWith(key)

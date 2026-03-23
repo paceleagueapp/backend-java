@@ -37,4 +37,12 @@ public class RefreshTokenService {
     public void revoke(String refreshToken) {
         redis.delete("refresh:" + refreshToken);
     }
+
+    public Long validate(String refreshToken) {
+        Long memberSno = getMemberSnoByRefreshToken(refreshToken);
+        if (memberSno == null) {
+            throw new IllegalArgumentException("refresh token expired or invalid");
+        }
+        return memberSno;
+    }
 }

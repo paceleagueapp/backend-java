@@ -6,5 +6,6 @@ import java.time.LocalDateTime;
 public record RecordCreateRequest(
         BigDecimal distanceRecord,
         LocalDateTime startTime,
-        LocalDateTime endTime
+        LocalDateTime endTime,
+        String utcOffset
 ) {}

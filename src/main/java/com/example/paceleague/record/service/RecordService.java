@@ -46,7 +46,8 @@ public class RecordService {
                 seasonData.getSeason(),
                 req.distanceRecord(),
                 req.startTime(),
-                req.endTime()
+                req.endTime(),
+                req.utcOffset()
         );
 
         Record savedRecord = recordRepository.save(record);
@@ -78,7 +79,8 @@ public class RecordService {
                     seasonData.getSeason(),
                     req.distanceRecord(),
                     req.startTime(),
-                    req.endTime()
+                    req.endTime(),
+                    req.utcOffset()
             );
 
             Record savedRecord = recordRepository.save(record);
@@ -166,7 +168,8 @@ public class RecordService {
                 uno,
                 totalScore,
                 scaledScore,
-                addScore
+                addScore,
+                req.utcOffset()
         );
 
         rankRepository.save(rank);

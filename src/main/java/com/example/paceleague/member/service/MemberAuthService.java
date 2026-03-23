@@ -62,4 +62,39 @@ public class MemberAuthService {
                 props.refreshTokenTtlSeconds()
         );
     }
+
+    @Transactional
+    public TokenResponse reissue(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new IllegalArgumentException("refresh token is required");
+        }
+
+        Long memberSno = refreshTokenService.validate(refreshToken);
+
+        Member member = memberRepository.findBySno(memberSno)
+                .orElseThrow(() -> new IllegalArgumentException("member not found"));
+
+        // refresh token rotation
+        refreshTokenService.revoke(refreshToken);
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(member.getSno(), member.getMemberId());
+        String newRefreshToken = refreshTokenService.issue(member.getSno());
+
+        return new TokenResponse(
+                "Bearer",
+                newAccessToken,
+                props.accessTokenTtlSeconds(),
+                newRefreshToken,
+                props.refreshTokenTtlSeconds()
+        );
+    }
+
+    @Transactional
+    public void logout(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new IllegalArgumentException("refresh token is required");
+        }
+
+        refreshTokenService.revoke(refreshToken);
+    }
 }

@@ -35,16 +35,20 @@ public class Rank {
     @Column(name = "update_at")
     private LocalDateTime updateAt;
 
+    @Column(name = "utc_offset")
+    private String utcOffset;
+
     protected Rank() {
     }
 
-    public Rank(Long uno, Integer score, Integer scaledScore, Integer addScore) {
+    public Rank(Long uno, Integer score, Integer scaledScore, Integer addScore, String utcOffset) {
         this.uno = uno;
         this.score = score;
         this.scaledScore = scaledScore;
         this.addScore = addScore;
         this.createAt = LocalDateTime.now();
         this.updateAt = LocalDateTime.now();
+        this.utcOffset = utcOffset;
     }
 
     @PreUpdate

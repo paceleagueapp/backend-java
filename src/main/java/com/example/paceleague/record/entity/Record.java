@@ -34,9 +34,12 @@ public class Record {
     @Column(name = "update_at")
     private LocalDateTime updateAt;
 
+    @Column(name = "utc_offset")
+    private String utcOffset;
+
     protected Record() {}
 
-    public Record(Long uno, Long season, BigDecimal distanceRecord, LocalDateTime startTime, LocalDateTime endTime) {
+    public Record(Long uno, Long season, BigDecimal distanceRecord, LocalDateTime startTime, LocalDateTime endTime, String utcOffset) {
         this.uno = uno;
         this.season = season;
         this.distanceRecord = distanceRecord;
@@ -44,6 +47,7 @@ public class Record {
         this.endTime = endTime;
         this.createAt = LocalDateTime.now();
         this.updateAt = LocalDateTime.now();
+        this.utcOffset = utcOffset;
     }
 
     public static Record create(Long uno, Long season, BigDecimal distanceRecord, LocalDateTime startTime, LocalDateTime endTime) {
