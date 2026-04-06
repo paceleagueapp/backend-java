@@ -29,8 +29,8 @@ spring:
 app:
   jwt:
     issuer: paceleague
-    access-token-ttl-seconds: 900        # 15분
-    refresh-token-ttl-seconds: 1209600   # 14일
+    access-token-ttl-seconds: 20
+    refresh-token-ttl-seconds: 40
     secret: "YOUR_SUPER_LONG_SECRET_KEY_CHANGE_ME_!!!"
 
 logging:
