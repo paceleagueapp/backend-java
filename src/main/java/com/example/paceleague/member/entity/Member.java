@@ -1,11 +1,16 @@
 package com.example.paceleague.member.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
 @Entity
 @Table(name = "member")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member {
 
         @Id
@@ -30,8 +35,6 @@ public class Member {
         @Column(name = "updated_at", nullable = false)
         private Instant updatedAt;
 
-        protected Member() {}
-
         public Member(String memberId, String passwordHash, String nickname, String email) {
                 this.memberId = memberId;
                 this.passwordHash = passwordHash;
@@ -41,12 +44,12 @@ public class Member {
                 this.updatedAt = this.createdAt;
         }
 
+        public static Member create(String memberId, String passwordHash, String nickname, String email) {
+                return new Member(memberId, passwordHash, nickname, email);
+        }
+
         @PreUpdate
         public void preUpdate() {
                 this.updatedAt = Instant.now();
         }
-
-        public Integer getSno() { return sno; }
-        public String getMemberId() { return memberId; }
-        public String getPasswordHash() { return passwordHash; }
 }

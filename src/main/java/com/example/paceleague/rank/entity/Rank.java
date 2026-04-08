@@ -1,7 +1,9 @@
 package com.example.paceleague.rank.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
@@ -9,7 +11,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "score_rank")
 @Getter
-@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Rank {
 
     @Id
@@ -38,9 +40,6 @@ public class Rank {
     @Column(name = "utc_offset")
     private String utcOffset;
 
-    protected Rank() {
-    }
-
     public Rank(Long uno, Integer score, Integer scaledScore, Integer addScore, String utcOffset) {
         this.uno = uno;
         this.score = score;
@@ -49,6 +48,10 @@ public class Rank {
         this.createAt = LocalDateTime.now();
         this.updateAt = LocalDateTime.now();
         this.utcOffset = utcOffset;
+    }
+
+    public static Rank create(Long uno, Integer score, Integer scaledScore, Integer addScore, String utcOffset){
+        return new Rank(uno, score, scaledScore, addScore, utcOffset);
     }
 
     @PreUpdate

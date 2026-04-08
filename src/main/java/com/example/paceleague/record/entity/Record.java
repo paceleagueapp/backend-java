@@ -1,12 +1,17 @@
 package com.example.paceleague.record.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "record")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Record {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,8 +42,6 @@ public class Record {
     @Column(name = "utc_offset")
     private String utcOffset;
 
-    protected Record() {}
-
     public Record(Long uno, Long season, BigDecimal distanceRecord, LocalDateTime startTime, LocalDateTime endTime, String utcOffset) {
         this.uno = uno;
         this.season = season;
@@ -50,28 +53,19 @@ public class Record {
         this.utcOffset = utcOffset;
     }
 
-    public static Record create(Long uno, Long season, BigDecimal distanceRecord, LocalDateTime startTime, LocalDateTime endTime) {
-        Record r = new Record();
-        r.uno = uno;
-        r.season = season;
-        r.distanceRecord = distanceRecord;
-        r.startTime = startTime;
-        r.endTime = endTime;
-        r.createAt = LocalDateTime.now();
-        r.updateAt = LocalDateTime.now();
-        return r;
+    public static Record create(Long uno, Long season, BigDecimal distanceRecord, LocalDateTime startTime, LocalDateTime endTime, String utcOffset) {
+        return new Record(
+                uno,
+                season,
+                distanceRecord,
+                startTime,
+                endTime,
+                utcOffset
+        );
     }
 
     @PreUpdate
     public void preUpdate() {
         this.updateAt = LocalDateTime.now();
     }
-
-    public Long getSno() { return sno; }
-    public Long getUno() { return uno; }
-    public BigDecimal getDistanceRecord() { return distanceRecord; }
-    public LocalDateTime getStartTime() { return startTime; }
-    public LocalDateTime getEndTime() { return endTime; }
-    public LocalDateTime getCreateAt() { return createAt; }
-    public LocalDateTime getUpdateAt() { return updateAt; }
 }
