@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 @EnableConfigurationProperties(JwtProperties.class)
 @SpringBootApplication
 public class PaceleagueApplication {
-
+ 
     public static void main(String[] args) {
         SpringApplication.run(PaceleagueApplication.class, args);
     }
