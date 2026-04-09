@@ -26,10 +26,15 @@ jobs:
 
       - name: Create bundle zip
         run: |
-          mkdir -p bundle/build/libs
-          cp -r build/libs/*.jar bundle/build/libs/
-          cp appspec.yml bundle/
-          cp -r scripts bundle/scripts
+          mkdir -p bundle
+          rsync -av \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.gradle' \
+            --exclude 'build' \
+            --exclude 'bundle' \
+            --exclude 'deploy.zip' \
+            ./ bundle/
           cd bundle
           zip -r ../deploy.zip .
 
