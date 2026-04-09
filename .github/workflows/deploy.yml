@@ -1,8 +1,8 @@
-name: Build & Deploy (CodeDeploy)
+name: Build and Push Docker Image to ECR
 
 on:
   push:
-    branches: [ "main" ]  # master면 master로
+    branches: [ "main" ]
 
 permissions:
   contents: read
@@ -10,33 +10,20 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: microsoft
+          distribution: temurin
           java-version: "21"
 
-      - name: Build
+      - name: Build jar
         run: |
           chmod +x gradlew
           ./gradlew clean build -x test
-
-      - name: Create bundle zip
-        run: |
-          mkdir -p bundle
-          rsync -av \
-            --exclude '.git' \
-            --exclude '.github' \
-            --exclude '.gradle' \
-            --exclude 'build' \
-            --exclude 'bundle' \
-            --exclude 'deploy.zip' \
-            ./ bundle/
-          cd bundle
-          zip -r ../deploy.zip .
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -45,13 +32,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-2
 
-      - name: Upload to S3
-        run: |
-          aws s3 cp deploy.zip s3://${{ secrets.DEPLOY_S3_BUCKET }}/paceleague/deploy-${{ github.sha }}.zip
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Trigger CodeDeploy
-        run: |
-          aws deploy create-deployment \
-            --application-name "${{ secrets.CODEDEPLOY_APP_NAME }}" \
-            --deployment-group-name "${{ secrets.CODEDEPLOY_DEPLOYMENT_GROUP }}" \
-            --s3-location bucket=${{ secrets.DEPLOY_S3_BUCKET }},key=paceleague/deploy-${{ github.sha }}.zip,bundleType=zip
+      - name: Build Docker image
+        run: docker build -t paceleague .
+
+      - name: Tag Docker image
+        run: docker tag paceleague:latest 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com/paceleague:latest
+
+      - name: Push Docker image to ECR
+        run: docker push 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com/paceleague:latest
