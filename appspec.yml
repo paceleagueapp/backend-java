@@ -25,7 +25,7 @@ hooks:
 
   AfterInstall:
     - location: scripts/start.sh
-      timeout: 300
+      timeout: 1800
       runas: root
 
   ValidateService:

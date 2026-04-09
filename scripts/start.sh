@@ -10,9 +10,6 @@ cd "$APP_DIR"
 echo "[INFO] Stopping old container if exists"
 docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
 
-echo "[INFO] Removing old image if exists"
-docker rmi "$IMAGE_NAME" 2>/dev/null || true
-
 echo "[INFO] Building docker image"
 docker build -t "$IMAGE_NAME" .
 
