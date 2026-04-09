@@ -1,24 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SERVICE="paceleague"
+CONTAINER_NAME="paceleague"
 URL="http://127.0.0.1:8080/"
 
-# 서비스가 active 될 때까지 최대 60초 대기
 for i in {1..30}; do
-  if systemctl is-active --quiet "$SERVICE"; then
+  if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
     break
   fi
   sleep 2
 done
 
-if ! systemctl is-active --quiet "$SERVICE"; then
-  echo "[ERROR] $SERVICE is not active"
-  systemctl status "$SERVICE" -l --no-pager || true
+if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+  echo "[ERROR] container is not running: $CONTAINER_NAME"
+  docker ps -a
   exit 3
 fi
 
-# HTTP 응답 확인(최대 60초)
 for i in {1..30}; do
   if curl -fsS "$URL" >/dev/null; then
     echo "[OK] service is up: $URL"
@@ -28,4 +26,5 @@ for i in {1..30}; do
 done
 
 echo "[ERROR] HTTP check failed: $URL"
+docker logs "$CONTAINER_NAME" --tail 100 || true
 exit 3

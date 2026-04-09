@@ -1,3 +1,4 @@
 #!/bin/bash
 set -e
-systemctl stop paceleague || true
+
+docker rm -f paceleague 2>/dev/null || true

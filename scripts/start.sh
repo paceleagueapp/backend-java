@@ -2,21 +2,26 @@
 set -euo pipefail
 
 APP_DIR="/opt/paceleague"
+CONTAINER_NAME="paceleague"
+IMAGE_NAME="paceleague:latest"
+
 cd "$APP_DIR"
 
-# plain 제외한 SNAPSHOT.jar 우선 선택
-JAR="$(ls -1 "$APP_DIR"/*SNAPSHOT.jar 2>/dev/null | grep -v -- '-plain\.jar$' | head -n 1 || true)"
+echo "[INFO] Stopping old container if exists"
+docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
 
-if [[ -z "${JAR}" ]]; then
-  echo "[ERROR] fat jar not found in $APP_DIR"
-  ls -al "$APP_DIR"
-  exit 1
-fi
+echo "[INFO] Removing old image if exists"
+docker rmi "$IMAGE_NAME" 2>/dev/null || true
 
-echo "[INFO] Using jar: $JAR"
-cp -f "$JAR" "$APP_DIR/app.jar"
-chown ec2-user:ec2-user "$APP_DIR/app.jar"
-chmod 0644 "$APP_DIR/app.jar"
+echo "[INFO] Building docker image"
+docker build -t "$IMAGE_NAME" .
 
-sudo systemctl daemon-reload
-sudo systemctl restart paceleague
+echo "[INFO] Starting new container"
+docker run -d \
+  --name "$CONTAINER_NAME" \
+  -p 8080:8080 \
+  --restart unless-stopped \
+  "$IMAGE_NAME"
+
+echo "[INFO] Running containers"
+docker ps
