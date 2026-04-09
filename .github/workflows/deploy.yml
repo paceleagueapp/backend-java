@@ -47,13 +47,13 @@ jobs:
       - name: Deploy to EC2 via SSM
         run: |
           aws ssm send-command \
-            --instance-ids "i-0998774e170eb0928" \
+            --region ap-northeast-2
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --comment "Deploy paceleague" \
-            --parameters 'commands=[
-              "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com",
-              "docker pull 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com/paceleague:latest",
-              "docker rm -f paceleague || true",
-              "docker run -d --name paceleague --env-file /opt/paceleague/.env -p 8080:8080 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com/paceleague:latest"
+            --parameters commands='[
+                "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com",
+                "docker pull 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com/paceleague:latest",
+                "docker rm -f paceleague || true",
+                "docker run -d --name paceleague --env-file /opt/paceleague/.env -p 8080:8080 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com/paceleague:latest"
             ]' \
-            --region ap-northeast-2

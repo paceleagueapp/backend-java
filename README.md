@@ -199,4 +199,4 @@ http://EC2_PUBLIC_IP:8080/swagger-ui/index.html
 Backend Developer
 
 * Java / Spring Boot 기반 서비스 개발
-* AWS 및 Docker 기반 인프라 구축 경험
+* AWS 및 Docker 기반 인프라 구축 경험 
