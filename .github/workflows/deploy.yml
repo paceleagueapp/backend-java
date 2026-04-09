@@ -44,11 +44,20 @@ jobs:
       - name: Push Docker image to ECR
         run: docker push 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com/paceleague:latest
 
+      - name: Debug AWS CLI
+        run: |
+          aws --version
+          aws sts get-caller-identity
+          echo "INSTANCE_ID=${{ secrets.EC2_INSTANCE_ID }}"
+          ls -al .github
+          cat .github/ssm-commands.json
+
       - name: Deploy to EC2 via SSM
         run: |
           aws ssm send-command \
-            --region ap-northeast-2
+            --region ap-northeast-2 \
             --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --comment "Deploy paceleague" \
-            --parameters file://.github/ssm-commands.json
+            --parameters file://.github/ssm-commands.json \
+            --output json
