@@ -16,6 +16,8 @@ import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.example.paceleague.rank.entity.MemberScore;
+import com.example.paceleague.rank.repository.MemberScoreRepository;
 
 @Service
 @Transactional(readOnly = true)
@@ -23,14 +25,17 @@ public class RecordServiceImpl implements RecordService{
     private final RecordRepository recordRepository;
     private final SeasonRepository seasonRepository;
     private final RankRepository rankRepository;
+    private final MemberScoreRepository memberScoreRepository;
 
-    public RecordServiceImpl(RecordRepository recordRepository, SeasonRepository seasonRepository, RankRepository rankRepository) {
+    public RecordServiceImpl(RecordRepository recordRepository, SeasonRepository seasonRepository, RankRepository rankRepository, MemberScoreRepository memberScoreRepository) {
 
         this.recordRepository = recordRepository;
 
         this.seasonRepository = seasonRepository;
 
         this.rankRepository = rankRepository;
+
+        this.memberScoreRepository = memberScoreRepository;
     }
 
     @Transactional
@@ -50,7 +55,7 @@ public class RecordServiceImpl implements RecordService{
 
         Record savedRecord = recordRepository.save(record);
 
-        saveRank(uno, req);
+        saveRank(uno, seasonData.getSeason(), req);
 
         return savedRecord.getSno();
     }
@@ -83,7 +88,7 @@ public class RecordServiceImpl implements RecordService{
 
             Record savedRecord = recordRepository.save(record);
 
-            saveRank(uno, req);
+            saveRank(uno, seasonData.getSeason(), req);
 
             return savedRecord.getSno();
         }).toList();
@@ -109,7 +114,7 @@ public class RecordServiceImpl implements RecordService{
         }
     }
 
-    private void saveRank(Long uno, RecordCreateRequest req) {
+    private void saveRank(Long uno, Long seasonSno, RecordCreateRequest req) {
         long durationSeconds = Duration.between(req.startTime(), req.endTime()).getSeconds();
 
         BigDecimal distanceKm = req.distanceRecord()
@@ -171,5 +176,27 @@ public class RecordServiceImpl implements RecordService{
         );
 
         rankRepository.save(rank);
+
+        MemberScore memberScore = memberScoreRepository
+                .findByMemberSnoAndSeasonSnoForUpdate(uno, seasonSno)
+                .orElseGet(() -> MemberScore.builder()
+                        .memberSno(uno)
+                        .seasonSno(seasonSno)
+                        .totalScore(1500)
+                        .build());
+
+        System.out.println("req.distanceRecord() = " + req.distanceRecord());
+        System.out.println("distanceKm = " + distanceKm);
+        System.out.println("baseScore = " + baseScore);
+        System.out.println("scaledScore = " + scaledScore);
+        System.out.println("addScore = " + addScore);
+        System.out.println("before = " + memberScore.getTotalScore());
+
+
+        memberScore.addScore(totalScore);
+
+        System.out.println("after = " + memberScore.getTotalScore());
+
+        memberScoreRepository.save(memberScore);
     }
 }
