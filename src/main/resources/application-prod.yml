@@ -19,6 +19,6 @@ spring:
 
 app:
   jwt:
-    access-token-ttl-seconds: 900
+    access-token-ttl-seconds: 300
     refresh-token-ttl-seconds: 1209600
     secret: ${JWT_SECRET}
