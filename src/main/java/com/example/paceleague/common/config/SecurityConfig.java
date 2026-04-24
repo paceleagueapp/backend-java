@@ -38,6 +38,22 @@ public class SecurityConfig {
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, ex) -> {
+                            response.setStatus(401);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("""
+                            {"success":false,"code":"UNAUTHORIZED","message":"인증이 필요합니다."}
+                        """);
+                        })
+                        .accessDeniedHandler((request, response, ex) -> {
+                            response.setStatus(403);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("""
+                            {"success":false,"code":"FORBIDDEN","message":"접근 권한이 없습니다."}
+                        """);
+                        })
+                )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
