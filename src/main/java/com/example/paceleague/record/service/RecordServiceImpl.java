@@ -185,17 +185,7 @@ public class RecordServiceImpl implements RecordService{
                         .totalScore(1500)
                         .build());
 
-        System.out.println("req.distanceRecord() = " + req.distanceRecord());
-        System.out.println("distanceKm = " + distanceKm);
-        System.out.println("baseScore = " + baseScore);
-        System.out.println("scaledScore = " + scaledScore);
-        System.out.println("addScore = " + addScore);
-        System.out.println("before = " + memberScore.getTotalScore());
-
-
         memberScore.addScore(totalScore);
-
-        System.out.println("after = " + memberScore.getTotalScore());
 
         memberScoreRepository.save(memberScore);
     }

@@ -4,6 +4,9 @@ import com.example.paceleague.rank.enums.RankTier;
 
 public record RankMeResponse(
         int totalScore,
-        RankTier tier
+        RankTier currentTier,
+        RankTier nextTier,
+        int nextTierRequiredScore,
+        int remainingScore
 ) {
 }

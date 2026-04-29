@@ -27,13 +27,28 @@ public class RankQueryService {
                 .findByMemberSnoAndSeasonSno(memberSno, season.getSeason())
                 .orElse(null);
 
+        int totalScore;
+        RankTier currentTier;
+
         if (memberScore == null) {
-            return new RankMeResponse(DEFAULT_SCORE, RankTier.SILVER);
+            totalScore = DEFAULT_SCORE;
+            currentTier = RankTier.SILVER;
+        } else {
+            totalScore = memberScore.getTotalScore();
+            currentTier = memberScore.getTier();
         }
 
+        RankTier nextTier = currentTier.next();
+
+        int nextTierRequiredScore = nextTier == null ? 0 : nextTier.getMinScore();
+        int remainingScore = nextTier == null ? 0 : nextTierRequiredScore - totalScore;
+
         return new RankMeResponse(
-                memberScore.getTotalScore(),
-                memberScore.getTier()
+                totalScore,
+                currentTier,
+                nextTier,
+                nextTierRequiredScore,
+                remainingScore
         );
     }
 }
