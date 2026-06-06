@@ -1,0 +1,25 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  data:
+    redis:
+      host: ${REDIS_URL}
+      port: 6379
+      password: ${REDIS_PASSWORD}
+
+app:
+  jwt:
+    access-token-ttl-seconds: 300
+    refresh-token-ttl-seconds: 1209600
+    secret: ${JWT_SECRET}

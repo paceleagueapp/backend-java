@@ -1,0 +1,63 @@
+name: Build and Push Docker Image to ECR
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Build jar
+        run: |
+          chmod +x gradlew
+          ./gradlew clean build -x test
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        run: docker build -t paceleague .
+
+      - name: Tag Docker image
+        run: docker tag paceleague:latest 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com/paceleague:latest
+
+      - name: Push Docker image to ECR
+        run: docker push 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com/paceleague:latest
+
+      - name: Debug AWS CLI
+        run: |
+          aws --version
+          aws sts get-caller-identity
+          echo "INSTANCE_ID=${{ secrets.EC2_INSTANCE_ID }}"
+          ls -al .github
+          cat .github/ssm-commands.json
+
+      - name: Deploy to EC2 via SSM
+        run: |
+          aws ssm send-command \
+            --region ap-northeast-2 \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy paceleague" \
+            --parameters file://.github/ssm-commands.json \
+            --output json
