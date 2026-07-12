@@ -69,6 +69,7 @@
 - `POST /api/member/logout`
 - `GET /api/app/version-check`
 - `GET /api/ranking/top10`
+- `GET /robots.txt` (검색엔진 크롤링 전면 차단용, [infra.md](./infra.md#검색엔진-크롤링-차단-apipaceleaguecokr) 참고)
 - `/v3/api-docs/**`, `/swagger-ui.html`, `/swagger-ui/**`
 
 그 외 모든 엔드포인트는 인증이 필요합니다.

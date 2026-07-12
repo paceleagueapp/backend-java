@@ -24,6 +24,12 @@
 
 Swagger는 별도 설정 없이 `https://api.paceleague.co.kr/swagger-ui.html`에서 바로 열립니다 (Nginx가 8080 전체를 프록시하기 때문에 앱의 모든 경로가 그대로 노출됨).
 
+### 검색엔진 크롤링 차단 (`api.paceleague.co.kr`)
+
+`api.paceleague.co.kr`은 API 전용 도메인이라 검색엔진에 노출될 필요가 없습니다. `api/src/main/resources/static/robots.txt`(Spring Boot 기본 정적 리소스 서빙)로 전체 `Disallow: /`를 응답하며, `SecurityConfig`의 공개 경로 목록에 `/robots.txt`를 추가해 인증 없이 200으로 받을 수 있게 했습니다 — robots.txt가 401/403 등 4xx로 응답되면 대부분의 크롤러가 "제약 없음"으로 해석해 오히려 전체 크롤링을 허용해버리기 때문에, 반드시 인증 예외 목록에 넣어야 의도대로 동작합니다.
+
+`paceleague.co.kr`(정적 사이트, `web/`)에는 별도 robots.txt가 없어 기본값(크롤링 허용)이며, 이미 `sitemap.xml`을 두고 있으므로 의도적으로 인덱싱 대상입니다. 이 차단은 `api.paceleague.co.kr`에만 적용됩니다.
+
 ## `web/` 파일 출처
 
 `web/` 폴더는 2026-07-12에 `paceleague` EC2의 `/var/www/paceleague`에 있던 파일을 그대로 가져와 이 저장소에 편입한 것입니다.
@@ -32,8 +38,9 @@ Swagger는 별도 설정 없이 `https://api.paceleague.co.kr/swagger-ui.html`�
 - `ko/`, `en/` — 앱스토어 심사에 필요한 이용약관/개인정보처리방침/계정삭제 안내 (한/영)
 - `app-ads.txt` — AdMob 광고 검증 파일
 - `sitemap.xml` — 실제 사용 중인 사이트맵
-- `t_sitemap.xml` — **다른 도메인(`onedaykorea.co.kr`) 내용이 들어있는 파일.** `paceleague.conf`에서 별도로 참조되지 않는, 관련 없는 잔여 파일로 보입니다. 삭제 여부는 확인 후 결정 필요.
 - `ko/privacy_bak.html` — `privacy.html`의 백업본으로 보이며 실제 서비스 경로에서는 쓰이지 않음.
+
+> `t_sitemap.xml`(다른 도메인 `onedaykorea.co.kr` 내용이 들어있던 관련 없는 잔여 파일)은 2026-07-12에 삭제했습니다.
 
 ## 배포 시 서버에 반영되는 방식
 

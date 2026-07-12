@@ -37,7 +37,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/api/app/version-check",
-                                "/api/ranking/top10"
+                                "/api/ranking/top10",
+                                "/robots.txt"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
