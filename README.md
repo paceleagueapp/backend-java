@@ -90,15 +90,21 @@ Docker Run
 
 # 프로젝트 구조
 
+모노레포입니다. 백엔드(`api/`)와 정적 랜딩/약관 사이트(`web/`)를 함께 관리하고 한 번에 배포합니다. 자세한 내용은 [docs/](./docs/README.md) 참고.
+
 ```text
-src/main/java/com/example/paceleague
-├── auth
-├── user
-├── record
-├── season
-├── ranking
-├── common
-└── config
+.
+├── api/            Spring Boot 백엔드 (api.paceleague.co.kr)
+│   └── src/main/java/com/example/paceleague
+│       ├── member
+│       ├── record
+│       ├── rank
+│       ├── ranking
+│       ├── season
+│       ├── appversion
+│       └── common
+├── web/            정적 랜딩/약관 사이트 (paceleague.co.kr)
+└── docs/           상세 문서
 ```
 
 ---
@@ -108,12 +114,14 @@ src/main/java/com/example/paceleague
 ## 로컬 실행
 
 ```bash
+cd api
 ./gradlew bootRun
 ```
 
 Windows:
 
 ```bash
+cd api
 gradlew.bat bootRun
 ```
 
@@ -122,6 +130,7 @@ gradlew.bat bootRun
 # 테스트 실행
 
 ```bash
+cd api
 ./gradlew test
 ```
 
@@ -130,12 +139,15 @@ gradlew.bat bootRun
 # 빌드
 
 ```bash
+cd api
 ./gradlew clean build
 ```
 
 ---
 
 # Docker 실행
+
+빌드 컨텍스트가 `api/`와 `web/`을 모두 포함하므로 **저장소 루트에서** 실행합니다.
 
 ```bash
 docker build -t paceleague .

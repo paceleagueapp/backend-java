@@ -1,7 +1,10 @@
-build
-.gradle
-.idea
 .git
+.idea
 .gitignore
-.env
 *.iml
+
+api/build
+api/.gradle
+api/.env
+
+docs

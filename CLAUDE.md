@@ -6,22 +6,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PaceLeague — a Spring Boot backend for a running-record and ranking service. Users log runs, the server computes pace/calories/score, and members are ranked by season/tier.
 
+This is a **monorepo** with two independently-managed parts deployed together:
+
+- **`api/`** — the Spring Boot backend (everything described below). Serves `api.paceleague.co.kr`.
+- **`web/`** — a static marketing/legal site (landing page + ko/en privacy/terms/account-deletion pages required for app store compliance). Serves `paceleague.co.kr` / `www.paceleague.co.kr`. No build step, no framework — plain HTML served directly by Nginx.
+
+A single push to `main` deploys both (see Deploy below) — there is no separate pipeline for `web/`.
+
 ## Commands
 
+Run all Gradle commands from `api/` (or pass `-p api`):
+
 ```bash
-./gradlew bootRun          # run locally (Windows: gradlew.bat bootRun)
-./gradlew test             # run all tests (JUnit 5)
-./gradlew test --tests "com.example.paceleague.SomeTest"   # run a single test class
-./gradlew clean build      # full build (used by CI/Docker, run with -x test to skip tests)
+cd api && ./gradlew bootRun          # run locally (Windows: gradlew.bat bootRun)
+cd api && ./gradlew test             # run all tests (JUnit 5)
+cd api && ./gradlew test --tests "com.example.paceleague.SomeTest"   # run a single test class
+cd api && ./gradlew clean build      # full build (used by CI/Docker, run with -x test to skip tests)
 ```
 
-Local run requires a `local` Spring profile with env vars: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET` (see `application-local.yml`), plus a running MySQL and Redis (Redis defaults to `127.0.0.1:6379`).
+Local run requires a `local` Spring profile with env vars: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET` (see `api/src/main/resources/application-local.yml`), plus a running MySQL and Redis (Redis defaults to `127.0.0.1:6379`). `.env` lives at `api/.env` (gitignored) since that's the working directory `./gradlew bootRun` runs from.
 
-Docker: `docker build -t paceleague .` / `docker run -d -p 8080:8080 --name paceleague paceleague`. Deploy is via GitHub Actions on push to `main`: builds the jar, pushes to AWS ECR, then triggers deployment on EC2 via SSM (`.github/workflows/deploy.yml`, `.github/ssm-commands.json`).
+## Deploy (single pipeline for api/ + web/)
+
+`docker build -t paceleague .` is run from the **repo root** (build context spans both `api/` and `web/`) — the Dockerfile builds the `api/` jar in a builder stage, then in the final image also `COPY web /web-dist` so the static site travels inside the same image as a distribution artifact (the Spring Boot app does not serve it).
+
+GitHub Actions deploys on push to `main` (`.github/workflows/deploy.yml`): builds the jar from `api/`, builds/pushes the Docker image to AWS ECR, then triggers `.github/ssm-commands.json` on EC2 via SSM, which — in this order, deliberately, so a web-asset-extraction failure can never delay or block the app coming back up:
+1. pulls the new image and **restarts the `paceleague` app container first** (serves `api.paceleague.co.kr` via Nginx reverse proxy on port 8080) — this is the priority; the app must not stay down
+2. only then extracts `/web-dist` from the same image into a temp dir and swaps it into `/var/www/paceleague` (what Nginx serves for `paceleague.co.kr`), guarded so a failed extraction leaves the previous static site in place rather than deleting it
+
+So `api.paceleague.co.kr` and `paceleague.co.kr` both update together from one push — see `docs/infra.md` for the full Nginx/domain wiring on the EC2 host.
+
+Local Docker smoke test: `docker build -t paceleague .` / `docker run -d -p 8080:8080 --name paceleague paceleague` (run from repo root, not `api/`).
 
 ## Architecture
 
-Each domain package under `com.example.paceleague` follows a strict layered structure: `controller → service → repository`, with `entity`/`dto` alongside. Controllers must stay thin (no business logic, no `@Transactional`); services own transactions and business logic; repositories are the only DB access point. See `AGENT.md` for the full rule set this codebase is meant to follow (Java/Gradle only, no Kotlin/Maven, minimal abstraction, no unrequested design patterns or multi-module split).
+Each domain package under `com.example.paceleague` follows a strict layered structure: `controller → service → repository`, with `entity`/`dto` alongside. Controllers must stay thin (no business logic, no `@Transactional`); services own transactions and business logic; repositories are the only DB access point. See `AGENTS.md` for the full rule set this codebase is meant to follow (Java/Gradle only, no Kotlin/Maven, minimal abstraction, no unrequested design patterns or multi-module split — the `api/`+`web/` monorepo split is a deployment-unit split, not the kind of multi-module Gradle setup that rule is about).
 
 Domains: `member` (auth), `record` (running logs), `rank` (individual score/tier), `ranking` (leaderboard), `season`, `appversion` (mobile force/soft update check), `common` (cross-cutting config/response/error).
 
@@ -49,4 +68,8 @@ Known gap: `RecordController.getMonthAll` hardcodes `weightKg = 70` instead of r
 
 ## Testing
 
-Only `PaceleagueApplicationTests` (context-load smoke test) currently exists — `AGENT.md` calls for JUnit 5 + Mockito with both success/failure cases per feature (Korean test method names are acceptable), but this isn't yet followed in practice. Existing tests must never be deleted per project rules.
+Only `PaceleagueApplicationTests` (context-load smoke test) currently exists — `AGENTS.md` calls for JUnit 5 + Mockito with both success/failure cases per feature (Korean test method names are acceptable), but this isn't yet followed in practice. Existing tests must never be deleted per project rules.
+
+## Keeping docs in sync
+
+`docs/` and this file are the source of truth for infra/architecture decisions that aren't obvious from the code (domain wiring, deploy pipeline, AWS layout, etc.). When you make a change that affects them — a new endpoint, a deploy pipeline change, a new domain/env var, infra topology — update the relevant `docs/*.md` file (and this file if it's a command/structure change) in the same change, not as a follow-up.

@@ -3,6 +3,12 @@
     "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com",
     "docker pull 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com/paceleague:latest",
     "docker rm -f paceleague || true",
-    "docker run -d --restart unless-stopped --name paceleague --env-file /opt/paceleague/.env -p 8080:8080 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com/paceleague:latest"
+    "docker run -d --restart unless-stopped --name paceleague --env-file /opt/paceleague/.env -p 8080:8080 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com/paceleague:latest",
+    "docker rm -f paceleague-web-extract || true",
+    "rm -rf /tmp/web-dist-new",
+    "docker create --name paceleague-web-extract 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com/paceleague:latest",
+    "docker cp paceleague-web-extract:/web-dist /tmp/web-dist-new",
+    "docker rm -f paceleague-web-extract || true",
+    "if [ -d /tmp/web-dist-new ]; then rm -rf /var/www/paceleague && mv /tmp/web-dist-new /var/www/paceleague; else echo 'web asset extraction failed, leaving /var/www/paceleague untouched' >&2; fi"
   ]
 }
