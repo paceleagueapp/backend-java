@@ -22,9 +22,16 @@ public class RankingQueryService {
 
     private static final int DEFAULT_SCORE = 1500;
     private static final int AROUND_LIMIT = 5;
+    private static final int TOP10_LIMIT = 10;
 
     private final RankingRepository rankingRepository;
     private final SeasonRepository seasonRepository;
+
+    public List<RankingUserResponse> getTop10() {
+        Season season = seasonRepository.findTopByOrderByStartDtDesc();
+        List<RankingProjection> top10 = rankingRepository.findAroundRanking(season.getSno(), TOP10_LIMIT, 0);
+        return toResponse(top10, null, 1);
+    }
 
     public RankingPageResponse getRankingPage(Long memberSno) {
         Season season = seasonRepository.findTopByOrderByStartDtDesc();

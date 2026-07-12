@@ -15,6 +15,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      padding: 40px 0 100px;
     }
     .icon { font-size: 64px; margin-bottom: 16px; }
     h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
@@ -30,6 +31,25 @@
     }
     a:hover { background: #c62828; }
     footer { position: absolute; bottom: 24px; color: #444; font-size: 13px; }
+
+    .ranking { width: 100%; max-width: 360px; margin-top: 48px; padding: 0 20px; }
+    .ranking h2 { font-size: 15px; font-weight: 700; text-align: center; color: #ccc; margin-bottom: 12px; }
+    .ranking-list { list-style: none; }
+    .ranking-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      margin-bottom: 6px;
+      background: #1a1a1a;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+    .ranking-rank { color: #e53935; font-weight: 700; width: 20px; flex-shrink: 0; }
+    .ranking-nickname { flex: 1; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ranking-tier { color: #888; font-size: 12px; flex-shrink: 0; }
+    .ranking-score { color: #fff; font-weight: 600; flex-shrink: 0; }
+    .ranking-loading, .ranking-empty { text-align: center; color: #666; padding: 12px; font-size: 13px; }
   </style>
 </head>
 <body>
@@ -38,6 +58,55 @@
   <a href="https://play.google.com/store/apps/details?id=com.paceleague.app" target="_blank">
     Google Play에서 다운로드
   </a>
+
+  <div class="ranking">
+    <h2>이번 시즌 TOP 10</h2>
+    <ol id="ranking-list" class="ranking-list">
+      <li class="ranking-loading">랭킹 불러오는 중...</li>
+    </ol>
+  </div>
+
   <footer>© 2026 Pace League. All rights reserved.</footer>
+
+  <script>
+    var TIER_LABEL = {
+      BRONZE: '브론즈', SILVER: '실버', GOLD: '골드',
+      PLATINUM: '플래티넘', DIAMOND: '다이아', MASTER: '마스터', CHALLENGER: '챌린저'
+    };
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    fetch('https://api.paceleague.co.kr/api/ranking/top10')
+      .then(function (res) { return res.json(); })
+      .then(function (json) {
+        var list = document.getElementById('ranking-list');
+        var items = (json && json.data) || [];
+
+        if (items.length === 0) {
+          list.innerHTML = '<li class="ranking-empty">아직 랭킹 데이터가 없습니다.</li>';
+          return;
+        }
+
+        list.innerHTML = items.map(function (item) {
+          return '<li>' +
+            '<span class="ranking-rank">' + item.rank + '</span>' +
+            '<span class="ranking-nickname">' + escapeHtml(item.nickname || '익명') + '</span>' +
+            '<span class="ranking-tier">' + (TIER_LABEL[item.tier] || item.tier) + '</span>' +
+            '<span class="ranking-score">' + item.totalScore + '</span>' +
+            '</li>';
+        }).join('');
+      })
+      .catch(function () {
+        var list = document.getElementById('ranking-list');
+        list.innerHTML = '<li class="ranking-empty">랭킹을 불러오지 못했습니다.</li>';
+      });
+  </script>
 </body>
 </html>

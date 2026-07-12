@@ -66,3 +66,7 @@ Client → POST /api/member/logout { refreshToken }
 
 - `app.jwt.secret`은 환경 변수 `JWT_SECRET`에서 주입 (`application-local.yml` / `application-prod.yml`), 코드/설정 파일에 하드코딩되어 있지 않음.
 - `.env` 파일과 운영용 설정은 Git에 커밋하지 않는 것이 원칙 (`README.md`, `AGENTS.md` 명시).
+
+## CORS
+
+기본적으로 CORS는 열려 있지 않습니다 — 브라우저에서 다른 오리진(예: `web/`이 서빙되는 `paceleague.co.kr`)이 이 API를 `fetch`로 호출하면 차단됩니다. 유일한 예외는 `GET /api/ranking/top10`이며, `common.config.CorsConfig`가 이 경로 하나에만 `https://paceleague.co.kr`, `https://www.paceleague.co.kr` 오리진의 GET 요청을 허용합니다 ([api.md](./api.md#get-apirankingtop10--상위-10명-랭킹-조회-공개-인증-불필요) 참고). 다른 공개 API(`/api/app/version-check` 등)는 서버-투-서버 또는 앱 클라이언트 호출만 가정하므로 CORS를 열지 않았습니다.

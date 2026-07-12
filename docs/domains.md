@@ -77,7 +77,9 @@ totalScore = baseScore + scaledScore + addScore
    - 내 `MemberScore`가 없으면(이번 시즌 미기록) "점수가 1500 초과인 사람 수 + 1"을 기본 순위로 사용.
 3. **내 주변 5명(aroundRanks)**: `offset = max(0, myRank - 3)`, `limit = 5`로 같은 정렬 기준의 목록을 조회. 즉 내가 1~3위여도 항상 1위부터 보여주고(offset 0으로 클램프), 그 외에는 내 순위 기준 위로 2명 정도 포함되도록 구성.
 4. 두 목록 모두 `RankingUserResponse`로 변환하며 각 항목의 `rank`는 조회 시작 순번(`startRank`)에 배열 인덱스를 더해 부여 (DB에 순위 컬럼이 저장되어 있는 게 아니라 조회 시점에 계산됨).
-5. `me` 플래그는 `ranking.getMemberSno().equals(myMemberSno)`로 판정.
+5. `me` 플래그는 `ranking.getMemberSno().equals(myMemberSno)`로 판정. `myMemberSno`가 `null`이면(비로그인 컨텍스트) `Long.equals(null)`이 항상 `false`를 반환하므로 자연스럽게 모든 항목이 `me: false`가 됨 — `getTop10()`이 바로 이 방식으로 로그인 없이 재사용.
+
+`RankingQueryService.getTop10()`은 `getRankingPage`와 별도 쿼리를 만들지 않고, `aroundRanks`가 쓰는 `findAroundRanking(seasonSno, limit, offset)`을 `limit=10, offset=0`으로 그대로 재사용합니다. `GET /api/ranking/top10`(공개, 인증 불필요)으로 노출되며 `paceleague.co.kr` 랜딩 페이지가 이 응답을 표시합니다 — 자세한 내용은 [api.md](./api.md#get-apirankingtop10--상위-10명-랭킹-조회-공개-인증-불필요) 참고.
 
 ## 앱 버전 체크 로직
 

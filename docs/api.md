@@ -68,6 +68,7 @@
 - `POST /api/member/reissue`
 - `POST /api/member/logout`
 - `GET /api/app/version-check`
+- `GET /api/ranking/top10`
 - `/v3/api-docs/**`, `/swagger-ui.html`, `/swagger-ui/**`
 
 그 외 모든 엔드포인트는 인증이 필요합니다.
@@ -335,11 +336,11 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 ---
 
-## Ranking API (`/api/ranking`) — 인증 필요
+## Ranking API (`/api/ranking`)
 
-전체 리더보드(Top3) + 내 주변 순위를 함께 반환하는 API.
+전체 리더보드(Top3) + 내 주변 순위를 함께 반환하는 API. `top10`만 예외적으로 공개(인증 불필요) 엔드포인트입니다.
 
-### GET `/api/ranking/getRanking` — 랭킹 페이지 조회
+### GET `/api/ranking/getRanking` — 랭킹 페이지 조회 (인증 필요)
 
 **Response** `200 OK` — `data`: `RankingPageResponse`
 
@@ -361,6 +362,22 @@ join/login/reissue가 공통으로 반환하는 구조:
 - `aroundRanks`: 내 순위를 중심으로 앞뒤 포함 **5명** (내 순위가 3위 이하로 밀려있어도 상위 유저부터 잘리지 않도록 `offset = max(0, 내 순위 - 3)`으로 계산)
 - 두 목록 모두 각 항목에 `me: true/false`로 본인 여부 표시
 - 순위 산정 로직(동점자 처리 포함)은 [domains.md](./domains.md#랭킹리더보드-산정-로직) 참고
+
+### GET `/api/ranking/top10` — 상위 10명 랭킹 조회 (공개, 인증 불필요)
+
+`paceleague.co.kr` 랜딩 페이지(`web/index.html`)에서 표시하기 위한 공개 엔드포인트입니다. 시즌 상위 10명을 그대로 반환합니다 (내부적으로 `getRanking`의 "내 주변 순위" 조회와 같은 쿼리를 `offset=0, limit=10`으로 재사용).
+
+**Response** `200 OK` — `data`: `RankingUserResponse[]`
+
+```json
+[
+  { "rank": 1, "memberSno": 7, "nickname": "페이서", "totalScore": 24500, "tier": "CHALLENGER", "me": false },
+  { "rank": 2, "memberSno": 3, "nickname": "런닝맨", "totalScore": 19800, "tier": "MASTER", "me": false }
+]
+```
+
+- 로그인 컨텍스트가 없으므로 `me`는 항상 `false`.
+- CORS: `https://paceleague.co.kr`, `https://www.paceleague.co.kr` 오리진에서만 브라우저 `fetch`로 호출 가능하도록 이 경로에만 한정해 CORS를 허용합니다 (`common.config.CorsConfig`). 다른 API는 CORS를 열지 않았으므로 브라우저에서 다른 오리진으로는 호출할 수 없습니다.
 
 ---
 

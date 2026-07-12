@@ -50,7 +50,8 @@ Note the `rank` vs `ranking` split — they are separate packages by design, not
 
 JWT-based, stateless (`SecurityConfig`, `sessionCreationPolicy(STATELESS)`).
 
-- Public endpoints: `/api/member/join`, `/login`, `/reissue`, `/logout`, `/api/app/version-check`, Swagger paths. Everything else requires a valid access token.
+- Public endpoints: `/api/member/join`, `/login`, `/reissue`, `/logout`, `/api/app/version-check`, `/api/ranking/top10`, Swagger paths. Everything else requires a valid access token.
+- CORS is otherwise closed. `/api/ranking/top10` is the one exception (`common.config.CorsConfig`), scoped to that single path so `web/index.html` can `fetch()` it cross-origin from `paceleague.co.kr`/`www.paceleague.co.kr`. Don't widen this without a reason — every other endpoint has no CORS headers and can't be called from a browser on a different origin.
 - `JwtAuthenticationFilter` runs before `UsernamePasswordAuthenticationFilter`, validates the access token, and puts a `JwtAuthenticationFilter.AuthPrincipal(memberSno)` on the `Authentication`. Controllers pull the current user via `((AuthPrincipal) authentication.getPrincipal()).memberSno()` — this pattern is repeated in every authenticated controller, not centralized in a resolver/annotation.
 - Access tokens are short-lived JWTs (`JwtTokenProvider`); refresh tokens are opaque random strings stored in Redis with TTL (`RefreshTokenService`, key prefix `refresh:`), not JWTs. `/reissue` rotates the refresh token (old one revoked, new one issued).
 - Password hashing via `BCryptPasswordEncoder` (Spring Security is used only for auth mechanics here, not full MVC integration).
