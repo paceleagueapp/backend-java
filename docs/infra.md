@@ -26,6 +26,10 @@ Swagger는 별도 설정 없이 `https://api.paceleague.co.kr/swagger-ui.html`�
 
 Nginx가 TLS를 종료하고 `http://127.0.0.1:8080`으로 평문 프록시하므로, 앱이 `X-Forwarded-Proto` 등 forwarded 헤더를 신뢰하도록 `server.forward-headers-strategy: framework`를 `application.yml`에 설정해뒀습니다. 이게 없으면 Springdoc이 OpenAPI `servers` URL의 scheme을 요청 그대로(`http`)로 오인해 생성하고, Swagger UI의 "Try it out"이 `http://api.paceleague.co.kr`로 요청을 보내면서 scheme 불일치로 브라우저가 이를 cross-origin(preflight)으로 취급 — `/api/ranking/top10` 외에는 CORS 설정이 없어 403 "Invalid CORS request"로 막히는 문제가 있었습니다(2026-07-12에 확인 및 수정).
 
+### 배포 시 디스크 부족으로 이미지가 갱신되지 않는 문제
+
+`paceleague` 인스턴스의 루트 디스크는 8GB뿐이고, 배포마다 이전 이미지가 `<none>` 태그로 남아 쌓입니다(이미지당 ~390MB). `.github/ssm-commands.json`은 원래 이걸 정리하지 않아서, 2026-07-12에 디스크가 99%까지 차서 `docker pull`이 새 레이어(`app.jar`)를 받다가 `no space left on device`로 실패한 적이 있습니다 — GitHub Actions의 빌드/푸시는 성공했는데도 EC2에는 이전 이미지가 그대로 떠 있어서, 배포가 "성공"으로 보이지만 실제로는 반영되지 않는 상태였습니다(`docker pull`이 실패해도 스크립트가 멈추지 않고 기존 로컬 이미지로 계속 실행됨). 재발 방지로 `ssm-commands.json` 마지막에 `docker image prune -f`/`docker builder prune -f`를 추가했습니다. 만약 이후에도 배포했는데 실제 동작이 코드 변경과 다르다면, 가장 먼저 EC2 디스크 사용량(`df -h`)과 `docker pull` 실패 여부부터 의심할 것.
+
 ### 검색엔진 크롤링 차단 (`api.paceleague.co.kr`)
 
 `api.paceleague.co.kr`은 API 전용 도메인이라 검색엔진에 노출될 필요가 없습니다. `api/src/main/resources/static/robots.txt`(Spring Boot 기본 정적 리소스 서빙)로 전체 `Disallow: /`를 응답하며, `SecurityConfig`의 공개 경로 목록에 `/robots.txt`를 추가해 인증 없이 200으로 받을 수 있게 했습니다 — robots.txt가 401/403 등 4xx로 응답되면 대부분의 크롤러가 "제약 없음"으로 해석해 오히려 전체 크롤링을 허용해버리기 때문에, 반드시 인증 예외 목록에 넣어야 의도대로 동작합니다.

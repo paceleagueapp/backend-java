@@ -9,6 +9,8 @@
     "docker create --name paceleague-web-extract 042776339568.dkr.ecr.ap-northeast-2.amazonaws.com/paceleague:latest",
     "docker cp paceleague-web-extract:/web-dist /tmp/web-dist-new",
     "docker rm -f paceleague-web-extract || true",
-    "if [ -d /tmp/web-dist-new ]; then rm -rf /var/www/paceleague && mv /tmp/web-dist-new /var/www/paceleague; else echo 'web asset extraction failed, leaving /var/www/paceleague untouched' >&2; fi"
+    "if [ -d /tmp/web-dist-new ]; then rm -rf /var/www/paceleague && mv /tmp/web-dist-new /var/www/paceleague; else echo 'web asset extraction failed, leaving /var/www/paceleague untouched' >&2; fi",
+    "docker image prune -f || true",
+    "docker builder prune -f || true"
   ]
 }
