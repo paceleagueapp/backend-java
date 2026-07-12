@@ -4,6 +4,10 @@ import com.example.paceleague.common.response.ResponseApi;
 import com.example.paceleague.common.security.JwtAuthenticationFilter;
 import com.example.paceleague.ranking.dto.RankingPageResponse;
 import com.example.paceleague.ranking.service.RankingQueryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -11,10 +15,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/ranking")
 @RequiredArgsConstructor
+@Tag(name = "Ranking", description = "리더보드(랭킹) 조회 API")
+@SecurityRequirement(name = "bearerAuth")
 public class RankingController {
 
     private final RankingQueryService rankingQueryService;
 
+    @Operation(summary = "랭킹 페이지 조회", description = "시즌 Top3와 내 주변 순위 5명을 함께 반환합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/getRanking")
     public ResponseApi<RankingPageResponse> getRanking(
             Authentication authentication
