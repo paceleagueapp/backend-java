@@ -24,6 +24,8 @@
 
 Swagger는 별도 설정 없이 `https://api.paceleague.co.kr/swagger-ui.html`에서 바로 열립니다 (Nginx가 8080 전체를 프록시하기 때문에 앱의 모든 경로가 그대로 노출됨).
 
+Nginx가 TLS를 종료하고 `http://127.0.0.1:8080`으로 평문 프록시하므로, 앱이 `X-Forwarded-Proto` 등 forwarded 헤더를 신뢰하도록 `server.forward-headers-strategy: framework`를 `application.yml`에 설정해뒀습니다. 이게 없으면 Springdoc이 OpenAPI `servers` URL의 scheme을 요청 그대로(`http`)로 오인해 생성하고, Swagger UI의 "Try it out"이 `http://api.paceleague.co.kr`로 요청을 보내면서 scheme 불일치로 브라우저가 이를 cross-origin(preflight)으로 취급 — `/api/ranking/top10` 외에는 CORS 설정이 없어 403 "Invalid CORS request"로 막히는 문제가 있었습니다(2026-07-12에 확인 및 수정).
+
 ### 검색엔진 크롤링 차단 (`api.paceleague.co.kr`)
 
 `api.paceleague.co.kr`은 API 전용 도메인이라 검색엔진에 노출될 필요가 없습니다. `api/src/main/resources/static/robots.txt`(Spring Boot 기본 정적 리소스 서빙)로 전체 `Disallow: /`를 응답하며, `SecurityConfig`의 공개 경로 목록에 `/robots.txt`를 추가해 인증 없이 200으로 받을 수 있게 했습니다 — robots.txt가 401/403 등 4xx로 응답되면 대부분의 크롤러가 "제약 없음"으로 해석해 오히려 전체 크롤링을 허용해버리기 때문에, 반드시 인증 예외 목록에 넣어야 의도대로 동작합니다.
