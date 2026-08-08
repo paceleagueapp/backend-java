@@ -14,6 +14,11 @@ MySQL, Spring Data JPA(Hibernate) 사용. 로컬은 `ddl-auto: update`, 운영�
 | `member_score` | `MemberScore` | 회원×시즌별 누적 점수/티어 |
 | `season` | `Season` | 시즌 메타데이터 |
 | `app_version_policy` | `AppVersionPolicy` | 플랫폼별 앱 버전/점검 정책 |
+| `board` | `Board` | 커뮤니티 보드(카테고리) 목록, DDL로 시딩 |
+| `post` | `Post` | 게시글 |
+| `comment` | `Comment` | 댓글(1단계 중첩 — `parent_comment_sno`) |
+| `post_vote` | `PostVote` | 게시글 추천/비추천 기록 |
+| `comment_vote` | `CommentVote` | 댓글 추천/비추천 기록 |
 
 ## `member`
 
@@ -95,6 +100,58 @@ MySQL, Spring Data JPA(Hibernate) 사용. 로컬은 `ddl-auto: update`, 운영�
 | maintenance_yn | String(1) | `"Y"`/`"N"` |
 | maintenance_message | String(500) | |
 | create_at / update_at | LocalDateTime | |
+
+## `board`
+
+DDL로 시딩만 하고(자유게시판/질문/인증 3개), 생성/수정 API는 없음 — [migrations/2026-08-08_board_feature.sql](./migrations/2026-08-08_board_feature.sql) 참고.
+
+| 컬럼 | 타입(Java) | 설명 |
+|---|---|---|
+| sno | Long (PK, IDENTITY) | |
+| slug | String(50), UNIQUE | URL에 쓰이는 식별자 (`free`, `qna`, `verify`) |
+| name | String(50) | 표시명 |
+| description | String(255) | |
+| display_order | int | 목록 정렬 순서 |
+| create_at / update_at | LocalDateTime | |
+
+## `post`
+
+| 컬럼 | 타입(Java) | 설명 |
+|---|---|---|
+| sno | Long (PK, IDENTITY) | |
+| board_sno | Long | `board.sno` FK 값 |
+| member_sno | Long | 작성자, `member.sno` FK 값 |
+| title | String(200) | |
+| content | String (TEXT) | |
+| view_count | int | 조회할 때마다 원자적 `UPDATE ... SET view_count = view_count + 1`로 증가, 중복 방지 없음 |
+| score | int | 추천(+1)/비추천(-1) 합계, 투표 시점에 `PESSIMISTIC_WRITE` 락으로 갱신 |
+| create_at / update_at | LocalDateTime | |
+
+## `comment`
+
+| 컬럼 | 타입(Java) | 설명 |
+|---|---|---|
+| sno | Long (PK, IDENTITY) | |
+| post_sno | Long | |
+| member_sno | Long | 작성자 |
+| parent_comment_sno | Long, nullable | `NULL`이면 최상위 댓글, 값이 있으면 답글. **1단계 중첩만 허용** — 답글이 가리키는 부모는 항상 최상위 댓글이어야 함(서비스 레이어에서 검증) |
+| content | String(1000) | |
+| score | int | |
+| create_at / update_at | LocalDateTime | |
+
+## `post_vote` / `comment_vote`
+
+회원 1명당 게시글/댓글 1건에 대해 최대 1행. `vote_value`는 `1`(추천) 또는 `-1`(비추천).
+
+| 컬럼 | 타입(Java) | 설명 |
+|---|---|---|
+| sno | Long (PK, IDENTITY) | |
+| post_sno / comment_sno | Long | |
+| member_sno | Long | |
+| vote_value | int | `1` 또는 `-1` |
+| create_at / update_at | LocalDateTime | |
+
+**`(member_sno, post_sno)` / `(member_sno, comment_sno)`에 실제 DB `UNIQUE` 제약을 걸어둡니다.** 위 `member_score`가 "DB 유니크 제약 없이 앱 로직만으로 보장"하는 것과 다른 예외적 선택인데, 추천 중복 저장은 점수 조작으로 바로 이어지는 버그라 신규 테이블 도입 시점에 제약을 거는 비용이 나중에 정리하는 비용보다 훨씬 적기 때문입니다.
 
 ## Redis
 

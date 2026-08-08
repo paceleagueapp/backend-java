@@ -9,7 +9,7 @@ PaceLeague — a Spring Boot backend for a running-record and ranking service. U
 This is a **monorepo** with two independently-managed parts deployed together:
 
 - **`api/`** — the Spring Boot backend (everything described below). Serves `api.paceleague.co.kr`.
-- **`web/`** — a static marketing/legal site (landing page + ko/en privacy/terms/account-deletion pages required for app store compliance). Serves `paceleague.co.kr` / `www.paceleague.co.kr`. No build step, no framework — plain HTML served directly by Nginx.
+- **`web/`** — a static marketing/legal site (landing page + ko/en privacy/terms/account-deletion pages required for app store compliance), plus a small community UI (`login.html`, `board.html`, `post.html`, sharing `js/app.js` for auth/fetch helpers) that calls the `board`/`member` APIs directly from the browser. Serves `paceleague.co.kr` / `www.paceleague.co.kr`. No build step, no framework — plain multi-page HTML/vanilla JS served directly by Nginx (deliberately kept this way even for the community feature — see `docs/architecture.md`).
 
 A single push to `main` deploys both (see Deploy below) — there is no separate pipeline for `web/`.
 
@@ -42,7 +42,7 @@ Local Docker smoke test: `docker build -t paceleague .` / `docker run -d -p 8080
 
 Each domain package under `com.example.paceleague` follows a strict layered structure: `controller → service → repository`, with `entity`/`dto` alongside. Controllers must stay thin (no business logic, no `@Transactional`); services own transactions and business logic; repositories are the only DB access point. See `AGENTS.md` for the full rule set this codebase is meant to follow (Java/Gradle only, no Kotlin/Maven, minimal abstraction, no unrequested design patterns or multi-module split — the `api/`+`web/` monorepo split is a deployment-unit split, not the kind of multi-module Gradle setup that rule is about).
 
-Domains: `member` (auth), `record` (running logs), `rank` (individual score/tier), `ranking` (leaderboard), `season`, `appversion` (mobile force/soft update check), `common` (cross-cutting config/response/error).
+Domains: `member` (auth), `record` (running logs), `rank` (individual score/tier), `ranking` (leaderboard), `season`, `appversion` (mobile force/soft update check), `board` (community: boards/posts/comments/votes), `common` (cross-cutting config/response/error).
 
 Note the `rank` vs `ranking` split — they are separate packages by design, not duplicates: `rank` answers "what's my score/tier" (`GET /api/rank/me`), `ranking` answers "show me the leaderboard" (`GET /api/ranking/getRanking`).
 
@@ -50,8 +50,8 @@ Note the `rank` vs `ranking` split — they are separate packages by design, not
 
 JWT-based, stateless (`SecurityConfig`, `sessionCreationPolicy(STATELESS)`).
 
-- Public endpoints: `/api/member/join`, `/login`, `/reissue`, `/logout`, `/api/app/version-check`, `/api/ranking/top10`, Swagger paths. Everything else requires a valid access token.
-- CORS is otherwise closed. `/api/ranking/top10` is the one exception (`common.config.CorsConfig`), scoped to that single path so `web/index.html` can `fetch()` it cross-origin from `paceleague.co.kr`/`www.paceleague.co.kr`. Don't widen this without a reason — every other endpoint has no CORS headers and can't be called from a browser on a different origin.
+- Public endpoints: `/api/member/join`, `/login`, `/reissue`, `/logout`, `/api/app/version-check`, `/api/ranking/top10`, Swagger paths. Everything else — including all of `/api/board/**` — requires a valid access token; there is no anonymous read access to the community feature.
+- CORS is otherwise closed. Three registrations exist in `common.config.CorsConfig`, all scoped to `paceleague.co.kr`/`www.paceleague.co.kr`: `/api/ranking/top10` (GET only, the original public-landing-page exception), `/api/member/**` and `/api/board/**` (GET/POST/DELETE + `Authorization`/`Content-Type` headers, added so `web/login.html`/`board.html`/`post.html` can call auth and community endpoints from the browser). A `local`-profile-only bean additionally allows `http://localhost:*` for dev. Don't widen this further without a reason — every other endpoint (`record`, `rank`, `appversion`) has no CORS headers and can't be called from a browser on a different origin.
 - `JwtAuthenticationFilter` runs before `UsernamePasswordAuthenticationFilter`, validates the access token, and puts a `JwtAuthenticationFilter.AuthPrincipal(memberSno)` on the `Authentication`. Controllers pull the current user via `((AuthPrincipal) authentication.getPrincipal()).memberSno()` — this pattern is repeated in every authenticated controller, not centralized in a resolver/annotation.
 - Access tokens are short-lived JWTs (`JwtTokenProvider`); refresh tokens are opaque random strings stored in Redis with TTL (`RefreshTokenService`, key prefix `refresh:`), not JWTs. `/reissue` rotates the refresh token (old one revoked, new one issued).
 - Password hashing via `BCryptPasswordEncoder` (Spring Security is used only for auth mechanics here, not full MVC integration).

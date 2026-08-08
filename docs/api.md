@@ -277,15 +277,14 @@ join/login/reissue가 공통으로 반환하는 구조:
     "totalCalories": 10661.0
   },
   "monthSummary": { "...": "memberSummary와 동일한 구조, 해당 연/월로 필터링" },
-  "records": [ /* Record 엔티티 배열 (JPA 엔티티가 그대로 직렬화됨) */ ]
+  "records": [ /* RecordResponse DTO 배열 */ ]
 }
 ```
 
 - `memberSummary`: 가입 이후 **전체 기간** 누적 요약
 - `monthSummary`: 요청한 `year`/`month`의 요약
-- `records`: 해당 월의 전체 기록 목록 (시작 시각 오름차순)
+- `records`: 해당 월의 전체 기록 목록, `RecordResponse` DTO로 변환되어 반환 (시작 시각 오름차순)
 - **알려진 이슈**: 칼로리 계산에 쓰이는 체중이 실제 회원 체중이 아니라 `70kg`로 하드코딩되어 있음 (`RecordController`에 TODO 명시).
-- **알려진 이슈**: `records`는 `RecordResponse` DTO가 아닌 `Record` JPA 엔티티가 그대로 직렬화됨.
 
 **실패**: `month`가 1~12 범위를 벗어남 → 400 `"month must be 1~12"`
 
@@ -411,6 +410,119 @@ join/login/reissue가 공통으로 반환하는 구조:
   "maintenanceMessage": null
 }
 ```
+
+## Board API (`/api/board`) — 인증 필요
+
+커뮤니티(보드/게시글/댓글/추천). 로그인하지 않으면 조회를 포함한 모든 기능을 쓸 수 없습니다. 웹(`paceleague.co.kr`/`www.paceleague.co.kr`)에서 브라우저로 직접 호출하므로 CORS가 열려 있습니다(`CorsConfig`의 `/api/board/**` 등록, [architecture.md](./architecture.md) 참고).
+
+댓글은 **1단계 중첩만 허용**됩니다 — 최상위 댓글에는 답글을 달 수 있지만, 답글에는 답글을 달 수 없습니다(`parentCommentSno`가 이미 있는 댓글을 다시 `parentCommentSno`로 지정하면 400).
+
+추천/비추천은 토글 방식입니다: 같은 값으로 다시 요청하면 추천 취소, 다른 값으로 요청하면 전환, 처음이면 신규 생성.
+
+### GET `/api/board` — 보드 목록 조회
+
+**Response** `200 OK` — `data`: `BoardResponse[]`
+
+```json
+[
+  { "sno": 1, "slug": "free", "name": "자유게시판", "description": "자유롭게 이야기하는 공간입니다." }
+]
+```
+
+### GET `/api/board/{boardSno}/posts` — 게시글 목록 조회
+
+**Query Parameters**
+
+| 파라미터 | 타입 | 기본값 | 설명 |
+|---|---|---|---|
+| page | int | 0 | |
+| size | int | 20 | |
+| sort | string (`new`\|`top`) | `new` | `top`은 `score DESC, create_at DESC` |
+
+**Response** `200 OK` — `data`: Spring `Page<PostSummaryResponse>` (`sno`, `title`, `nickname`, `viewCount`, `score`, `commentCount`, `createAt`)
+
+**실패**: 존재하지 않는 `boardSno` → 400
+
+### POST `/api/board/{boardSno}/posts` — 게시글 작성
+
+```json
+{ "title": "오늘 10km 완주!", "content": "날씨가 좋아서 기분 좋게 뛰었습니다." }
+```
+
+**Response** `200 OK` — `data`: `{ "sno": 123 }`
+
+**실패**: `title`/`content` 공백 또는 `title` 200자 초과 → 400, 존재하지 않는 `boardSno` → 400
+
+### GET `/api/board/posts/{postSno}` — 게시글 상세 조회
+
+조회할 때마다 `view_count`가 1 증가합니다(중복 방지 없음). `myVote`는 내가 이 글에 투표한 값(`1`/`-1`/`null`).
+
+**Response** `200 OK` — `data`: `PostDetailResponse`
+
+```json
+{
+  "sno": 123, "boardSno": 1, "boardName": "자유게시판",
+  "title": "오늘 10km 완주!", "content": "...",
+  "memberSno": 5, "nickname": "러너1", "viewCount": 12, "score": 3, "myVote": 1,
+  "createAt": "2026-08-08T10:00:00", "updateAt": "2026-08-08T10:00:00"
+}
+```
+
+**실패**: 존재하지 않는 `postSno` → 400
+
+### DELETE `/api/board/posts/{postSno}` — 게시글 삭제
+
+본인 게시글만 삭제 가능. 그 게시글의 댓글/대댓글/추천 기록도 함께 삭제됩니다(하드 삭제, 복구 불가).
+
+**실패**: 존재하지 않거나 본인 소유가 아님 → 400
+
+### POST `/api/board/posts/{postSno}/vote` — 게시글 추천/비추천
+
+```json
+{ "voteValue": 1 }
+```
+
+`voteValue`는 `1`(추천) 또는 `-1`(비추천). **Response** `200 OK` — `data`: `{ "score": 4, "myVote": 1 }` (취소된 경우 `myVote: null`)
+
+**실패**: `voteValue`가 1/-1이 아님 → 400, 존재하지 않는 `postSno` → 400
+
+### GET `/api/board/posts/{postSno}/comments` — 댓글 목록 조회
+
+최상위 댓글과 그 답글(1단계)만 포함, 페이징 없음.
+
+**Response** `200 OK` — `data`: `CommentResponse[]`
+
+```json
+[
+  {
+    "sno": 10, "memberSno": 5, "nickname": "러너1", "content": "축하해요!", "score": 2, "myVote": null,
+    "createAt": "2026-08-08T10:05:00",
+    "replies": [
+      { "sno": 11, "memberSno": 6, "nickname": "러너2", "content": "감사합니다", "score": 0, "myVote": null, "createAt": "2026-08-08T10:06:00", "replies": [] }
+    ]
+  }
+]
+```
+
+### POST `/api/board/posts/{postSno}/comments` — 댓글/답글 작성
+
+```json
+{ "content": "축하해요!", "parentCommentSno": null }
+```
+
+`parentCommentSno`를 지정하면 그 댓글의 답글로 작성됩니다. **Response** `200 OK` — `data`: `{ "sno": 10 }`
+
+**실패**: `content` 공백 또는 1000자 초과 → 400, 존재하지 않는 `postSno`/`parentCommentSno` → 400, `parentCommentSno`가 다른 게시글의 댓글이거나 이미 답글임(답글에 답글 시도) → 400
+
+### DELETE `/api/board/comments/{commentSno}` — 댓글 삭제
+
+본인 댓글만 삭제 가능. 그 댓글의 답글/추천 기록도 함께 삭제됩니다.
+
+**실패**: 존재하지 않거나 본인 소유가 아님 → 400
+
+### POST `/api/board/comments/{commentSno}/vote` — 댓글 추천/비추천
+
+게시글 추천과 동일한 토글 규칙. `voteValue`: `1`\|`-1`. **Response** `200 OK` — `data`: `VoteResponse`
 
 `updateType` 판정 규칙(버전은 `.`으로 split 후 세그먼트별 숫자 비교):
 - `currentVersion < minRequiredVersion` → `FORCE` (`forceUpdate: true`)

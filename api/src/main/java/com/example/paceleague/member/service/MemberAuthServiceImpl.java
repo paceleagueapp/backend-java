@@ -43,17 +43,7 @@ public class MemberAuthServiceImpl implements MemberAuthService{
 
         memberRepository.save(member);
 
-        String access = jwtTokenProvider.createAccessToken(member.getSno(), member.getMemberId());
-        String refresh = refreshTokenService.issue(member.getSno());
-
-        return new AuthTokenInfo(
-                "Bearer",
-                access,
-                props.accessTokenTtlSeconds(),
-                refresh,
-                props.refreshTokenTtlSeconds(),
-                member.getNickname()
-        );
+        return issueTokens(member);
     }
 
     @Transactional(readOnly = true)
@@ -66,17 +56,7 @@ public class MemberAuthServiceImpl implements MemberAuthService{
             throw new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
         }
 
-        String access = jwtTokenProvider.createAccessToken(member.getSno(), member.getMemberId());
-        String refresh = refreshTokenService.issue(member.getSno());
-
-        return new AuthTokenInfo(
-                "Bearer",
-                access,
-                props.accessTokenTtlSeconds(),
-                refresh,
-                props.refreshTokenTtlSeconds(),
-                member.getNickname()
-        );
+        return issueTokens(member);
     }
 
     @Transactional
@@ -93,17 +73,7 @@ public class MemberAuthServiceImpl implements MemberAuthService{
         // refresh token rotation
         refreshTokenService.revoke(refreshToken);
 
-        String newAccessToken = jwtTokenProvider.createAccessToken(member.getSno(), member.getMemberId());
-        String newRefreshToken = refreshTokenService.issue(member.getSno());
-
-        return new AuthTokenInfo(
-                "Bearer",
-                newAccessToken,
-                props.accessTokenTtlSeconds(),
-                newRefreshToken,
-                props.refreshTokenTtlSeconds(),
-                member.getNickname()
-        );
+        return issueTokens(member);
     }
 
     @Transactional
@@ -113,5 +83,19 @@ public class MemberAuthServiceImpl implements MemberAuthService{
         }
 
         refreshTokenService.revoke(refreshToken);
+    }
+
+    private AuthTokenInfo issueTokens(Member member) {
+        String access = jwtTokenProvider.createAccessToken(member.getSno(), member.getMemberId());
+        String refresh = refreshTokenService.issue(member.getSno());
+
+        return new AuthTokenInfo(
+                "Bearer",
+                access,
+                props.accessTokenTtlSeconds(),
+                refresh,
+                props.refreshTokenTtlSeconds(),
+                member.getNickname()
+        );
     }
 }

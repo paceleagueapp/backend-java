@@ -50,9 +50,14 @@
     .ranking-tier { color: #888; font-size: 12px; flex-shrink: 0; }
     .ranking-score { color: #fff; font-weight: 600; flex-shrink: 0; }
     .ranking-loading, .ranking-empty { text-align: center; color: #666; padding: 12px; font-size: 13px; }
+
+    nav { position: absolute; top: 20px; right: 20px; display: flex; gap: 14px; }
+    nav a { background: none; color: #ccc; padding: 0; font-size: 13px; font-weight: 400; }
+    nav a:hover { background: none; color: #fff; }
   </style>
 </head>
 <body>
+  <nav id="site-nav"></nav>
   <h1>Pace League</h1>
   <p>러닝 기록 & 랭킹 앱</p>
   <a href="https://play.google.com/store/apps/details?id=com.paceleague.app" target="_blank">
@@ -68,19 +73,22 @@
 
   <footer>© 2026 Pace League. All rights reserved.</footer>
 
+  <script src="/js/app.js"></script>
   <script>
     var TIER_LABEL = {
       BRONZE: '브론즈', SILVER: '실버', GOLD: '골드',
       PLATINUM: '플래티넘', DIAMOND: '다이아', MASTER: '마스터', CHALLENGER: '챌린저'
     };
 
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    var navEl = document.getElementById('site-nav');
+    if (isLoggedIn()) {
+      navEl.innerHTML = '<a href="/board.html">커뮤니티</a><a href="#" id="nav-logout">로그아웃</a>';
+      document.getElementById('nav-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
+    } else {
+      navEl.innerHTML = '<a href="/login.html">로그인</a><a href="/board.html">커뮤니티</a>';
     }
 
     fetch('https://api.paceleague.co.kr/api/ranking/top10')

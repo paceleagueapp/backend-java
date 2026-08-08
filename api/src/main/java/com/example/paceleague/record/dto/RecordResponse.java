@@ -1,12 +1,13 @@
 package com.example.paceleague.record.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import com.example.paceleague.record.entity.Record;
 
 public record RecordResponse(
         Long sno,
         Long uno,
-        Object distanceRecord, // distance 타입이 INT면 Integer, DECIMAL이면 BigDecimal로 바꿔
+        BigDecimal distanceRecord,
         LocalDateTime startTime,
         LocalDateTime endTime,
         LocalDateTime createAt,

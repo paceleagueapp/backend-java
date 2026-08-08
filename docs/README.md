@@ -13,6 +13,7 @@ PaceLeague(Spring Boot 기반 러닝 기록/랭킹 서비스)의 상세 문서 �
 | [database.md](./database.md) | 엔티티/테이블 구조 및 관계 |
 | [setup.md](./setup.md) | 로컬 실행, 환경 변수, Docker, 배포(CI/CD) 가이드 |
 | [infra.md](./infra.md) | 운영 EC2/Nginx 도메인 라우팅 (`api.paceleague.co.kr`, `paceleague.co.kr`이 실제로 어디로 연결되는지) |
+| [migrations/](./migrations/) | 수동 DB 마이그레이션 SQL (이 저장소에는 자동 마이그레이션 도구가 없음 — 운영 DB에 직접 실행해야 함, 배포 전 실행 순서는 각 파일 상단 주석 참고) |
 
 ## 프로젝트 한 줄 요약
 

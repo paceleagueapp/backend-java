@@ -100,3 +100,40 @@ totalScore = baseScore + scaledScore + addScore
 - "현재 시즌"은 별도의 활성 플래그가 아니라 **`start_dt` 기준 가장 최근 시즌**으로 판정됩니다 (`SeasonRepository.findTopByOrderByStartDtDesc()`).
   - 즉 미래에 시작하는 시즌 데이터를 미리 넣어두면, `end_dt`가 아직 안 지났어도 그 시즌이 "현재 시즌"으로 잡힐 수 있으니 시즌 데이터 입력 순서/시점에 주의가 필요함.
 - 기록 저장 시 그 시점의 "현재 시즌"이 `Record.season` 및 `MemberScore.seasonSno`에 스냅샷처럼 기록됨.
+
+## 커뮤니티(Board) 도메인
+
+`board` 패키지. 보드(카테고리) → 게시글 → 댓글(1단계) → 추천/비추천 구조. 로그인하지 않으면 조회를 포함해 아무 기능도 쓸 수 없음(`SecurityConfig`에 별도 `permitAll` 없이 기본 `anyRequest().authenticated()`에 그대로 걸림).
+
+### 추천/비추천 토글 규칙 (`BoardServiceImpl.applyPostVote`/`applyCommentVote`)
+
+같은 대상(게시글 또는 댓글)에 대한 내 투표 여부에 따라 동작이 갈림:
+
+| 현재 내 투표 | 요청 값 | 결과 |
+|---|---|---|
+| 없음 | `1` 또는 `-1` | 신규 투표 생성, `score`에 그 값만큼 증감 |
+| `1` | `1` (동일) | 투표 취소(행 삭제), `score`에서 `-1` |
+| `-1` | `-1` (동일) | 투표 취소(행 삭제), `score`에서 `+1` |
+| `1` | `-1` (반대) | 투표 전환, `score`에서 `-2`(취소분 -1 + 반대표 -1) |
+| `-1` | `1` (반대) | 투표 전환, `score`에서 `+2` |
+
+`post`/`comment`의 `score` 컬럼은 투표 시점에 `PESSIMISTIC_WRITE` 락으로 해당 row를 잠근 뒤 증감(`MemberScore.addScore`와 동일한 패턴). `post_vote`/`comment_vote`에는 `(member_sno, post_sno)`/`(member_sno, comment_sno)` DB 유니크 제약이 실제로 걸려 있어 중복 투표를 원천 차단함([database.md](./database.md) 참고).
+
+### 댓글 1단계 중첩 규칙
+
+`comment.parent_comment_sno`가 `NULL`이면 최상위 댓글, 값이 있으면 답글. 답글 작성 요청 시 `parentCommentSno`가 가리키는 댓글이 **이미 답글이면(`parentCommentSno`가 있으면) 400으로 거부** — 즉 답글에는 답글을 달 수 없고 딱 1단계까지만 허용. 조회(`GET .../comments`)는 페이징 없이 게시글의 전체 댓글을 가져와 최상위/답글로 그룹핑해 반환.
+
+### 삭제 시 연쇄 삭제 규칙 (하드 삭제, 복구 불가)
+
+- 게시글 삭제 → 그 게시글의 모든 댓글(최상위+답글) + 모든 댓글의 추천 기록 + 게시글 자신의 추천 기록이 함께 삭제됨.
+- 댓글 삭제 → 그 댓글의 답글들 + 답글들의 추천 기록 + 그 댓글 자신의 추천 기록이 함께 삭제됨.
+- JPA cascade 애노테이션을 쓰지 않고 `BoardServiceImpl`이 삭제 순서(투표 → 하위 댓글 → 본체)를 명시적으로 제어함.
+- 소프트 삭제/감사 로그 없음 — 모더레이션이 필요해지면 별도 작업.
+
+### 조회수
+
+`GET /api/board/posts/{sno}` 호출마다 원자적 `UPDATE post SET view_count = view_count + 1`로 증가. 중복 방지(동일 사용자 재방문 시 미증가 등) 없음 — 의도된 단순화.
+
+### 정렬 (`top`)
+
+`GET /api/board/{boardSno}/posts?sort=top`은 `score DESC, create_at DESC` 순으로 정렬됨(레딧의 "hot" 알고리즘 같은 시간 가중치는 없음, 순수 추천수 내림차순).

@@ -28,10 +28,8 @@ public class RecordController {
     private final RecordQueryService recordQueryService;
 
     public RecordController(RecordService recordService, RecordQueryService recordQueryService) {
-
         this.recordService = recordService;
         this.recordQueryService = recordQueryService;
-
     }
 
     // 단건 저장

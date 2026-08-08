@@ -32,13 +32,9 @@ public class RecordServiceImpl implements RecordService{
     private final MemberScoreRepository memberScoreRepository;
 
     public RecordServiceImpl(RecordRepository recordRepository, SeasonRepository seasonRepository, RankRepository rankRepository, MemberScoreRepository memberScoreRepository) {
-
         this.recordRepository = recordRepository;
-
         this.seasonRepository = seasonRepository;
-
         this.rankRepository = rankRepository;
-
         this.memberScoreRepository = memberScoreRepository;
     }
 
@@ -60,20 +56,7 @@ public class RecordServiceImpl implements RecordService{
 
         Season seasonData = seasonRepository.findTopByOrderByStartDtDesc();
 
-        Record record = Record.create(
-                uno,
-                seasonData.getSeason(),
-                req.distanceRecord(),
-                req.startTime(),
-                req.endTime(),
-                req.utcOffset()
-        );
-
-        Record savedRecord = recordRepository.save(record);
-
-        saveRank(uno, seasonData.getSeason(), req);
-
-        return savedRecord.getSno();
+        return saveRecordAndRank(uno, seasonData.getSeason(), req);
     }
 
     @Transactional
@@ -108,24 +91,27 @@ public class RecordServiceImpl implements RecordService{
                 continue;
             }
 
-            Record record = Record.create(
-                    uno,
-                    seasonData.getSeason(),
-                    req.distanceRecord(),
-                    req.startTime(),
-                    req.endTime(),
-                    req.utcOffset()
-            );
-
-            Record savedRecord = recordRepository.save(record);
-            saveRank(uno, seasonData.getSeason(), req);
-
-            savedIds.add(savedRecord.getSno());
-
+            savedIds.add(saveRecordAndRank(uno, seasonData.getSeason(), req));
             existingStartTimes.add(req.startTime());
         }
 
         return savedIds;
+    }
+
+    private Long saveRecordAndRank(Long uno, Long seasonNo, RecordCreateRequest req) {
+        Record record = Record.create(
+                uno,
+                seasonNo,
+                req.distanceRecord(),
+                req.startTime(),
+                req.endTime(),
+                req.utcOffset()
+        );
+
+        Record savedRecord = recordRepository.save(record);
+        saveRank(uno, seasonNo, req);
+
+        return savedRecord.getSno();
     }
 
     private void validateRequest(Long uno, RecordCreateRequest req) {
@@ -147,68 +133,66 @@ public class RecordServiceImpl implements RecordService{
     }
 
     private void saveRank(Long uno, Long seasonSno, RecordCreateRequest req) {
-        long durationSeconds = Duration.between(req.startTime(), req.endTime()).getSeconds();
-
         BigDecimal distanceKm = req.distanceRecord()
                 .divide(BigDecimal.valueOf(1000), 6, RoundingMode.HALF_UP);
+        long durationSeconds = Duration.between(req.startTime(), req.endTime()).getSeconds();
 
-        // 기본 점수 = 거리(km) * 10
-        int baseScore = distanceKm.multiply(BigDecimal.TEN)
+        int baseScore = calculateBaseScore(distanceKm);
+        int scaledScore = calculatePaceBonus(baseScore, durationSeconds, distanceKm);
+        int addScore = calculateWeeklyBonus(uno, req.startTime());
+        int totalScore = baseScore + scaledScore + addScore;
+
+        Rank rank = Rank.create(uno, totalScore, scaledScore, addScore, req.utcOffset());
+        rankRepository.save(rank);
+
+        applyScoreToSeason(uno, seasonSno, totalScore);
+    }
+
+    // 기본 점수 = 거리(km) * 10
+    private int calculateBaseScore(BigDecimal distanceKm) {
+        return distanceKm.multiply(BigDecimal.TEN)
                 .setScale(0, RoundingMode.HALF_UP)
                 .intValue();
+    }
 
-        // pace 계산
+    // pace 5:30/km 이하 -> baseScore의 20%, 6:30/km 이하 -> 10%, 그 외 0
+    private int calculatePaceBonus(int baseScore, long durationSeconds, BigDecimal distanceKm) {
         long paceSecondsPerKm = BigDecimal.valueOf(durationSeconds)
                 .divide(distanceKm, 0, RoundingMode.HALF_UP)
                 .longValue();
 
-        int scaledScore = 0;
-
-        // 5:30/km 이하 -> 20%
+        BigDecimal bonusRate;
         if (paceSecondsPerKm <= 330) {
-            scaledScore = BigDecimal.valueOf(baseScore)
-                    .multiply(BigDecimal.valueOf(0.2))
-                    .setScale(0, RoundingMode.HALF_UP)
-                    .intValue();
-        }
-        // 6:30/km 이하 -> 10%
-        else if (paceSecondsPerKm <= 390) {
-            scaledScore = BigDecimal.valueOf(baseScore)
-                    .multiply(BigDecimal.valueOf(0.1))
-                    .setScale(0, RoundingMode.HALF_UP)
-                    .intValue();
+            bonusRate = BigDecimal.valueOf(0.2);
+        } else if (paceSecondsPerKm <= 390) {
+            bonusRate = BigDecimal.valueOf(0.1);
+        } else {
+            return 0;
         }
 
-        // 주간 횟수 계산
-        LocalDateTime weekStart = req.startTime()
-                .with(DayOfWeek.MONDAY)
-                .toLocalDate()
-                .atStartOfDay();
+        return BigDecimal.valueOf(baseScore)
+                .multiply(bonusRate)
+                .setScale(0, RoundingMode.HALF_UP)
+                .intValue();
+    }
 
+    // 이번 기록이 속한 주(월~일)의 기록 수가 5회 이상이면 120점, 3회 이상이면 50점
+    private int calculateWeeklyBonus(Long uno, LocalDateTime startTime) {
+        LocalDateTime weekStart = startTime.with(DayOfWeek.MONDAY).toLocalDate().atStartOfDay();
         LocalDateTime weekEnd = weekStart.plusDays(7);
 
         long weeklyRunCount = recordRepository
                 .countByUnoAndStartTimeGreaterThanEqualAndStartTimeLessThan(uno, weekStart, weekEnd);
 
-        int addScore = 0;
         if (weeklyRunCount >= 5) {
-            addScore = 120;
+            return 120;
         } else if (weeklyRunCount >= 3) {
-            addScore = 50;
+            return 50;
         }
+        return 0;
+    }
 
-        int totalScore = baseScore + scaledScore + addScore;
-
-        Rank rank = Rank.create(
-                uno,
-                totalScore,
-                scaledScore,
-                addScore,
-                req.utcOffset()
-        );
-
-        rankRepository.save(rank);
-
+    private void applyScoreToSeason(Long uno, Long seasonSno, int totalScore) {
         MemberScore memberScore = memberScoreRepository
                 .findByMemberSnoAndSeasonSnoForUpdate(uno, seasonSno)
                 .orElseGet(() -> MemberScore.builder()
@@ -218,7 +202,6 @@ public class RecordServiceImpl implements RecordService{
                         .build());
 
         memberScore.addScore(totalScore);
-
         memberScoreRepository.save(memberScore);
     }
 }

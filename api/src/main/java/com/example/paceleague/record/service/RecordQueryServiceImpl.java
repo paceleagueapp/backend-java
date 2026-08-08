@@ -1,6 +1,7 @@
 package com.example.paceleague.record.service;
 
 import com.example.paceleague.record.dto.RecordMonthResponse;
+import com.example.paceleague.record.dto.RecordResponse;
 import com.example.paceleague.record.dto.RecordSummaryDto;
 import com.example.paceleague.record.dto.RecordSummaryProjection;
 import com.example.paceleague.record.dto.RunningRecordResponse;
@@ -56,10 +57,12 @@ public class RecordQueryServiceImpl implements RecordQueryService{
         RecordSummaryDto memberSummary = RecordSummaryCalculator.from(memberProjection, weightKg);
         RecordSummaryDto monthSummary = RecordSummaryCalculator.from(monthProjection, weightKg);
 
-        List<Record> monthRecords =
+        List<RecordResponse> monthRecords =
                 recordRepository.findByUnoAndStartTimeGreaterThanEqualAndStartTimeLessThanOrderByStartTimeAsc(
                         uno, from, to
-                );
+                ).stream()
+                        .map(RecordResponse::from)
+                        .toList();
 
         return new RecordMonthResponse(memberSummary, monthSummary, monthRecords);
     }
