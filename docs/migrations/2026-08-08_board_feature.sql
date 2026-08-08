@@ -43,11 +43,14 @@ CREATE TABLE comment (
     KEY idx_comment_parent_comment_sno (parent_comment_sno)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- vote_value는 값 범위만 보면 TINYINT로 충분하지만 INT로 둔다: PostVote/CommentVote 엔티티의
+-- Java 필드가 int라서, Hibernate가 ddl-auto: validate 시 INTEGER 타입을 기대함(TINYINT로 만들면
+-- 배포 시 "wrong column type" 에러로 앱이 기동 실패한다 — 2026-08-08 실제로 발생했던 문제).
 CREATE TABLE post_vote (
     sno         BIGINT AUTO_INCREMENT PRIMARY KEY,
     post_sno    BIGINT   NOT NULL,
     member_sno  BIGINT   NOT NULL,
-    vote_value  TINYINT  NOT NULL,
+    vote_value  INT      NOT NULL,
     create_at   DATETIME NULL,
     update_at   DATETIME NULL,
     UNIQUE KEY uq_post_vote_member_post (member_sno, post_sno),
