@@ -101,67 +101,37 @@
 
   <script src="/js/app.js"></script>
   <script>
-    var TIER_LABEL = {
-      BRONZE: '브론즈', SILVER: '실버', GOLD: '골드',
-      PLATINUM: '플래티넘', DIAMOND: '다이아', MASTER: '마스터', CHALLENGER: '챌린저'
-    };
+    renderHeader();
+    renderFeed();
 
-    if (isLoggedIn()) {
-      renderLoggedIn();
-    } else {
-      renderLoggedOut();
-    }
-
-    function renderLoggedOut() {
-      document.getElementById('header-actions').innerHTML =
-        '<a class="btn" href="/login.html">로그인</a>';
-
-      document.getElementById('content').innerHTML =
-        '<div class="icon">🏃</div>' +
-        '<p class="tagline">러닝 기록 & 커뮤니티 — 로그인하고 게시판을 확인해보세요</p>' +
-        '<div style="text-align:center;margin-bottom:30px;">' +
-          '<a class="btn" href="/login.html">로그인하고 커뮤니티 보기</a>' +
-        '</div>' +
-        '<div class="ranking">' +
-          '<h2>이번 시즌 TOP 10</h2>' +
-          '<ol id="ranking-list" class="ranking-list"><li class="ranking-loading">랭킹 불러오는 중...</li></ol>' +
-        '</div>' +
-        '<footer>© 2026 Pace League. All rights reserved.</footer>';
-
-      fetch('https://api.paceleague.co.kr/api/ranking/top10')
-        .then(function (res) { return res.json(); })
-        .then(function (json) {
-          var list = document.getElementById('ranking-list');
-          var items = (json && json.data) || [];
-          if (items.length === 0) {
-            list.innerHTML = '<li class="ranking-empty">아직 랭킹 데이터가 없습니다.</li>';
-            return;
-          }
-          list.innerHTML = items.map(function (item) {
-            return '<li>' +
-              '<span class="ranking-rank">' + item.rank + '</span>' +
-              '<span class="ranking-nickname">' + escapeHtml(item.nickname || '익명') + '</span>' +
-              '<span class="ranking-tier">' + (TIER_LABEL[item.tier] || item.tier) + '</span>' +
-              '<span class="ranking-score">' + item.totalScore + '</span>' +
-              '</li>';
-          }).join('');
-        })
-        .catch(function () {
-          document.getElementById('ranking-list').innerHTML = '<li class="ranking-empty">랭킹을 불러오지 못했습니다.</li>';
+    function renderHeader() {
+      var actionsEl = document.getElementById('header-actions');
+      if (isLoggedIn()) {
+        actionsEl.innerHTML =
+          '<span class="nickname">' + escapeHtml(getNickname()) + '</span>' +
+          '<button class="btn" id="write-btn">글쓰기</button>' +
+          '<a class="btn ghost" href="#" id="logout-link">로그아웃</a>';
+        document.getElementById('logout-link').addEventListener('click', function (e) {
+          e.preventDefault();
+          logout();
         });
+      } else {
+        actionsEl.innerHTML =
+          '<button class="btn" id="write-btn">글쓰기</button>' +
+          '<a class="btn ghost" href="/login.html">로그인</a>';
+      }
+
+      // 비로그인 상태에서 글쓰기를 누르면 로그인 페이지로 보낸다(작성/댓글/추천만 로그인 필요).
+      document.getElementById('write-btn').addEventListener('click', function () {
+        if (redirectToLoginIfNeeded()) return;
+        document.getElementById('write-title').value = '';
+        document.getElementById('write-content').value = '';
+        document.getElementById('write-error').textContent = '';
+        document.getElementById('write-dialog').showModal();
+      });
     }
 
-    function renderLoggedIn() {
-      document.getElementById('header-actions').innerHTML =
-        '<span class="nickname">' + escapeHtml(getNickname()) + '</span>' +
-        '<button class="btn" id="write-btn">글쓰기</button>' +
-        '<a class="btn ghost" href="#" id="logout-link">로그아웃</a>';
-
-      document.getElementById('logout-link').addEventListener('click', function (e) {
-        e.preventDefault();
-        logout();
-      });
-
+    function renderFeed() {
       document.getElementById('content').innerHTML =
         '<div class="tabs" id="tabs"></div>' +
         '<div class="sort-row">' +
@@ -172,13 +142,6 @@
         '</div>' +
         '<ol class="post-list" id="post-list"></ol>' +
         '<div class="pager" id="pager"></div>';
-
-      document.getElementById('write-btn').addEventListener('click', function () {
-        document.getElementById('write-title').value = '';
-        document.getElementById('write-content').value = '';
-        document.getElementById('write-error').textContent = '';
-        document.getElementById('write-dialog').showModal();
-      });
 
       var boards = [];
       var currentBoardSno = null;

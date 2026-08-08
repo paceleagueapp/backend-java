@@ -13,6 +13,7 @@ public interface BoardQueryService {
 
     Page<PostSummaryResponse> listPosts(Long boardSno, int page, int size, String sort);
 
+    // memberSno가 null이면 비로그인 조회 — myVote는 항상 null로 반환된다.
     PostDetailResponse getPost(Long memberSno, Long postSno);
 
     List<CommentResponse> listComments(Long memberSno, Long postSno);

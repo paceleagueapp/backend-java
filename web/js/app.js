@@ -127,7 +127,10 @@ function reissueTokens() {
 function rawFetch(path, options) {
   options = options || {};
   var headers = options.headers || {};
-  headers['Authorization'] = 'Bearer ' + localStorage.getItem(STORAGE_KEYS.accessToken);
+  var token = localStorage.getItem(STORAGE_KEYS.accessToken);
+  if (token) {
+    headers['Authorization'] = 'Bearer ' + token;
+  }
   if (options.body) {
     headers['Content-Type'] = 'application/json';
   }
@@ -138,10 +141,11 @@ function rawFetch(path, options) {
   });
 }
 
-// 인증이 필요한 API 호출 공용 래퍼. 401이면 reissue 후 한 번만 재시도.
+// 공용 API 호출 래퍼. 게시판 조회(GET)는 비로그인도 호출 가능하고, 로그인 상태면 토큰을 자동 첨부한다.
+// 로그인 상태에서 401이 오면(토큰 만료 등) reissue 후 한 번만 재시도.
 function apiFetch(path, options) {
   return rawFetch(path, options).then(function (res) {
-    if (res.status !== 401) {
+    if (res.status !== 401 || !isLoggedIn()) {
       return res.json();
     }
     return reissueTokens()
@@ -162,4 +166,13 @@ function requireLogin() {
   if (!isLoggedIn()) {
     window.location.href = '/login.html';
   }
+}
+
+// 글쓰기/댓글/투표처럼 로그인이 필요한 동작을 시작하기 전에 호출. 비로그인이면 로그인 페이지로 보내고 true를 반환.
+function redirectToLoginIfNeeded() {
+  if (!isLoggedIn()) {
+    window.location.href = '/login.html';
+    return true;
+  }
+  return false;
 }

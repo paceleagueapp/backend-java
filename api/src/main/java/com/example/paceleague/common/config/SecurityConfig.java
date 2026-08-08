@@ -4,6 +4,7 @@ import com.example.paceleague.common.security.JwtAuthenticationFilter;
 import com.example.paceleague.member.service.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -39,6 +40,13 @@ public class SecurityConfig {
                                 "/api/app/version-check",
                                 "/api/ranking/top10",
                                 "/robots.txt"
+                        ).permitAll()
+                        // 게시판 조회(GET)는 레딧처럼 비로그인도 가능 — 작성/삭제/추천(POST/DELETE)은 아래 anyRequest()에 걸려 로그인 필요.
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/board",
+                                "/api/board/*/posts",
+                                "/api/board/posts/*",
+                                "/api/board/posts/*/comments"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

@@ -71,6 +71,7 @@
 - `GET /api/ranking/top10`
 - `GET /robots.txt` (검색엔진 크롤링 전면 차단용, [infra.md](./infra.md#검색엔진-크롤링-차단-apipaceleaguecokr) 참고)
 - `/v3/api-docs/**`, `/swagger-ui.html`, `/swagger-ui/**`
+- `GET /api/board`, `GET /api/board/{boardSno}/posts`, `GET /api/board/posts/{postSno}`, `GET /api/board/posts/{postSno}/comments` (게시판 조회 4종만 공개 — 작성/삭제/추천은 인증 필요, [Board API](#board-api-apiboard--조회는-공개-작성삭제추천은-인증-필요) 참고)
 
 그 외 모든 엔드포인트는 인증이 필요합니다.
 
@@ -411,15 +412,17 @@ join/login/reissue가 공통으로 반환하는 구조:
 }
 ```
 
-## Board API (`/api/board`) — 인증 필요
+## Board API (`/api/board`) — 조회는 공개, 작성/삭제/추천은 인증 필요
 
-커뮤니티(보드/게시글/댓글/추천). 로그인하지 않으면 조회를 포함한 모든 기능을 쓸 수 없습니다. 웹(`paceleague.co.kr`/`www.paceleague.co.kr`)에서 브라우저로 직접 호출하므로 CORS가 열려 있습니다(`CorsConfig`의 `/api/board/**` 등록, [architecture.md](./architecture.md) 참고).
+커뮤니티(보드/게시글/댓글/추천). 레딧처럼 **조회(GET)는 비로그인도 가능**하고, 글/댓글 작성·삭제·추천처럼 쓰기 작업(POST/DELETE)만 로그인이 필요합니다. 웹(`paceleague.co.kr`/`www.paceleague.co.kr`)에서 브라우저로 직접 호출하므로 CORS가 열려 있습니다(`CorsConfig`의 `/api/board/**` 등록, [architecture.md](./architecture.md) 참고).
+
+비로그인으로 조회하면 `myVote`는 항상 `null`입니다(내 투표 여부를 알 수 없으므로).
 
 댓글은 **1단계 중첩만 허용**됩니다 — 최상위 댓글에는 답글을 달 수 있지만, 답글에는 답글을 달 수 없습니다(`parentCommentSno`가 이미 있는 댓글을 다시 `parentCommentSno`로 지정하면 400).
 
 추천/비추천은 토글 방식입니다: 같은 값으로 다시 요청하면 추천 취소, 다른 값으로 요청하면 전환, 처음이면 신규 생성.
 
-### GET `/api/board` — 보드 목록 조회
+### GET `/api/board` — 보드 목록 조회 (공개)
 
 **Response** `200 OK` — `data`: `BoardResponse[]`
 
@@ -429,7 +432,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 ]
 ```
 
-### GET `/api/board/{boardSno}/posts` — 게시글 목록 조회
+### GET `/api/board/{boardSno}/posts` — 게시글 목록 조회 (공개)
 
 **Query Parameters**
 
@@ -443,7 +446,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 **실패**: 존재하지 않는 `boardSno` → 400
 
-### POST `/api/board/{boardSno}/posts` — 게시글 작성
+### POST `/api/board/{boardSno}/posts` — 게시글 작성 (인증 필요)
 
 ```json
 { "title": "오늘 10km 완주!", "content": "날씨가 좋아서 기분 좋게 뛰었습니다." }
@@ -453,9 +456,9 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 **실패**: `title`/`content` 공백 또는 `title` 200자 초과 → 400, 존재하지 않는 `boardSno` → 400
 
-### GET `/api/board/posts/{postSno}` — 게시글 상세 조회
+### GET `/api/board/posts/{postSno}` — 게시글 상세 조회 (공개)
 
-조회할 때마다 `view_count`가 1 증가합니다(중복 방지 없음). `myVote`는 내가 이 글에 투표한 값(`1`/`-1`/`null`).
+조회할 때마다 `view_count`가 1 증가합니다(중복 방지 없음). `myVote`는 내가 이 글에 투표한 값(`1`/`-1`/`null`), 비로그인이면 항상 `null`.
 
 **Response** `200 OK` — `data`: `PostDetailResponse`
 
@@ -470,13 +473,13 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 **실패**: 존재하지 않는 `postSno` → 400
 
-### DELETE `/api/board/posts/{postSno}` — 게시글 삭제
+### DELETE `/api/board/posts/{postSno}` — 게시글 삭제 (인증 필요)
 
 본인 게시글만 삭제 가능. 그 게시글의 댓글/대댓글/추천 기록도 함께 삭제됩니다(하드 삭제, 복구 불가).
 
 **실패**: 존재하지 않거나 본인 소유가 아님 → 400
 
-### POST `/api/board/posts/{postSno}/vote` — 게시글 추천/비추천
+### POST `/api/board/posts/{postSno}/vote` — 게시글 추천/비추천 (인증 필요)
 
 ```json
 { "voteValue": 1 }
@@ -486,7 +489,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 **실패**: `voteValue`가 1/-1이 아님 → 400, 존재하지 않는 `postSno` → 400
 
-### GET `/api/board/posts/{postSno}/comments` — 댓글 목록 조회
+### GET `/api/board/posts/{postSno}/comments` — 댓글 목록 조회 (공개)
 
 최상위 댓글과 그 답글(1단계)만 포함, 페이징 없음.
 
@@ -504,7 +507,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 ]
 ```
 
-### POST `/api/board/posts/{postSno}/comments` — 댓글/답글 작성
+### POST `/api/board/posts/{postSno}/comments` — 댓글/답글 작성 (인증 필요)
 
 ```json
 { "content": "축하해요!", "parentCommentSno": null }
@@ -514,13 +517,13 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 **실패**: `content` 공백 또는 1000자 초과 → 400, 존재하지 않는 `postSno`/`parentCommentSno` → 400, `parentCommentSno`가 다른 게시글의 댓글이거나 이미 답글임(답글에 답글 시도) → 400
 
-### DELETE `/api/board/comments/{commentSno}` — 댓글 삭제
+### DELETE `/api/board/comments/{commentSno}` — 댓글 삭제 (인증 필요)
 
 본인 댓글만 삭제 가능. 그 댓글의 답글/추천 기록도 함께 삭제됩니다.
 
 **실패**: 존재하지 않거나 본인 소유가 아님 → 400
 
-### POST `/api/board/comments/{commentSno}/vote` — 댓글 추천/비추천
+### POST `/api/board/comments/{commentSno}/vote` — 댓글 추천/비추천 (인증 필요)
 
 게시글 추천과 동일한 토글 규칙. `voteValue`: `1`\|`-1`. **Response** `200 OK` — `data`: `VoteResponse`
 

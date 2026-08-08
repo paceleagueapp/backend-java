@@ -20,8 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/board")
-@Tag(name = "Board", description = "커뮤니티(게시판) API — 보드/게시글/댓글/추천")
-@SecurityRequirement(name = "bearerAuth")
+@Tag(name = "Board", description = "커뮤니티(게시판) API — 보드/게시글/댓글/추천. 조회(GET)는 비로그인도 가능, 작성/삭제/추천은 로그인 필요.")
 public class BoardController {
     private final BoardService boardService;
     private final BoardQueryService boardQueryService;
@@ -52,6 +51,7 @@ public class BoardController {
 
     @Operation(summary = "게시글 작성")
     @ApiResponse(responseCode = "200", description = "작성 성공")
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/{boardSno}/posts")
     public ResponseEntity<ResponseApi<CreatedResponse>> createPost(
             Authentication authentication,
@@ -62,15 +62,16 @@ public class BoardController {
         return ResponseEntity.ok(ResponseApi.success("게시글이 작성되었습니다.", new CreatedResponse(sno)));
     }
 
-    @Operation(summary = "게시글 상세 조회", description = "조회 시 조회수가 1 증가합니다.")
+    @Operation(summary = "게시글 상세 조회", description = "조회 시 조회수가 1 증가합니다. 비로그인 시에도 조회 가능(이 경우 myVote는 항상 null).")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/posts/{postSno}")
     public ResponseApi<PostDetailResponse> getPost(Authentication authentication, @PathVariable Long postSno) {
-        return ResponseApi.success(boardQueryService.getPost(uno(authentication), postSno));
+        return ResponseApi.success(boardQueryService.getPost(unoOrNull(authentication), postSno));
     }
 
     @Operation(summary = "게시글 삭제", description = "본인 게시글만 삭제 가능하며, 댓글/추천도 함께 삭제됩니다.")
     @ApiResponse(responseCode = "200", description = "삭제 성공")
+    @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/posts/{postSno}")
     public ResponseApi<String> deletePost(Authentication authentication, @PathVariable Long postSno) {
         boardService.deletePost(uno(authentication), postSno);
@@ -79,6 +80,7 @@ public class BoardController {
 
     @Operation(summary = "게시글 추천/비추천", description = "같은 값 재요청 시 취소, 다른 값이면 전환됩니다.")
     @ApiResponse(responseCode = "200", description = "처리 성공")
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/posts/{postSno}/vote")
     public ResponseApi<VoteResponse> votePost(
             Authentication authentication,
@@ -88,15 +90,16 @@ public class BoardController {
         return ResponseApi.success(boardService.votePost(uno(authentication), postSno, req.voteValue()));
     }
 
-    @Operation(summary = "댓글 목록 조회", description = "최상위 댓글과 그 대댓글(1단계)만 포함합니다.")
+    @Operation(summary = "댓글 목록 조회", description = "최상위 댓글과 그 대댓글(1단계)만 포함합니다. 비로그인 시에도 조회 가능(이 경우 myVote는 항상 null).")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/posts/{postSno}/comments")
     public ResponseApi<List<CommentResponse>> listComments(Authentication authentication, @PathVariable Long postSno) {
-        return ResponseApi.success(boardQueryService.listComments(uno(authentication), postSno));
+        return ResponseApi.success(boardQueryService.listComments(unoOrNull(authentication), postSno));
     }
 
     @Operation(summary = "댓글/대댓글 작성", description = "parentCommentSno를 주면 대댓글로 작성됩니다. 대댓글에는 답글을 달 수 없습니다.")
     @ApiResponse(responseCode = "200", description = "작성 성공")
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/posts/{postSno}/comments")
     public ResponseEntity<ResponseApi<CreatedResponse>> createComment(
             Authentication authentication,
@@ -109,6 +112,7 @@ public class BoardController {
 
     @Operation(summary = "댓글 삭제", description = "본인 댓글만 삭제 가능하며, 대댓글/추천도 함께 삭제됩니다.")
     @ApiResponse(responseCode = "200", description = "삭제 성공")
+    @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/comments/{commentSno}")
     public ResponseApi<String> deleteComment(Authentication authentication, @PathVariable Long commentSno) {
         boardService.deleteComment(uno(authentication), commentSno);
@@ -117,6 +121,7 @@ public class BoardController {
 
     @Operation(summary = "댓글 추천/비추천")
     @ApiResponse(responseCode = "200", description = "처리 성공")
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/comments/{commentSno}/vote")
     public ResponseApi<VoteResponse> voteComment(
             Authentication authentication,
@@ -130,6 +135,14 @@ public class BoardController {
 
     private long uno(Authentication authentication) {
         var p = (JwtAuthenticationFilter.AuthPrincipal) authentication.getPrincipal();
+        return p.memberSno();
+    }
+
+    // 조회(GET) 엔드포인트는 비로그인도 허용되므로, 로그인 상태가 아니면 null을 반환한다.
+    private Long unoOrNull(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof JwtAuthenticationFilter.AuthPrincipal p)) {
+            return null;
+        }
         return p.memberSno();
     }
 }

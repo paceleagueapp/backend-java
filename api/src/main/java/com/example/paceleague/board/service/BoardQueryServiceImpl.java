@@ -67,9 +67,7 @@ public class BoardQueryServiceImpl implements BoardQueryService {
         Board board = boardRepository.findById(post.getBoardSno())
                 .orElseThrow(() -> new IllegalArgumentException("board not found"));
 
-        Integer myVote = postVoteRepository.findByPostSnoAndMemberSno(postSno, memberSno)
-                .map(vote -> vote.getVoteValue())
-                .orElse(null);
+        Integer myVote = myVoteOnPost(memberSno, postSno);
 
         // post.getViewCount()는 위 incrementViewCount()가 반영되기 전 값이므로 +1 해서 응답한다.
         return new PostDetailResponse(
@@ -98,10 +96,26 @@ public class BoardQueryServiceImpl implements BoardQueryService {
     }
 
     private CommentResponse toResponse(Comment comment, Long memberSno, List<CommentResponse> replies) {
-        Integer myVote = commentVoteRepository.findByCommentSnoAndMemberSno(comment.getSno(), memberSno)
+        Integer myVote = myVoteOnComment(memberSno, comment.getSno());
+        return CommentResponse.from(comment, nicknameOf(comment.getMemberSno()), myVote, replies);
+    }
+
+    private Integer myVoteOnPost(Long memberSno, Long postSno) {
+        if (memberSno == null) {
+            return null;
+        }
+        return postVoteRepository.findByPostSnoAndMemberSno(postSno, memberSno)
                 .map(vote -> vote.getVoteValue())
                 .orElse(null);
-        return CommentResponse.from(comment, nicknameOf(comment.getMemberSno()), myVote, replies);
+    }
+
+    private Integer myVoteOnComment(Long memberSno, Long commentSno) {
+        if (memberSno == null) {
+            return null;
+        }
+        return commentVoteRepository.findByCommentSnoAndMemberSno(commentSno, memberSno)
+                .map(vote -> vote.getVoteValue())
+                .orElse(null);
     }
 
     private String nicknameOf(Long memberSno) {

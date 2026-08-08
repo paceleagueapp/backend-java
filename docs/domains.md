@@ -103,7 +103,7 @@ totalScore = baseScore + scaledScore + addScore
 
 ## 커뮤니티(Board) 도메인
 
-`board` 패키지. 보드(카테고리) → 게시글 → 댓글(1단계) → 추천/비추천 구조. 로그인하지 않으면 조회를 포함해 아무 기능도 쓸 수 없음(`SecurityConfig`에 별도 `permitAll` 없이 기본 `anyRequest().authenticated()`에 그대로 걸림).
+`board` 패키지. 보드(카테고리) → 게시글 → 댓글(1단계) → 추천/비추천 구조. 레딧처럼 **조회(GET)는 비로그인도 가능**하고, 작성/삭제/추천(POST/DELETE)만 로그인이 필요합니다 — `SecurityConfig`에 `HttpMethod.GET` 한정으로 `/api/board`, `/api/board/*/posts`, `/api/board/posts/*`, `/api/board/posts/*/comments` 4개 경로만 `permitAll`, 나머지(같은 경로의 POST/DELETE 포함)는 기본 `anyRequest().authenticated()`에 걸림. `BoardController`는 이 4개 조회 엔드포인트에서 `unoOrNull(authentication)`(비로그인이면 `null`)을 쓰고, 나머지 쓰기 엔드포인트는 기존 `uno(authentication)`(비로그인이면 예외)을 그대로 씀 — 인증된 컨트롤러 전체에 반복되는 `uno` 헬퍼 패턴([architecture.md](./architecture.md) 참고)의 변형.
 
 ### 시각(createAt/updateAt)은 전세계 사용자를 가정해 UTC로 저장 — 다른 도메인과 다른 규칙
 
