@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "board", uniqueConstraints = @UniqueConstraint(columnNames = "slug"))
@@ -39,8 +40,8 @@ public class Board {
         this.name = name;
         this.description = description;
         this.displayOrder = displayOrder;
-        this.createAt = LocalDateTime.now();
-        this.updateAt = LocalDateTime.now();
+        this.createAt = LocalDateTime.now(ZoneOffset.UTC);
+        this.updateAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     public static Board create(String slug, String name, String description, int displayOrder) {
@@ -49,6 +50,6 @@ public class Board {
 
     @PreUpdate
     public void preUpdate() {
-        this.updateAt = LocalDateTime.now();
+        this.updateAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 }

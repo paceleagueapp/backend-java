@@ -130,6 +130,7 @@
               '<span>추천 ' + p.score + '</span>' +
               '<span>댓글 ' + p.commentCount + '</span>' +
               '<span>조회 ' + p.viewCount + '</span>' +
+              '<span>' + escapeHtml(formatLocalTime(p.createAt)) + '</span>' +
             '</div>' +
           '</li>';
         }).join('');

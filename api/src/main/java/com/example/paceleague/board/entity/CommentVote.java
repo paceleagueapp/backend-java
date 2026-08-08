@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "comment_vote", uniqueConstraints = @UniqueConstraint(columnNames = {"member_sno", "comment_sno"}))
@@ -36,8 +37,8 @@ public class CommentVote {
         this.commentSno = commentSno;
         this.memberSno = memberSno;
         this.voteValue = voteType.getValue();
-        this.createAt = LocalDateTime.now();
-        this.updateAt = LocalDateTime.now();
+        this.createAt = LocalDateTime.now(ZoneOffset.UTC);
+        this.updateAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     public static CommentVote create(Long commentSno, Long memberSno, VoteType voteType) {
@@ -46,11 +47,11 @@ public class CommentVote {
 
     public void changeValue(VoteType voteType) {
         this.voteValue = voteType.getValue();
-        this.updateAt = LocalDateTime.now();
+        this.updateAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     @PreUpdate
     public void preUpdate() {
-        this.updateAt = LocalDateTime.now();
+        this.updateAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 }

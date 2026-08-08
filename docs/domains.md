@@ -105,6 +105,10 @@ totalScore = baseScore + scaledScore + addScore
 
 `board` 패키지. 보드(카테고리) → 게시글 → 댓글(1단계) → 추천/비추천 구조. 로그인하지 않으면 조회를 포함해 아무 기능도 쓸 수 없음(`SecurityConfig`에 별도 `permitAll` 없이 기본 `anyRequest().authenticated()`에 그대로 걸림).
 
+### 시각(createAt/updateAt)은 전세계 사용자를 가정해 UTC로 저장 — 다른 도메인과 다른 규칙
+
+`record`/`rank` 등 기존 도메인은 `LocalDateTime.now()`(서버 시스템 기본 타임존 기준)를 그대로 쓰지만, `board`는 전세계에서 접속하는 걸 가정한 기능이라 의도적으로 `LocalDateTime.now(ZoneOffset.UTC)`를 써서 **항상 UTC 값**을 저장합니다(컬럼 타입은 여전히 `LocalDateTime`이라 값에 타임존 표시가 붙지는 않지만, 값 자체가 UTC로 고정됨). 프론트엔드(`web/js/app.js`의 `formatLocalTime`)가 이 문자열을 UTC로 간주해 `Z`를 붙여 파싱한 뒤, 보는 사람 브라우저의 로케일/타임존으로 자동 변환해서 표시합니다 — 즉 등록 시각은 서버에 UTC로 한 번만 저장되고, "어느 나라 시간으로 보여줄지"는 전적으로 클라이언트에서 결정됩니다.
+
 ### 추천/비추천 토글 규칙 (`BoardServiceImpl.applyPostVote`/`applyCommentVote`)
 
 같은 대상(게시글 또는 댓글)에 대한 내 투표 여부에 따라 동작이 갈림:

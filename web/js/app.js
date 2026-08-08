@@ -18,6 +18,20 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+// 서버는 createAt/updateAt을 UTC 기준 시각으로 보내지만 "Z"(타임존 표시)가 없는 문자열이라,
+// 그냥 new Date()에 넘기면 브라우저가 "이미 내 로컬 시간"으로 잘못 해석한다.
+// UTC임을 명시해준 뒤 보는 사람의 브라우저 타임존/로케일로 자동 변환해서 표시한다.
+function formatLocalTime(isoString) {
+  if (!isoString) return '';
+  var withZone = /Z$|[+-]\d\d:\d\d$/.test(isoString) ? isoString : isoString + 'Z';
+  var date = new Date(withZone);
+  if (isNaN(date.getTime())) return isoString;
+  return date.toLocaleString(undefined, {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
 function isLoggedIn() {
   return !!localStorage.getItem(STORAGE_KEYS.accessToken);
 }

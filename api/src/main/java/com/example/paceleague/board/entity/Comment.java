@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "comment")
@@ -43,8 +44,8 @@ public class Comment {
         this.parentCommentSno = parentCommentSno;
         this.content = content;
         this.score = 0;
-        this.createAt = LocalDateTime.now();
-        this.updateAt = LocalDateTime.now();
+        this.createAt = LocalDateTime.now(ZoneOffset.UTC);
+        this.updateAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     public static Comment create(Long postSno, Long memberSno, Long parentCommentSno, String content) {
@@ -57,11 +58,11 @@ public class Comment {
 
     public void applyVoteDelta(int delta) {
         this.score += delta;
-        this.updateAt = LocalDateTime.now();
+        this.updateAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     @PreUpdate
     public void preUpdate() {
-        this.updateAt = LocalDateTime.now();
+        this.updateAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 }
