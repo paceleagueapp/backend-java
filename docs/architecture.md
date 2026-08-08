@@ -11,7 +11,8 @@
 | 빌드 | Gradle (Maven/멀티모듈 미사용) |
 | 인증 | Spring Security (인증 메커니즘 용도, 필터 체인 전체를 쓰지는 않음) + JWT (jjwt 0.12.6) |
 | DB | MySQL (Spring Data JPA / Hibernate) |
-| 캐시 | Redis (Spring Data Redis, `StringRedisTemplate`) — refresh token 저장 전용 |
+| 캐시 | Redis (Spring Data Redis, `StringRedisTemplate`) — refresh token 저장 + board 번역 결과 캐싱(180일) |
+| 번역 | AWS Translate (`software.amazon.awssdk:translate` 2.46.7) — board 게시글/댓글 번역, 자격증명은 EC2 인스턴스 프로필(`paceleague-s3-read` role) 기본 체인 사용, `common.config.AwsTranslateConfig` |
 | API 문서 | springdoc-openapi (Swagger UI) |
 | 비밀번호 해시 | BCrypt |
 | 기타 | Lombok, commons-lang3, spring-dotenv(.env 로딩) |

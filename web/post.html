@@ -14,19 +14,24 @@
       padding: 20px;
     }
     .wrap { max-width: 640px; margin: 0 auto; }
-    nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
     nav a { color: #ccc; text-decoration: none; font-size: 13px; margin-left: 12px; }
+    #lang-select {
+      background: #1a1a1a; color: #ccc; border: 1px solid #333; border-radius: 16px;
+      padding: 6px 10px; font-size: 13px; cursor: pointer;
+    }
 
     .post-box { background: #1a1a1a; border-radius: 10px; padding: 18px; margin-bottom: 20px; }
     .post-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
     .post-meta { font-size: 12px; color: #888; margin-bottom: 14px; display: flex; gap: 10px; }
     .post-content { font-size: 14px; line-height: 1.6; white-space: pre-wrap; margin-bottom: 14px; }
-    .vote-row { display: flex; align-items: center; gap: 10px; }
+    .vote-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .vote-btn {
       background: #0f0f0f; border: 1px solid #333; color: #ccc; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;
     }
     .vote-btn.active-up { background: #e53935; color: #fff; border-color: #e53935; }
     .vote-btn.active-down { background: #3949ab; color: #fff; border-color: #3949ab; }
+    .translate-btn { background: none; border: 1px solid #333; color: #888; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
     .score-text { font-size: 14px; font-weight: 700; }
     .delete-link { margin-left: auto; color: #888; font-size: 12px; cursor: pointer; }
 
@@ -40,11 +45,11 @@
     .comment-item { background: #1a1a1a; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
     .comment-meta { font-size: 12px; color: #888; margin-bottom: 4px; display: flex; gap: 8px; }
     .comment-content { font-size: 13px; margin-bottom: 8px; white-space: pre-wrap; }
-    .comment-actions { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .comment-actions { display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap; }
     .comment-actions button { background: none; border: 1px solid #333; color: #ccc; border-radius: 6px; padding: 3px 8px; cursor: pointer; font-size: 12px; }
     .comment-actions button.active-up { background: #e53935; color: #fff; border-color: #e53935; }
     .comment-actions button.active-down { background: #3949ab; color: #fff; border-color: #3949ab; }
-    .comment-actions .reply-link, .comment-actions .delete-link { color: #888; cursor: pointer; }
+    .comment-actions .reply-link, .comment-actions .delete-link, .comment-actions .translate-link { color: #888; cursor: pointer; }
     .replies { margin-left: 20px; margin-top: 8px; }
     .reply-form { display: none; margin-top: 8px; gap: 6px; flex-direction: column; }
     .reply-form textarea { background: #0f0f0f; border: 1px solid #333; color: #fff; padding: 8px; border-radius: 6px; font-size: 12px; min-height: 40px; }
@@ -55,27 +60,47 @@
 <body>
   <div class="wrap">
     <nav>
-      <a href="javascript:history.back()">← 목록</a>
-      <span><a href="/index.html">메인</a></span>
+      <a href="javascript:history.back()" id="back-link"></a>
+      <span>
+        <a href="/index.html" id="main-link"></a>
+        <select id="lang-select"></select>
+      </span>
     </nav>
 
     <div class="post-box" id="post-box"></div>
 
-    <div class="comments-title">댓글</div>
+    <div class="comments-title" id="comments-title"></div>
     <div class="comment-form">
-      <textarea id="comment-content" placeholder="댓글을 입력하세요"></textarea>
-      <button id="comment-submit">댓글 작성</button>
+      <textarea id="comment-content"></textarea>
+      <button id="comment-submit"></button>
     </div>
     <div id="comment-list"></div>
   </div>
 
   <script src="/js/app.js"></script>
+  <script src="/js/i18n.js"></script>
   <script>
+    renderLangSelect(document.getElementById('lang-select'));
+    document.getElementById('back-link').textContent = t('backToList');
+    document.getElementById('main-link').textContent = t('mainLink');
+    document.getElementById('comments-title').textContent = t('commentsTitle');
+    document.getElementById('comment-content').placeholder = t('commentPlaceholder');
+    document.getElementById('comment-submit').textContent = t('commentSubmit');
+
     var postSno = new URLSearchParams(window.location.search).get('post');
     var myMemberSno = getMemberSno();
 
+    var postOriginal = null;
+    var postTranslated = null;
+    var showingPostTranslation = false;
+    var commentTranslations = {}; // sno -> translated content
+    var showingCommentTranslation = {}; // sno -> boolean
+
     function loadPost() {
       apiFetch('/api/board/posts/' + postSno).then(function (json) {
+        postOriginal = { title: json.data.title, content: json.data.content };
+        postTranslated = null;
+        showingPostTranslation = false;
         renderPost(json.data);
       });
     }
@@ -86,31 +111,70 @@
       var downClass = post.myVote === -1 ? ' active-down' : '';
 
       document.getElementById('post-box').innerHTML =
-        '<div class="post-title">' + escapeHtml(post.title) + '</div>' +
+        '<div class="post-title" id="post-title">' + escapeHtml(post.title) + '</div>' +
         '<div class="post-meta">' +
           '<span>' + escapeHtml(post.nickname) + '</span>' +
-          '<span>조회 ' + post.viewCount + '</span>' +
+          '<span>' + t('viewCountLabel') + ' ' + post.viewCount + '</span>' +
           '<span>' + escapeHtml(formatLocalTime(post.createAt)) + '</span>' +
         '</div>' +
-        '<div class="post-content">' + escapeHtml(post.content) + '</div>' +
+        '<div class="post-content" id="post-content">' + escapeHtml(post.content) + '</div>' +
         '<div class="vote-row">' +
-          '<button class="vote-btn' + upClass + '" id="post-up">▲ 추천</button>' +
+          '<button class="vote-btn' + upClass + '" id="post-up">' + t('voteUp') + '</button>' +
           '<span class="score-text" id="post-score">' + post.score + '</span>' +
-          '<button class="vote-btn' + downClass + '" id="post-down">▼ 비추천</button>' +
-          (isMine ? '<span class="delete-link" id="post-delete">삭제</span>' : '') +
+          '<button class="vote-btn' + downClass + '" id="post-down">' + t('voteDown') + '</button>' +
+          '<button class="translate-btn" id="post-translate">' + t('translateShow') + '</button>' +
+          (isMine ? '<span class="delete-link" id="post-delete">' + t('delete') + '</span>' : '') +
         '</div>';
 
       document.getElementById('post-up').addEventListener('click', function () { votePost(1); });
       document.getElementById('post-down').addEventListener('click', function () { votePost(-1); });
+      document.getElementById('post-translate').addEventListener('click', togglePostTranslation);
       if (isMine) {
         document.getElementById('post-delete').addEventListener('click', function () {
           if (redirectToLoginIfNeeded()) return;
-          if (!confirm('게시글을 삭제할까요? 댓글도 함께 삭제됩니다.')) return;
+          if (!confirm(t('confirmDeletePost'))) return;
           apiFetch('/api/board/posts/' + postSno, { method: 'DELETE' }).then(function () {
             window.location.href = '/index.html';
           });
         });
       }
+    }
+
+    function togglePostTranslation() {
+      if (redirectToLoginIfNeeded()) return;
+      var btn = document.getElementById('post-translate');
+
+      if (showingPostTranslation) {
+        document.getElementById('post-title').textContent = postOriginal.title;
+        document.getElementById('post-content').textContent = postOriginal.content;
+        showingPostTranslation = false;
+        btn.textContent = t('translateShow');
+        return;
+      }
+
+      if (postTranslated) {
+        applyPostTranslation();
+        return;
+      }
+
+      apiFetch('/api/board/posts/' + postSno + '/translate', {
+        method: 'POST',
+        body: { targetLanguage: getLang() }
+      }).then(function (json) {
+        if (!json.success) {
+          alert(t('translateFailed'));
+          return;
+        }
+        postTranslated = json.data;
+        applyPostTranslation();
+      });
+    }
+
+    function applyPostTranslation() {
+      document.getElementById('post-title').textContent = postTranslated.title;
+      document.getElementById('post-content').textContent = postTranslated.content;
+      showingPostTranslation = true;
+      document.getElementById('post-translate').textContent = t('translateHide');
     }
 
     function votePost(voteValue) {
@@ -126,26 +190,27 @@
       var upClass = c.myVote === 1 ? ' active-up' : '';
       var downClass = c.myVote === -1 ? ' active-down' : '';
 
-      var html = '<div class="comment-item" data-sno="' + c.sno + '">' +
+      var html = '<div class="comment-item" data-sno="' + c.sno + '" data-original="' + escapeHtml(c.content) + '">' +
         '<div class="comment-meta"><span>' + escapeHtml(c.nickname) + '</span><span>' + escapeHtml(formatLocalTime(c.createAt)) + '</span></div>' +
-        '<div class="comment-content">' + escapeHtml(c.content) + '</div>' +
+        '<div class="comment-content" id="comment-content-' + c.sno + '">' + escapeHtml(c.content) + '</div>' +
         '<div class="comment-actions">' +
           '<button class="vote-up' + upClass + '" data-sno="' + c.sno + '">▲</button>' +
           '<span>' + c.score + '</span>' +
-          '<button class="vote-down' + downClass + '" data-sno="' + c.sno + '">▼</button>';
+          '<button class="vote-down' + downClass + '" data-sno="' + c.sno + '">▼</button>' +
+          '<span class="translate-link" data-sno="' + c.sno + '">' + t('translateShow') + '</span>';
 
       if (!isReply) {
-        html += '<span class="reply-link" data-sno="' + c.sno + '">답글</span>';
+        html += '<span class="reply-link" data-sno="' + c.sno + '">' + t('replyLink') + '</span>';
       }
       if (isMine) {
-        html += '<span class="delete-link" data-sno="' + c.sno + '">삭제</span>';
+        html += '<span class="delete-link" data-sno="' + c.sno + '">' + t('delete') + '</span>';
       }
       html += '</div>';
 
       if (!isReply) {
         html += '<div class="reply-form" data-parent="' + c.sno + '">' +
-          '<textarea placeholder="답글을 입력하세요"></textarea>' +
-          '<button data-parent="' + c.sno + '">등록</button>' +
+          '<textarea placeholder="' + t('replyPlaceholder') + '"></textarea>' +
+          '<button data-parent="' + c.sno + '">' + t('submit') + '</button>' +
           '</div>';
       }
 
@@ -159,6 +224,8 @@
 
     function loadComments() {
       apiFetch('/api/board/posts/' + postSno + '/comments').then(function (json) {
+        commentTranslations = {};
+        showingCommentTranslation = {};
         renderComments(json.data || []);
       });
     }
@@ -166,7 +233,7 @@
     function renderComments(comments) {
       var listEl = document.getElementById('comment-list');
       if (comments.length === 0) {
-        listEl.innerHTML = '<div class="empty">아직 댓글이 없습니다.</div>';
+        listEl.innerHTML = '<div class="empty">' + t('noComments') + '</div>';
         return;
       }
       listEl.innerHTML = comments.map(function (c) { return commentHtml(c, false); }).join('');
@@ -179,6 +246,9 @@
       });
       listEl.querySelectorAll('.delete-link').forEach(function (el) {
         el.addEventListener('click', function () { deleteComment(el.getAttribute('data-sno')); });
+      });
+      listEl.querySelectorAll('.translate-link').forEach(function (el) {
+        el.addEventListener('click', function () { toggleCommentTranslation(el.getAttribute('data-sno'), el); });
       });
       listEl.querySelectorAll('.reply-link').forEach(function (el) {
         el.addEventListener('click', function () {
@@ -196,6 +266,41 @@
       });
     }
 
+    function toggleCommentTranslation(commentSno, linkEl) {
+      if (redirectToLoginIfNeeded()) return;
+      var contentEl = document.getElementById('comment-content-' + commentSno);
+      var itemEl = document.querySelector('.comment-item[data-sno="' + commentSno + '"]');
+      var original = itemEl.getAttribute('data-original');
+
+      if (showingCommentTranslation[commentSno]) {
+        contentEl.textContent = original;
+        showingCommentTranslation[commentSno] = false;
+        linkEl.textContent = t('translateShow');
+        return;
+      }
+
+      if (commentTranslations[commentSno]) {
+        contentEl.textContent = commentTranslations[commentSno];
+        showingCommentTranslation[commentSno] = true;
+        linkEl.textContent = t('translateHide');
+        return;
+      }
+
+      apiFetch('/api/board/comments/' + commentSno + '/translate', {
+        method: 'POST',
+        body: { targetLanguage: getLang() }
+      }).then(function (json) {
+        if (!json.success) {
+          alert(t('translateFailed'));
+          return;
+        }
+        commentTranslations[commentSno] = json.data.content;
+        contentEl.textContent = json.data.content;
+        showingCommentTranslation[commentSno] = true;
+        linkEl.textContent = t('translateHide');
+      });
+    }
+
     function voteComment(commentSno, voteValue) {
       if (redirectToLoginIfNeeded()) return;
       apiFetch('/api/board/comments/' + commentSno + '/vote', {
@@ -206,7 +311,7 @@
 
     function deleteComment(commentSno) {
       if (redirectToLoginIfNeeded()) return;
-      if (!confirm('댓글을 삭제할까요?')) return;
+      if (!confirm(t('confirmDeleteComment'))) return;
       apiFetch('/api/board/comments/' + commentSno, { method: 'DELETE' }).then(function () { loadComments(); });
     }
 

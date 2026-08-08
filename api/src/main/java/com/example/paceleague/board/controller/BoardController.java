@@ -3,6 +3,7 @@ package com.example.paceleague.board.controller;
 import com.example.paceleague.board.dto.*;
 import com.example.paceleague.board.service.BoardQueryService;
 import com.example.paceleague.board.service.BoardService;
+import com.example.paceleague.board.service.TranslationService;
 import com.example.paceleague.common.response.ResponseApi;
 import com.example.paceleague.common.security.JwtAuthenticationFilter;
 
@@ -24,10 +25,12 @@ import java.util.List;
 public class BoardController {
     private final BoardService boardService;
     private final BoardQueryService boardQueryService;
+    private final TranslationService translationService;
 
-    public BoardController(BoardService boardService, BoardQueryService boardQueryService) {
+    public BoardController(BoardService boardService, BoardQueryService boardQueryService, TranslationService translationService) {
         this.boardService = boardService;
         this.boardQueryService = boardQueryService;
+        this.translationService = translationService;
     }
 
     @Operation(summary = "보드 목록 조회")
@@ -78,6 +81,17 @@ public class BoardController {
         return ResponseApi.success("게시글이 삭제되었습니다.");
     }
 
+    @Operation(summary = "게시글 번역", description = "제목/본문을 대상 언어로 번역합니다. 외부 번역 API(AWS Translate) 호출 비용 통제를 위해 조회성 동작이지만 로그인이 필요합니다.")
+    @ApiResponse(responseCode = "200", description = "번역 성공")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/posts/{postSno}/translate")
+    public ResponseApi<PostTranslationResponse> translatePost(
+            @PathVariable Long postSno,
+            @RequestBody TranslateRequest req
+    ) {
+        return ResponseApi.success(translationService.translatePost(postSno, req.targetLanguage()));
+    }
+
     @Operation(summary = "게시글 추천/비추천", description = "같은 값 재요청 시 취소, 다른 값이면 전환됩니다.")
     @ApiResponse(responseCode = "200", description = "처리 성공")
     @SecurityRequirement(name = "bearerAuth")
@@ -108,6 +122,17 @@ public class BoardController {
     ) {
         Long sno = boardService.createComment(uno(authentication), postSno, req);
         return ResponseEntity.ok(ResponseApi.success("댓글이 작성되었습니다.", new CreatedResponse(sno)));
+    }
+
+    @Operation(summary = "댓글 번역", description = "댓글 내용을 대상 언어로 번역합니다. 로그인 필요(사유는 게시글 번역과 동일).")
+    @ApiResponse(responseCode = "200", description = "번역 성공")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/comments/{commentSno}/translate")
+    public ResponseApi<CommentTranslationResponse> translateComment(
+            @PathVariable Long commentSno,
+            @RequestBody TranslateRequest req
+    ) {
+        return ResponseApi.success(translationService.translateComment(commentSno, req.targetLanguage()));
     }
 
     @Operation(summary = "댓글 삭제", description = "본인 댓글만 삭제 가능하며, 대댓글/추천도 함께 삭제됩니다.")

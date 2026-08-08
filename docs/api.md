@@ -412,6 +412,13 @@ join/login/reissue가 공통으로 반환하는 구조:
 }
 ```
 
+`updateType` 판정 규칙(버전은 `.`으로 split 후 세그먼트별 숫자 비교):
+- `currentVersion < minRequiredVersion` → `FORCE` (`forceUpdate: true`)
+- `minRequiredVersion <= currentVersion < latestVersion` → `OPTIONAL`
+- 그 외 → `NONE`
+
+**실패**: 해당 `platform`에 대한 정책이 DB에 없음 → 400 `"앱 버전 정책이 존재하지 않습니다. platform=..."`
+
 ## Board API (`/api/board`) — 조회는 공개, 작성/삭제/추천은 인증 필요
 
 커뮤니티(보드/게시글/댓글/추천). 레딧처럼 **조회(GET)는 비로그인도 가능**하고, 글/댓글 작성·삭제·추천처럼 쓰기 작업(POST/DELETE)만 로그인이 필요합니다. 웹(`paceleague.co.kr`/`www.paceleague.co.kr`)에서 브라우저로 직접 호출하므로 CORS가 열려 있습니다(`CorsConfig`의 `/api/board/**` 등록, [architecture.md](./architecture.md) 참고).
@@ -527,9 +534,18 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 게시글 추천과 동일한 토글 규칙. `voteValue`: `1`\|`-1`. **Response** `200 OK` — `data`: `VoteResponse`
 
-`updateType` 판정 규칙(버전은 `.`으로 split 후 세그먼트별 숫자 비교):
-- `currentVersion < minRequiredVersion` → `FORCE` (`forceUpdate: true`)
-- `minRequiredVersion <= currentVersion < latestVersion` → `OPTIONAL`
-- 그 외 → `NONE`
+### POST `/api/board/posts/{postSno}/translate` — 게시글 번역 (인증 필요)
 
-**실패**: 해당 `platform`에 대한 정책이 DB에 없음 → 400 `"앱 버전 정책이 존재하지 않습니다. platform=..."`
+제목/본문을 대상 언어로 번역합니다. **조회성 동작이지만 예외적으로 로그인이 필요합니다** — AWS Translate 호출 비용이 드는 유일한 board 엔드포인트라, 비로그인 남용으로 비용이 새는 걸 막기 위함([domains.md](./domains.md) 참고). 결과는 Redis에 `(postSno, targetLanguage)` 기준 180일 캐싱되어 같은 조합 재요청 시 API를 다시 호출하지 않습니다.
+
+```json
+{ "targetLanguage": "en" }
+```
+
+지원 언어: `ko`, `en`, `ja`, `zh`, `es`, `fr`, `de`, `pt`, `vi`, `th`. **Response** `200 OK` — `data`: `{ "title": "...", "content": "..." }`
+
+**실패**: `targetLanguage`가 지원 목록 밖 → 400, 존재하지 않는 `postSno` → 400
+
+### POST `/api/board/comments/{commentSno}/translate` — 댓글 번역 (인증 필요)
+
+게시글 번역과 동일한 방식(캐싱/지원 언어/인증 이유 동일). `data`: `{ "content": "..." }`

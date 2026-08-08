@@ -28,6 +28,8 @@ public class BoardServiceImpl implements BoardService {
 
     private static final int TITLE_MAX_LENGTH = 200;
     private static final int COMMENT_MAX_LENGTH = 1000;
+    // 번역 API 비용이 글자 수에 비례하므로 게시글 본문 길이를 제한한다(기존엔 무제한이었음).
+    private static final int CONTENT_MAX_LENGTH = 10_000;
 
     private final BoardRepository boardRepository;
     private final PostRepository postRepository;
@@ -38,7 +40,7 @@ public class BoardServiceImpl implements BoardService {
     @Transactional
     public Long createPost(Long memberSno, Long boardSno, PostCreateRequest req) {
         requireNonBlank(req.title(), "title", TITLE_MAX_LENGTH);
-        requireNonBlank(req.content(), "content", Integer.MAX_VALUE);
+        requireNonBlank(req.content(), "content", CONTENT_MAX_LENGTH);
 
         boardRepository.findById(boardSno)
                 .orElseThrow(() -> new IllegalArgumentException("board not found"));

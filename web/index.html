@@ -14,7 +14,7 @@
     }
     .wrap { max-width: 640px; margin: 0 auto; padding: 20px; }
 
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
     header h1 { font-size: 20px; font-weight: 700; }
     .btn {
       background: #e53935; color: #fff; text-decoration: none; border: none;
@@ -22,26 +22,14 @@
     }
     .btn:hover { background: #c62828; }
     .btn.ghost { background: none; color: #ccc; border: 1px solid #333; padding: 7px 16px; }
-    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .header-actions .nickname { color: #888; font-size: 13px; margin-right: 4px; }
-
-    /* 로그아웃 상태: TOP10 랭킹 + 로그인 유도 */
-    .icon { font-size: 48px; text-align: center; margin: 30px 0 8px; }
-    .tagline { color: #888; font-size: 14px; text-align: center; margin-bottom: 24px; }
-    .ranking h2 { font-size: 15px; font-weight: 700; text-align: center; color: #ccc; margin-bottom: 12px; }
-    .ranking-list { list-style: none; }
-    .ranking-list li {
-      display: flex; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 6px;
-      background: #1a1a1a; border-radius: 10px; font-size: 14px;
+    #lang-select {
+      background: #1a1a1a; color: #ccc; border: 1px solid #333; border-radius: 16px;
+      padding: 6px 10px; font-size: 13px; cursor: pointer;
     }
-    .ranking-rank { color: #e53935; font-weight: 700; width: 20px; flex-shrink: 0; }
-    .ranking-nickname { flex: 1; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ranking-tier { color: #888; font-size: 12px; flex-shrink: 0; }
-    .ranking-score { color: #fff; font-weight: 600; flex-shrink: 0; }
-    .ranking-loading, .ranking-empty { text-align: center; color: #666; padding: 12px; font-size: 13px; }
     footer { text-align: center; color: #444; font-size: 13px; padding: 30px 0; }
 
-    /* 로그인 상태: 게시판 피드 */
     .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
     .tab { background: #1a1a1a; color: #ccc; padding: 8px 14px; border-radius: 16px; font-size: 13px; text-decoration: none; }
     .tab.active { background: #e53935; color: #fff; }
@@ -90,36 +78,46 @@
   </div>
 
   <dialog id="write-dialog">
-    <input type="text" id="write-title" placeholder="제목" maxlength="200">
-    <textarea id="write-content" placeholder="내용을 입력하세요"></textarea>
+    <input type="text" id="write-title" maxlength="200">
+    <textarea id="write-content"></textarea>
     <div class="error" id="write-error" style="color:#ff6b6b;font-size:13px;margin-bottom:8px;"></div>
     <div class="actions">
-      <button class="cancel" id="write-cancel">취소</button>
-      <button class="submit" id="write-submit">등록</button>
+      <button class="cancel" id="write-cancel"></button>
+      <button class="submit" id="write-submit"></button>
     </div>
   </dialog>
 
   <script src="/js/app.js"></script>
+  <script src="/js/i18n.js"></script>
   <script>
     renderHeader();
     renderFeed();
 
     function renderHeader() {
       var actionsEl = document.getElementById('header-actions');
+      var langSelectHtml = '<select id="lang-select"></select>';
       if (isLoggedIn()) {
         actionsEl.innerHTML =
           '<span class="nickname">' + escapeHtml(getNickname()) + '</span>' +
-          '<button class="btn" id="write-btn">글쓰기</button>' +
-          '<a class="btn ghost" href="#" id="logout-link">로그아웃</a>';
+          '<button class="btn" id="write-btn">' + t('write') + '</button>' +
+          '<a class="btn ghost" href="#" id="logout-link">' + t('logout') + '</a>' +
+          langSelectHtml;
         document.getElementById('logout-link').addEventListener('click', function (e) {
           e.preventDefault();
           logout();
         });
       } else {
         actionsEl.innerHTML =
-          '<button class="btn" id="write-btn">글쓰기</button>' +
-          '<a class="btn ghost" href="/login.html">로그인</a>';
+          '<button class="btn" id="write-btn">' + t('write') + '</button>' +
+          '<a class="btn ghost" href="/login.html">' + t('login') + '</a>' +
+          langSelectHtml;
       }
+      renderLangSelect(document.getElementById('lang-select'));
+
+      document.getElementById('write-title').placeholder = t('titlePlaceholder');
+      document.getElementById('write-content').placeholder = t('contentPlaceholder');
+      document.getElementById('write-cancel').textContent = t('cancel');
+      document.getElementById('write-submit').textContent = t('submit');
 
       // 비로그인 상태에서 글쓰기를 누르면 로그인 페이지로 보낸다(작성/댓글/추천만 로그인 필요).
       document.getElementById('write-btn').addEventListener('click', function () {
@@ -136,8 +134,8 @@
         '<div class="tabs" id="tabs"></div>' +
         '<div class="sort-row">' +
           '<div class="sort-buttons">' +
-            '<button id="sort-new" class="active">최신순</button>' +
-            '<button id="sort-top">인기순</button>' +
+            '<button id="sort-new" class="active">' + t('sortNew') + '</button>' +
+            '<button id="sort-top">' + t('sortTop') + '</button>' +
           '</div>' +
         '</div>' +
         '<ol class="post-list" id="post-list"></ol>' +
@@ -165,16 +163,16 @@
         var items = pageData.content || [];
 
         if (items.length === 0) {
-          listEl.innerHTML = '<div class="empty">아직 게시글이 없습니다.</div>';
+          listEl.innerHTML = '<div class="empty">' + t('noPosts') + '</div>';
         } else {
           listEl.innerHTML = items.map(function (p) {
             return '<li onclick="location.href=\'/post.html?post=' + p.sno + '\'">' +
               '<div class="post-title">' + escapeHtml(p.title) + '</div>' +
               '<div class="post-meta">' +
                 '<span>' + escapeHtml(p.nickname) + '</span>' +
-                '<span>추천 ' + p.score + '</span>' +
-                '<span>댓글 ' + p.commentCount + '</span>' +
-                '<span>조회 ' + p.viewCount + '</span>' +
+                '<span>' + t('reactionLabel') + ' ' + p.score + '</span>' +
+                '<span>' + t('commentCountLabel') + ' ' + p.commentCount + '</span>' +
+                '<span>' + t('viewCountLabel') + ' ' + p.viewCount + '</span>' +
                 '<span>' + escapeHtml(formatLocalTime(p.createAt)) + '</span>' +
               '</div>' +
             '</li>';
@@ -183,8 +181,8 @@
 
         var pagerEl = document.getElementById('pager');
         pagerEl.innerHTML =
-          '<button id="prev-page"' + (pageData.first ? ' disabled' : '') + '>이전</button>' +
-          '<button id="next-page"' + (pageData.last ? ' disabled' : '') + '>다음</button>';
+          '<button id="prev-page"' + (pageData.first ? ' disabled' : '') + '>' + t('prevPage') + '</button>' +
+          '<button id="next-page"' + (pageData.last ? ' disabled' : '') + '>' + t('nextPage') + '</button>';
         document.getElementById('prev-page').addEventListener('click', function () {
           if (!pageData.first) { currentPage--; loadPosts(); }
         });
@@ -215,7 +213,7 @@
         var errorEl = document.getElementById('write-error');
 
         if (!title || !content) {
-          errorEl.textContent = '제목과 내용을 모두 입력해주세요.';
+          errorEl.textContent = t('writeErrorEmpty');
           return;
         }
 
@@ -224,7 +222,7 @@
           body: { title: title, content: content }
         }).then(function (json) {
           if (!json.success) {
-            errorEl.textContent = json.message || '작성에 실패했습니다.';
+            errorEl.textContent = json.message || t('writeFailed');
             return;
           }
           window.location.href = '/post.html?post=' + json.data.sno;
@@ -239,7 +237,7 @@
         var slug = boardSlugFromQuery();
         var selected = boards.find(function (b) { return b.slug === slug; }) || boards[0];
         if (!selected) {
-          document.getElementById('post-list').innerHTML = '<div class="empty">보드가 없습니다.</div>';
+          document.getElementById('post-list').innerHTML = '<div class="empty">' + t('noBoards') + '</div>';
           return;
         }
         currentBoardSno = selected.sno;

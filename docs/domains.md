@@ -141,3 +141,14 @@ totalScore = baseScore + scaledScore + addScore
 ### 정렬 (`top`)
 
 `GET /api/board/{boardSno}/posts?sort=top`은 `score DESC, create_at DESC` 순으로 정렬됨(레딧의 "hot" 알고리즘 같은 시간 가중치는 없음, 순수 추천수 내림차순).
+
+### 게시글/댓글 번역 (`TranslationService`)
+
+`POST /api/board/posts/{postSno}/translate`, `POST /api/board/comments/{commentSno}/translate` — AWS Translate(`software.amazon.awssdk:translate`)로 제목/본문을 대상 언어로 번역해 반환. **원문은 절대 수정/대체되지 않음** — 번역은 매 요청마다 별도로 계산되는 부가 뷰이고, `Post`/`Comment` 엔티티의 `title`/`content`는 그대로 유지된다. `web/post.html`도 이를 "번역 보기"를 누르면 화면에서만 원문↔번역을 토글하는 방식으로 구현(서버에 원문을 다시 보내지 않고, 클라이언트가 최초 응답을 기억했다가 토글).
+
+- **지원 언어**: `ko`/`en`/`ja`/`zh`/`es`/`fr`/`de`/`pt`/`vi`/`th` 10개 — `TranslationServiceImpl.SUPPORTED_LANGUAGES`와 `web/js/i18n.js`의 `SUPPORTED_LANGUAGES`가 반드시 일치해야 함(하나를 바꾸면 다른 쪽도 같이 바꿀 것).
+- **비용 통제를 위해 조회성 동작인데도 로그인 필요**: board의 다른 조회(GET)는 전부 비로그인 공개인데, 번역만 유일하게 외부 유료 API(AWS Translate)를 호출하는 조회라 비로그인 남용으로 비용이 새는 걸 막기 위한 예외.
+- **Redis 캐싱**: 키 `translate:post:{sno}:{lang}` / `translate:comment:{sno}:{lang}`, TTL 180일. 게시글/댓글은 수정 기능이 없어 원문이 불변이므로 같은 조합은 최초 1회만 실제 API를 호출하고 이후는 캐시로 응답 — `RefreshTokenService`(`api/src/main/java/com/example/paceleague/member/service/RefreshTokenService.java`)와 동일한 `StringRedisTemplate` 사용 패턴.
+- **번역 소스 언어는 자동 감지**(`SourceLanguageCode: "auto"`) — 게시글/댓글에 작성 언어를 저장하는 컬럼이 없기 때문.
+- `Post.content` 최대 길이를 10,000자로 제한(`BoardServiceImpl.CONTENT_MAX_LENGTH`) — 원래는 무제한이었으나, 번역 비용이 글자 수에 비례하므로 이번에 추가.
+- **사전 조건**: 운영 EC2의 IAM role(`paceleague-s3-read`)에 `translate:TranslateText` 권한(예: `TranslateReadOnly` 관리형 정책)이 연결되어 있어야 함. 앱은 AWS SDK 기본 자격증명 체인(인스턴스 메타데이터)을 그대로 쓰며, 별도 액세스 키를 설정에 넣지 않음(`common.config.AwsTranslateConfig`). 권한이 없으면 번역 엔드포인트만 500으로 실패하고 나머지 API는 영향받지 않음.
