@@ -1,4 +1,4 @@
-// PaceLeague 커뮤니티 공유 스크립트 — login.html/board.html/post.html/index.html에서 공통으로 사용.
+// PaceLeague 공유 스크립트 — index.html(게시판 피드)/login.html/post.html에서 공통으로 사용.
 
 var API_BASE = 'https://api.paceleague.co.kr';
 

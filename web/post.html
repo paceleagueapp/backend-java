@@ -108,7 +108,7 @@
         document.getElementById('post-delete').addEventListener('click', function () {
           if (!confirm('게시글을 삭제할까요? 댓글도 함께 삭제됩니다.')) return;
           apiFetch('/api/board/posts/' + postSno, { method: 'DELETE' }).then(function () {
-            window.location.href = '/board.html';
+            window.location.href = '/index.html';
           });
         });
       }

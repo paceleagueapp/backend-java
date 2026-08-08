@@ -66,7 +66,7 @@
       login(memberId, password)
         .then(function (data) {
           storeAuth(data);
-          window.location.href = '/board.html';
+          window.location.href = '/index.html';
         })
         .catch(function (err) {
           errorEl.textContent = err.message || '로그인에 실패했습니다.';

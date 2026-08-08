@@ -11,67 +11,93 @@
       background: #0f0f0f;
       color: #fff;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 0 100px;
     }
-    .icon { font-size: 64px; margin-bottom: 16px; }
-    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
-    p { color: #888; font-size: 15px; margin-bottom: 32px; }
-    a {
-      background: #e53935;
-      color: #fff;
-      text-decoration: none;
-      padding: 12px 28px;
-      border-radius: 24px;
-      font-size: 15px;
-      font-weight: 600;
-    }
-    a:hover { background: #c62828; }
-    footer { position: absolute; bottom: 24px; color: #444; font-size: 13px; }
+    .wrap { max-width: 640px; margin: 0 auto; padding: 20px; }
 
-    .ranking { width: 100%; max-width: 360px; margin-top: 48px; padding: 0 20px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    header h1 { font-size: 20px; font-weight: 700; }
+    .btn {
+      background: #e53935; color: #fff; text-decoration: none; border: none;
+      padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .btn:hover { background: #c62828; }
+    .btn.ghost { background: none; color: #ccc; border: 1px solid #333; padding: 7px 16px; }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .header-actions .nickname { color: #888; font-size: 13px; margin-right: 4px; }
+
+    /* 로그아웃 상태: TOP10 랭킹 + 로그인 유도 */
+    .icon { font-size: 48px; text-align: center; margin: 30px 0 8px; }
+    .tagline { color: #888; font-size: 14px; text-align: center; margin-bottom: 24px; }
     .ranking h2 { font-size: 15px; font-weight: 700; text-align: center; color: #ccc; margin-bottom: 12px; }
     .ranking-list { list-style: none; }
     .ranking-list li {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      margin-bottom: 6px;
-      background: #1a1a1a;
-      border-radius: 10px;
-      font-size: 14px;
+      display: flex; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 6px;
+      background: #1a1a1a; border-radius: 10px; font-size: 14px;
     }
     .ranking-rank { color: #e53935; font-weight: 700; width: 20px; flex-shrink: 0; }
     .ranking-nickname { flex: 1; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ranking-tier { color: #888; font-size: 12px; flex-shrink: 0; }
     .ranking-score { color: #fff; font-weight: 600; flex-shrink: 0; }
     .ranking-loading, .ranking-empty { text-align: center; color: #666; padding: 12px; font-size: 13px; }
+    footer { text-align: center; color: #444; font-size: 13px; padding: 30px 0; }
 
-    nav { position: absolute; top: 20px; right: 20px; display: flex; gap: 14px; }
-    nav a { background: none; color: #ccc; padding: 0; font-size: 13px; font-weight: 400; }
-    nav a:hover { background: none; color: #fff; }
+    /* 로그인 상태: 게시판 피드 */
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .tab { background: #1a1a1a; color: #ccc; padding: 8px 14px; border-radius: 16px; font-size: 13px; text-decoration: none; }
+    .tab.active { background: #e53935; color: #fff; }
+
+    .sort-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .sort-buttons button { background: none; border: none; color: #888; font-size: 13px; cursor: pointer; margin-right: 10px; }
+    .sort-buttons button.active { color: #fff; font-weight: 700; }
+
+    .post-list { list-style: none; }
+    .post-list li { background: #1a1a1a; border-radius: 10px; padding: 14px; margin-bottom: 8px; cursor: pointer; }
+    .post-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .post-meta { font-size: 12px; color: #888; display: flex; gap: 10px; flex-wrap: wrap; }
+    .empty { text-align: center; color: #666; padding: 30px; }
+
+    .pager { display: flex; justify-content: center; gap: 16px; margin-top: 16px; }
+    .pager button { background: none; border: 1px solid #333; color: #ccc; padding: 6px 14px; border-radius: 8px; cursor: pointer; }
+    .pager button:disabled { opacity: 0.3; cursor: default; }
+
+    dialog#write-dialog { background: #1a1a1a; color: #fff; border: none; border-radius: 12px; padding: 20px; width: 90%; max-width: 480px; }
+    dialog#write-dialog input, dialog#write-dialog textarea {
+      width: 100%; background: #0f0f0f; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 14px;
+    }
+    dialog#write-dialog textarea { min-height: 120px; resize: vertical; }
+    dialog#write-dialog .actions { display: flex; justify-content: flex-end; gap: 8px; }
+    dialog#write-dialog button.submit { background: #e53935; color: #fff; }
+    dialog#write-dialog button.cancel { background: #333; color: #ccc; border: none; }
+    dialog#write-dialog button { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; }
   </style>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18338881972"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'AW-18338881972');
+  </script>
 </head>
 <body>
-  <nav id="site-nav"></nav>
-  <h1>Pace League</h1>
-  <p>러닝 기록 & 랭킹 앱</p>
-  <a href="https://play.google.com/store/apps/details?id=com.paceleague.app" target="_blank">
-    Google Play에서 다운로드
-  </a>
+  <div class="wrap">
+    <header>
+      <h1>Pace League</h1>
+      <div class="header-actions" id="header-actions"></div>
+    </header>
 
-  <div class="ranking">
-    <h2>이번 시즌 TOP 10</h2>
-    <ol id="ranking-list" class="ranking-list">
-      <li class="ranking-loading">랭킹 불러오는 중...</li>
-    </ol>
+    <div id="content"></div>
   </div>
 
-  <footer>© 2026 Pace League. All rights reserved.</footer>
+  <dialog id="write-dialog">
+    <input type="text" id="write-title" placeholder="제목" maxlength="200">
+    <textarea id="write-content" placeholder="내용을 입력하세요"></textarea>
+    <div class="error" id="write-error" style="color:#ff6b6b;font-size:13px;margin-bottom:8px;"></div>
+    <div class="actions">
+      <button class="cancel" id="write-cancel">취소</button>
+      <button class="submit" id="write-submit">등록</button>
+    </div>
+  </dialog>
 
   <script src="/js/app.js"></script>
   <script>
@@ -80,41 +106,184 @@
       PLATINUM: '플래티넘', DIAMOND: '다이아', MASTER: '마스터', CHALLENGER: '챌린저'
     };
 
-    var navEl = document.getElementById('site-nav');
     if (isLoggedIn()) {
-      navEl.innerHTML = '<a href="/board.html">커뮤니티</a><a href="#" id="nav-logout">로그아웃</a>';
-      document.getElementById('nav-logout').addEventListener('click', function (e) {
+      renderLoggedIn();
+    } else {
+      renderLoggedOut();
+    }
+
+    function renderLoggedOut() {
+      document.getElementById('header-actions').innerHTML =
+        '<a class="btn" href="/login.html">로그인</a>';
+
+      document.getElementById('content').innerHTML =
+        '<div class="icon">🏃</div>' +
+        '<p class="tagline">러닝 기록 & 커뮤니티 — 로그인하고 게시판을 확인해보세요</p>' +
+        '<div style="text-align:center;margin-bottom:30px;">' +
+          '<a class="btn" href="/login.html">로그인하고 커뮤니티 보기</a>' +
+        '</div>' +
+        '<div class="ranking">' +
+          '<h2>이번 시즌 TOP 10</h2>' +
+          '<ol id="ranking-list" class="ranking-list"><li class="ranking-loading">랭킹 불러오는 중...</li></ol>' +
+        '</div>' +
+        '<footer>© 2026 Pace League. All rights reserved.</footer>';
+
+      fetch('https://api.paceleague.co.kr/api/ranking/top10')
+        .then(function (res) { return res.json(); })
+        .then(function (json) {
+          var list = document.getElementById('ranking-list');
+          var items = (json && json.data) || [];
+          if (items.length === 0) {
+            list.innerHTML = '<li class="ranking-empty">아직 랭킹 데이터가 없습니다.</li>';
+            return;
+          }
+          list.innerHTML = items.map(function (item) {
+            return '<li>' +
+              '<span class="ranking-rank">' + item.rank + '</span>' +
+              '<span class="ranking-nickname">' + escapeHtml(item.nickname || '익명') + '</span>' +
+              '<span class="ranking-tier">' + (TIER_LABEL[item.tier] || item.tier) + '</span>' +
+              '<span class="ranking-score">' + item.totalScore + '</span>' +
+              '</li>';
+          }).join('');
+        })
+        .catch(function () {
+          document.getElementById('ranking-list').innerHTML = '<li class="ranking-empty">랭킹을 불러오지 못했습니다.</li>';
+        });
+    }
+
+    function renderLoggedIn() {
+      document.getElementById('header-actions').innerHTML =
+        '<span class="nickname">' + escapeHtml(getNickname()) + '</span>' +
+        '<button class="btn" id="write-btn">글쓰기</button>' +
+        '<a class="btn ghost" href="#" id="logout-link">로그아웃</a>';
+
+      document.getElementById('logout-link').addEventListener('click', function (e) {
         e.preventDefault();
         logout();
       });
-    } else {
-      navEl.innerHTML = '<a href="/login.html">로그인</a><a href="/board.html">커뮤니티</a>';
-    }
 
-    fetch('https://api.paceleague.co.kr/api/ranking/top10')
-      .then(function (res) { return res.json(); })
-      .then(function (json) {
-        var list = document.getElementById('ranking-list');
-        var items = (json && json.data) || [];
+      document.getElementById('content').innerHTML =
+        '<div class="tabs" id="tabs"></div>' +
+        '<div class="sort-row">' +
+          '<div class="sort-buttons">' +
+            '<button id="sort-new" class="active">최신순</button>' +
+            '<button id="sort-top">인기순</button>' +
+          '</div>' +
+        '</div>' +
+        '<ol class="post-list" id="post-list"></ol>' +
+        '<div class="pager" id="pager"></div>';
+
+      document.getElementById('write-btn').addEventListener('click', function () {
+        document.getElementById('write-title').value = '';
+        document.getElementById('write-content').value = '';
+        document.getElementById('write-error').textContent = '';
+        document.getElementById('write-dialog').showModal();
+      });
+
+      var boards = [];
+      var currentBoardSno = null;
+      var currentPage = 0;
+      var currentSort = 'new';
+
+      function boardSlugFromQuery() {
+        return new URLSearchParams(window.location.search).get('board');
+      }
+
+      function renderTabs() {
+        document.getElementById('tabs').innerHTML = boards.map(function (b) {
+          var active = b.sno === currentBoardSno ? ' active' : '';
+          return '<a class="tab' + active + '" href="/index.html?board=' + encodeURIComponent(b.slug) + '">' +
+            escapeHtml(b.name) + '</a>';
+        }).join('');
+      }
+
+      function renderPosts(pageData) {
+        var listEl = document.getElementById('post-list');
+        var items = pageData.content || [];
 
         if (items.length === 0) {
-          list.innerHTML = '<li class="ranking-empty">아직 랭킹 데이터가 없습니다.</li>';
+          listEl.innerHTML = '<div class="empty">아직 게시글이 없습니다.</div>';
+        } else {
+          listEl.innerHTML = items.map(function (p) {
+            return '<li onclick="location.href=\'/post.html?post=' + p.sno + '\'">' +
+              '<div class="post-title">' + escapeHtml(p.title) + '</div>' +
+              '<div class="post-meta">' +
+                '<span>' + escapeHtml(p.nickname) + '</span>' +
+                '<span>추천 ' + p.score + '</span>' +
+                '<span>댓글 ' + p.commentCount + '</span>' +
+                '<span>조회 ' + p.viewCount + '</span>' +
+                '<span>' + escapeHtml(formatLocalTime(p.createAt)) + '</span>' +
+              '</div>' +
+            '</li>';
+          }).join('');
+        }
+
+        var pagerEl = document.getElementById('pager');
+        pagerEl.innerHTML =
+          '<button id="prev-page"' + (pageData.first ? ' disabled' : '') + '>이전</button>' +
+          '<button id="next-page"' + (pageData.last ? ' disabled' : '') + '>다음</button>';
+        document.getElementById('prev-page').addEventListener('click', function () {
+          if (!pageData.first) { currentPage--; loadPosts(); }
+        });
+        document.getElementById('next-page').addEventListener('click', function () {
+          if (!pageData.last) { currentPage++; loadPosts(); }
+        });
+      }
+
+      function loadPosts() {
+        apiFetch('/api/board/' + currentBoardSno + '/posts?page=' + currentPage + '&size=20&sort=' + currentSort)
+          .then(function (json) { renderPosts(json.data); });
+      }
+
+      function selectSort(sort) {
+        currentSort = sort;
+        currentPage = 0;
+        document.getElementById('sort-new').classList.toggle('active', sort === 'new');
+        document.getElementById('sort-top').classList.toggle('active', sort === 'top');
+        loadPosts();
+      }
+
+      document.getElementById('sort-new').addEventListener('click', function () { selectSort('new'); });
+      document.getElementById('sort-top').addEventListener('click', function () { selectSort('top'); });
+
+      document.getElementById('write-submit').addEventListener('click', function () {
+        var title = document.getElementById('write-title').value.trim();
+        var content = document.getElementById('write-content').value.trim();
+        var errorEl = document.getElementById('write-error');
+
+        if (!title || !content) {
+          errorEl.textContent = '제목과 내용을 모두 입력해주세요.';
           return;
         }
 
-        list.innerHTML = items.map(function (item) {
-          return '<li>' +
-            '<span class="ranking-rank">' + item.rank + '</span>' +
-            '<span class="ranking-nickname">' + escapeHtml(item.nickname || '익명') + '</span>' +
-            '<span class="ranking-tier">' + (TIER_LABEL[item.tier] || item.tier) + '</span>' +
-            '<span class="ranking-score">' + item.totalScore + '</span>' +
-            '</li>';
-        }).join('');
-      })
-      .catch(function () {
-        var list = document.getElementById('ranking-list');
-        list.innerHTML = '<li class="ranking-empty">랭킹을 불러오지 못했습니다.</li>';
+        apiFetch('/api/board/' + currentBoardSno + '/posts', {
+          method: 'POST',
+          body: { title: title, content: content }
+        }).then(function (json) {
+          if (!json.success) {
+            errorEl.textContent = json.message || '작성에 실패했습니다.';
+            return;
+          }
+          window.location.href = '/post.html?post=' + json.data.sno;
+        });
       });
+      document.getElementById('write-cancel').addEventListener('click', function () {
+        document.getElementById('write-dialog').close();
+      });
+
+      apiFetch('/api/board').then(function (json) {
+        boards = json.data || [];
+        var slug = boardSlugFromQuery();
+        var selected = boards.find(function (b) { return b.slug === slug; }) || boards[0];
+        if (!selected) {
+          document.getElementById('post-list').innerHTML = '<div class="empty">보드가 없습니다.</div>';
+          return;
+        }
+        currentBoardSno = selected.sno;
+        renderTabs();
+        loadPosts();
+      });
+    }
   </script>
 </body>
 </html>
