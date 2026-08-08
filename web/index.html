@@ -39,8 +39,10 @@
     .sort-buttons button.active { color: #fff; font-weight: 700; }
 
     .post-list { list-style: none; }
-    .post-list li { background: #1a1a1a; border-radius: 10px; padding: 14px; margin-bottom: 8px; cursor: pointer; }
-    .post-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .post-list li { background: #1a1a1a; border-radius: 10px; padding: 14px; margin-bottom: 8px; }
+    .post-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+    .post-title { font-size: 15px; font-weight: 600; cursor: pointer; }
+    .post-translate-link { color: #888; font-size: 11px; cursor: pointer; white-space: nowrap; flex-shrink: 0; padding-top: 2px; }
     .post-meta { font-size: 12px; color: #888; display: flex; gap: 10px; flex-wrap: wrap; }
     .empty { text-align: center; color: #666; padding: 30px; }
 
@@ -158,16 +160,28 @@
         }).join('');
       }
 
+      var titleBySno = {};
+      var translatedTitleBySno = {};
+      var showingTitleTranslation = {};
+
       function renderPosts(pageData) {
         var listEl = document.getElementById('post-list');
         var items = pageData.content || [];
+
+        titleBySno = {};
+        translatedTitleBySno = {};
+        showingTitleTranslation = {};
 
         if (items.length === 0) {
           listEl.innerHTML = '<div class="empty">' + t('noPosts') + '</div>';
         } else {
           listEl.innerHTML = items.map(function (p) {
-            return '<li onclick="location.href=\'/post.html?post=' + p.sno + '\'">' +
-              '<div class="post-title">' + escapeHtml(p.title) + '</div>' +
+            titleBySno[p.sno] = p.title;
+            return '<li>' +
+              '<div class="post-title-row">' +
+                '<div class="post-title post-open" data-sno="' + p.sno + '" id="post-title-' + p.sno + '">' + escapeHtml(p.title) + '</div>' +
+                '<span class="post-translate-link" data-sno="' + p.sno + '">' + t('translateShow') + '</span>' +
+              '</div>' +
               '<div class="post-meta">' +
                 '<span>' + escapeHtml(p.nickname) + '</span>' +
                 '<span>' + t('reactionLabel') + ' ' + p.score + '</span>' +
@@ -177,6 +191,18 @@
               '</div>' +
             '</li>';
           }).join('');
+
+          listEl.querySelectorAll('.post-open').forEach(function (el) {
+            el.addEventListener('click', function () {
+              location.href = '/post.html?post=' + el.getAttribute('data-sno');
+            });
+          });
+          listEl.querySelectorAll('.post-translate-link').forEach(function (el) {
+            el.addEventListener('click', function (e) {
+              e.stopPropagation();
+              toggleTitleTranslation(el.getAttribute('data-sno'), el);
+            });
+          });
         }
 
         var pagerEl = document.getElementById('pager');
@@ -194,6 +220,39 @@
       function loadPosts() {
         apiFetch('/api/board/' + currentBoardSno + '/posts?page=' + currentPage + '&size=20&sort=' + currentSort)
           .then(function (json) { renderPosts(json.data); });
+      }
+
+      function toggleTitleTranslation(sno, linkEl) {
+        if (redirectToLoginIfNeeded()) return;
+        var titleEl = document.getElementById('post-title-' + sno);
+
+        if (showingTitleTranslation[sno]) {
+          titleEl.textContent = titleBySno[sno];
+          showingTitleTranslation[sno] = false;
+          linkEl.textContent = t('translateShow');
+          return;
+        }
+
+        if (translatedTitleBySno[sno]) {
+          titleEl.textContent = translatedTitleBySno[sno];
+          showingTitleTranslation[sno] = true;
+          linkEl.textContent = t('translateHide');
+          return;
+        }
+
+        apiFetch('/api/board/posts/' + sno + '/translate', {
+          method: 'POST',
+          body: { targetLanguage: getLang() }
+        }).then(function (json) {
+          if (!json.success) {
+            alert(t('translateFailed'));
+            return;
+          }
+          translatedTitleBySno[sno] = json.data.title;
+          titleEl.textContent = json.data.title;
+          showingTitleTranslation[sno] = true;
+          linkEl.textContent = t('translateHide');
+        });
       }
 
       function selectSort(sort) {

@@ -144,7 +144,7 @@ totalScore = baseScore + scaledScore + addScore
 
 ### 게시글/댓글 번역 (`TranslationService`)
 
-`POST /api/board/posts/{postSno}/translate`, `POST /api/board/comments/{commentSno}/translate` — AWS Translate(`software.amazon.awssdk:translate`)로 제목/본문을 대상 언어로 번역해 반환. **원문은 절대 수정/대체되지 않음** — 번역은 매 요청마다 별도로 계산되는 부가 뷰이고, `Post`/`Comment` 엔티티의 `title`/`content`는 그대로 유지된다. `web/post.html`도 이를 "번역 보기"를 누르면 화면에서만 원문↔번역을 토글하는 방식으로 구현(서버에 원문을 다시 보내지 않고, 클라이언트가 최초 응답을 기억했다가 토글).
+`POST /api/board/posts/{postSno}/translate`, `POST /api/board/comments/{commentSno}/translate` — AWS Translate(`software.amazon.awssdk:translate`)로 제목/본문을 대상 언어로 번역해 반환. **원문은 절대 수정/대체되지 않음** — 번역은 매 요청마다 별도로 계산되는 부가 뷰이고, `Post`/`Comment` 엔티티의 `title`/`content`는 그대로 유지된다. `web/post.html`(게시글 본문+댓글)과 `web/index.html`(목록의 제목만, `PostTranslationResponse.title`만 사용)이 모두 이를 "번역 보기"를 누르면 화면에서만 원문↔번역을 토글하는 방식으로 구현(서버에 원문을 다시 보내지 않고, 클라이언트가 최초 응답을 기억했다가 토글).
 
 - **지원 언어**: `ko`/`en`/`ja`/`zh`/`es`/`fr`/`de`/`pt`/`vi`/`th` 10개 — `TranslationServiceImpl.SUPPORTED_LANGUAGES`와 `web/js/i18n.js`의 `SUPPORTED_LANGUAGES`가 반드시 일치해야 함(하나를 바꾸면 다른 쪽도 같이 바꿀 것).
 - **비용 통제를 위해 조회성 동작인데도 로그인 필요**: board의 다른 조회(GET)는 전부 비로그인 공개인데, 번역만 유일하게 외부 유료 API(AWS Translate)를 호출하는 조회라 비로그인 남용으로 비용이 새는 걸 막기 위한 예외.
