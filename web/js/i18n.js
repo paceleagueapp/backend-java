@@ -27,7 +27,8 @@ var TRANSLATIONS = {
     confirmDeletePost: '게시글을 삭제할까요? 댓글도 함께 삭제됩니다.', confirmDeleteComment: '댓글을 삭제할까요?',
     commentsTitle: '댓글', commentPlaceholder: '댓글을 입력하세요', commentSubmit: '댓글 작성',
     noComments: '아직 댓글이 없습니다.', replyLink: '답글', replyPlaceholder: '답글을 입력하세요',
-    translateShow: '번역 보기', translateHide: '원문 보기', translateFailed: '번역에 실패했습니다.'
+    translateShow: '번역 보기', translateHide: '원문 보기', translateFailed: '번역에 실패했습니다.',
+    top10Heading: '이번 시즌 TOP 10', top10Empty: '아직 랭킹 데이터가 없습니다.', top10LoadFailed: '랭킹을 불러오지 못했습니다.'
   },
   en: {
     login: 'Login', write: 'Write', logout: 'Logout', sortNew: 'New', sortTop: 'Top',
@@ -41,7 +42,8 @@ var TRANSLATIONS = {
     confirmDeletePost: 'Delete this post? Comments will be deleted too.', confirmDeleteComment: 'Delete this comment?',
     commentsTitle: 'Comments', commentPlaceholder: 'Write a comment', commentSubmit: 'Comment',
     noComments: 'No comments yet.', replyLink: 'Reply', replyPlaceholder: 'Write a reply',
-    translateShow: 'Show translation', translateHide: 'Show original', translateFailed: 'Translation failed.'
+    translateShow: 'Show translation', translateHide: 'Show original', translateFailed: 'Translation failed.',
+    top10Heading: 'This Season TOP 10', top10Empty: 'No ranking data yet.', top10LoadFailed: 'Failed to load ranking.'
   },
   ja: {
     login: 'ログイン', write: '投稿する', logout: 'ログアウト', sortNew: '新着順', sortTop: '人気順',
@@ -55,7 +57,8 @@ var TRANSLATIONS = {
     confirmDeletePost: '投稿を削除しますか？コメントも削除されます。', confirmDeleteComment: 'コメントを削除しますか？',
     commentsTitle: 'コメント', commentPlaceholder: 'コメントを入力してください', commentSubmit: 'コメントする',
     noComments: 'まだコメントがありません。', replyLink: '返信', replyPlaceholder: '返信を入力してください',
-    translateShow: '翻訳を見る', translateHide: '原文を見る', translateFailed: '翻訳に失敗しました。'
+    translateShow: '翻訳を見る', translateHide: '原文を見る', translateFailed: '翻訳に失敗しました。',
+    top10Heading: '今シーズン TOP 10', top10Empty: 'まだランキングデータがありません。', top10LoadFailed: 'ランキングを読み込めませんでした。'
   },
   zh: {
     login: '登录', write: '写帖子', logout: '登出', sortNew: '最新', sortTop: '热门',
@@ -69,7 +72,8 @@ var TRANSLATIONS = {
     confirmDeletePost: '确定要删除这篇帖子吗？评论也会一并删除。', confirmDeleteComment: '确定要删除这条评论吗？',
     commentsTitle: '评论', commentPlaceholder: '请输入评论', commentSubmit: '发表评论',
     noComments: '暂无评论。', replyLink: '回复', replyPlaceholder: '请输入回复',
-    translateShow: '查看翻译', translateHide: '查看原文', translateFailed: '翻译失败。'
+    translateShow: '查看翻译', translateHide: '查看原文', translateFailed: '翻译失败。',
+    top10Heading: '本赛季 TOP 10', top10Empty: '暂无排名数据。', top10LoadFailed: '排名加载失败。'
   },
   es: {
     login: 'Iniciar sesión', write: 'Publicar', logout: 'Cerrar sesión', sortNew: 'Recientes', sortTop: 'Popular',
@@ -83,7 +87,8 @@ var TRANSLATIONS = {
     confirmDeletePost: '¿Eliminar esta publicación? Los comentarios también se eliminarán.', confirmDeleteComment: '¿Eliminar este comentario?',
     commentsTitle: 'Comentarios', commentPlaceholder: 'Escribe un comentario', commentSubmit: 'Comentar',
     noComments: 'Aún no hay comentarios.', replyLink: 'Responder', replyPlaceholder: 'Escribe una respuesta',
-    translateShow: 'Ver traducción', translateHide: 'Ver original', translateFailed: 'Error al traducir.'
+    translateShow: 'Ver traducción', translateHide: 'Ver original', translateFailed: 'Error al traducir.',
+    top10Heading: 'TOP 10 de la temporada', top10Empty: 'Aún no hay datos de clasificación.', top10LoadFailed: 'Error al cargar la clasificación.'
   },
   fr: {
     login: 'Connexion', write: 'Publier', logout: 'Déconnexion', sortNew: 'Récent', sortTop: 'Populaire',
@@ -97,7 +102,8 @@ var TRANSLATIONS = {
     confirmDeletePost: 'Supprimer cette publication ? Les commentaires seront aussi supprimés.', confirmDeleteComment: 'Supprimer ce commentaire ?',
     commentsTitle: 'Commentaires', commentPlaceholder: 'Écrivez un commentaire', commentSubmit: 'Commenter',
     noComments: 'Aucun commentaire pour le moment.', replyLink: 'Répondre', replyPlaceholder: 'Écrivez une réponse',
-    translateShow: 'Voir la traduction', translateHide: "Voir l'original", translateFailed: 'Échec de la traduction.'
+    translateShow: 'Voir la traduction', translateHide: "Voir l'original", translateFailed: 'Échec de la traduction.',
+    top10Heading: 'TOP 10 de la saison', top10Empty: 'Aucune donnée de classement pour le moment.', top10LoadFailed: 'Échec du chargement du classement.'
   },
   de: {
     login: 'Anmelden', write: 'Beitrag erstellen', logout: 'Abmelden', sortNew: 'Neu', sortTop: 'Beliebt',
@@ -111,7 +117,8 @@ var TRANSLATIONS = {
     confirmDeletePost: 'Diesen Beitrag löschen? Kommentare werden ebenfalls gelöscht.', confirmDeleteComment: 'Diesen Kommentar löschen?',
     commentsTitle: 'Kommentare', commentPlaceholder: 'Kommentar schreiben', commentSubmit: 'Kommentieren',
     noComments: 'Noch keine Kommentare.', replyLink: 'Antworten', replyPlaceholder: 'Antwort schreiben',
-    translateShow: 'Übersetzung anzeigen', translateHide: 'Original anzeigen', translateFailed: 'Übersetzung fehlgeschlagen.'
+    translateShow: 'Übersetzung anzeigen', translateHide: 'Original anzeigen', translateFailed: 'Übersetzung fehlgeschlagen.',
+    top10Heading: 'TOP 10 der Saison', top10Empty: 'Noch keine Ranglistendaten.', top10LoadFailed: 'Rangliste konnte nicht geladen werden.'
   },
   pt: {
     login: 'Entrar', write: 'Publicar', logout: 'Sair', sortNew: 'Recentes', sortTop: 'Populares',
@@ -125,7 +132,8 @@ var TRANSLATIONS = {
     confirmDeletePost: 'Excluir esta publicação? Os comentários também serão excluídos.', confirmDeleteComment: 'Excluir este comentário?',
     commentsTitle: 'Comentários', commentPlaceholder: 'Escreva um comentário', commentSubmit: 'Comentar',
     noComments: 'Ainda não há comentários.', replyLink: 'Responder', replyPlaceholder: 'Escreva uma resposta',
-    translateShow: 'Ver tradução', translateHide: 'Ver original', translateFailed: 'Falha na tradução.'
+    translateShow: 'Ver tradução', translateHide: 'Ver original', translateFailed: 'Falha na tradução.',
+    top10Heading: 'TOP 10 da temporada', top10Empty: 'Ainda não há dados de classificação.', top10LoadFailed: 'Falha ao carregar a classificação.'
   },
   vi: {
     login: 'Đăng nhập', write: 'Viết bài', logout: 'Đăng xuất', sortNew: 'Mới nhất', sortTop: 'Nổi bật',
@@ -139,7 +147,8 @@ var TRANSLATIONS = {
     confirmDeletePost: 'Xóa bài viết này? Các bình luận cũng sẽ bị xóa.', confirmDeleteComment: 'Xóa bình luận này?',
     commentsTitle: 'Bình luận', commentPlaceholder: 'Nhập bình luận', commentSubmit: 'Bình luận',
     noComments: 'Chưa có bình luận nào.', replyLink: 'Trả lời', replyPlaceholder: 'Nhập trả lời',
-    translateShow: 'Xem bản dịch', translateHide: 'Xem nguyên văn', translateFailed: 'Dịch thất bại.'
+    translateShow: 'Xem bản dịch', translateHide: 'Xem nguyên văn', translateFailed: 'Dịch thất bại.',
+    top10Heading: 'TOP 10 mùa này', top10Empty: 'Chưa có dữ liệu xếp hạng.', top10LoadFailed: 'Tải xếp hạng thất bại.'
   },
   th: {
     login: 'เข้าสู่ระบบ', write: 'เขียนโพสต์', logout: 'ออกจากระบบ', sortNew: 'ใหม่ล่าสุด', sortTop: 'ยอดนิยม',
@@ -153,7 +162,8 @@ var TRANSLATIONS = {
     confirmDeletePost: 'ลบโพสต์นี้หรือไม่? ความคิดเห็นจะถูกลบไปด้วย', confirmDeleteComment: 'ลบความคิดเห็นนี้หรือไม่?',
     commentsTitle: 'ความคิดเห็น', commentPlaceholder: 'แสดงความคิดเห็น', commentSubmit: 'แสดงความคิดเห็น',
     noComments: 'ยังไม่มีความคิดเห็น', replyLink: 'ตอบกลับ', replyPlaceholder: 'พิมพ์การตอบกลับ',
-    translateShow: 'ดูคำแปล', translateHide: 'ดูต้นฉบับ', translateFailed: 'แปลไม่สำเร็จ'
+    translateShow: 'ดูคำแปล', translateHide: 'ดูต้นฉบับ', translateFailed: 'แปลไม่สำเร็จ',
+    top10Heading: 'TOP 10 ซีซั่นนี้', top10Empty: 'ยังไม่มีข้อมูลอันดับ', top10LoadFailed: 'โหลดอันดับไม่สำเร็จ'
   }
 };
 
