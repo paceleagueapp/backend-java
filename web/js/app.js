@@ -36,10 +36,6 @@ function isLoggedIn() {
   return !!localStorage.getItem(STORAGE_KEYS.accessToken);
 }
 
-function getNickname() {
-  return localStorage.getItem(STORAGE_KEYS.nickname) || '';
-}
-
 function getMemberSno() {
   var v = localStorage.getItem(STORAGE_KEYS.memberSno);
   return v ? Number(v) : null;

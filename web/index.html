@@ -44,7 +44,6 @@
     .btn:hover { background: #c62828; }
     .btn.ghost { background: none; color: #ccc; border: 1px solid #333; padding: 7px 16px; }
     .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .header-actions .nickname { color: #888; font-size: 13px; margin-right: 4px; }
     #lang-select {
       background: #1a1a1a; color: #ccc; border: 1px solid #333; border-radius: 16px;
       padding: 6px 10px; font-size: 13px; cursor: pointer;
@@ -164,7 +163,6 @@
       var langSelectHtml = '<select id="lang-select"></select>';
       if (isLoggedIn()) {
         actionsEl.innerHTML =
-          '<span class="nickname">' + escapeHtml(getNickname()) + '</span>' +
           '<button class="btn" id="write-btn">' + t('write') + '</button>' +
           '<a class="btn ghost" href="#" id="logout-link">' + t('logout') + '</a>' +
           langSelectHtml;
