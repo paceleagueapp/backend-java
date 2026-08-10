@@ -1,6 +1,6 @@
 package com.example.paceleague.common.security;
 
-import com.example.paceleague.member.service.JwtTokenProvider;
+import com.example.paceleague.common.security.jwt.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import jakarta.servlet.FilterChain;

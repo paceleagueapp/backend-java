@@ -43,7 +43,7 @@ totalScore = baseScore + scaledScore + addScore
 
 ## 티어 (Rank Tier)
 
-`rank.enums.RankTier` — 점수 구간별 티어. 각 티어는 `minScore`를 가지며, 점수가 그 이상인 **가장 높은** 티어가 선택됩니다(`RankTierPolicy.calculate`).
+`rank.domain.enums.RankTier` — 점수 구간별 티어. 각 티어는 `minScore`를 가지며, 점수가 그 이상인 **가장 높은** 티어가 선택됩니다(`rank.domain.policy.RankTierPolicy.calculate`).
 
 | 티어 | 최소 점수 |
 |---|---|
@@ -103,7 +103,7 @@ totalScore = baseScore + scaledScore + addScore
 
 ## 커뮤니티(Board) 도메인
 
-`board` 패키지. 보드(카테고리) → 게시글 → 댓글(1단계) → 추천/비추천 구조. 레딧처럼 **조회(GET)는 비로그인도 가능**하고, 작성/삭제/추천(POST/DELETE)만 로그인이 필요합니다 — `SecurityConfig`에 `HttpMethod.GET` 한정으로 `/api/board`, `/api/board/*/posts`, `/api/board/posts/*`, `/api/board/posts/*/comments` 4개 경로만 `permitAll`, 나머지(같은 경로의 POST/DELETE 포함)는 기본 `anyRequest().authenticated()`에 걸림. `BoardController`는 이 4개 조회 엔드포인트에서 `unoOrNull(authentication)`(비로그인이면 `null`)을 쓰고, 나머지 쓰기 엔드포인트는 기존 `uno(authentication)`(비로그인이면 예외)을 그대로 씀 — 인증된 컨트롤러 전체에 반복되는 `uno` 헬퍼 패턴([architecture.md](./architecture.md) 참고)의 변형.
+`board` 패키지. 보드(카테고리) → 게시글 → 댓글(1단계) → 추천/비추천 구조. 레딧처럼 **조회(GET)는 비로그인도 가능**하고, 작성/삭제/추천(POST/DELETE)만 로그인이 필요합니다 — `SecurityConfig`에 `HttpMethod.GET` 한정으로 `/api/board`, `/api/board/*/posts`, `/api/board/posts/*`, `/api/board/posts/*/comments` 4개 경로만 `permitAll`, 나머지(같은 경로의 POST/DELETE 포함)는 기본 `anyRequest().authenticated()`에 걸림. `BoardController`는 이 4개 조회 엔드포인트에서 `@MemberSno(required = false) Long memberSno`(비로그인이면 `null`)를 쓰고, 나머지 쓰기 엔드포인트는 기본값인 `@MemberSno Long memberSno`(비로그인이면 예외)를 그대로 씀 — 인증된 컨트롤러 전체가 공유하는 `common.web.MemberSnoArgumentResolver`([architecture.md](./architecture.md) 참고)의 `required` 옵션 차이.
 
 ### 시각(createAt/updateAt)은 전세계 사용자를 가정해 UTC로 저장 — 다른 도메인과 다른 규칙
 
@@ -148,7 +148,7 @@ totalScore = baseScore + scaledScore + addScore
 
 - **지원 언어**: `ko`/`en`/`ja`/`zh`/`es`/`fr`/`de`/`pt`/`vi`/`th` 10개 — `TranslationServiceImpl.SUPPORTED_LANGUAGES`와 `web/js/i18n.js`의 `SUPPORTED_LANGUAGES`가 반드시 일치해야 함(하나를 바꾸면 다른 쪽도 같이 바꿀 것).
 - **비용 통제를 위해 조회성 동작인데도 로그인 필요**: board의 다른 조회(GET)는 전부 비로그인 공개인데, 번역만 유일하게 외부 유료 API(AWS Translate)를 호출하는 조회라 비로그인 남용으로 비용이 새는 걸 막기 위한 예외.
-- **Redis 캐싱**: 키 `translate:post:{sno}:{lang}` / `translate:comment:{sno}:{lang}`, TTL 180일. 게시글/댓글은 수정 기능이 없어 원문이 불변이므로 같은 조합은 최초 1회만 실제 API를 호출하고 이후는 캐시로 응답 — `RefreshTokenService`(`api/src/main/java/com/example/paceleague/member/service/RefreshTokenService.java`)와 동일한 `StringRedisTemplate` 사용 패턴.
+- **Redis 캐싱**: 키 `translate:post:{sno}:{lang}` / `translate:comment:{sno}:{lang}`, TTL 180일. 게시글/댓글은 수정 기능이 없어 원문이 불변이므로 같은 조합은 최초 1회만 실제 API를 호출하고 이후는 캐시로 응답 — `member.adapter.out.token.RedisRefreshTokenAdapter`(`api/src/main/java/com/example/paceleague/member/adapter/out/token/RedisRefreshTokenAdapter.java`)와 동일한 `StringRedisTemplate` 사용 패턴.
 - **번역 소스 언어는 자동 감지**(`SourceLanguageCode: "auto"`) — 게시글/댓글에 작성 언어를 저장하는 컬럼이 없기 때문.
 - `Post.content` 최대 길이를 10,000자로 제한(`BoardServiceImpl.CONTENT_MAX_LENGTH`) — 원래는 무제한이었으나, 번역 비용이 글자 수에 비례하므로 이번에 추가.
 - **사전 조건**: 운영 EC2의 IAM role(`paceleague-s3-read`)에 `translate:TranslateText` 권한(예: `TranslateReadOnly` 관리형 정책)이 연결되어 있어야 함. 앱은 AWS SDK 기본 자격증명 체인(인스턴스 메타데이터)을 그대로 쓰며, 별도 액세스 키를 설정에 넣지 않음(`common.config.AwsTranslateConfig`). 권한이 없으면 번역 엔드포인트만 500으로 실패하고 나머지 API는 영향받지 않음.

@@ -1,3 +1,9 @@
+server:
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+
 spring:
   config:
     activate:
@@ -23,3 +29,7 @@ app:
     access-token-ttl-seconds: 300
     refresh-token-ttl-seconds: 1209600
     secret: ${JWT_SECRET}
+
+logging:
+  level:
+    org.springframework.security: WARN

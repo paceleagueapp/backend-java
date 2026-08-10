@@ -1,6 +1,6 @@
 package com.example.paceleague.common.config;
 
-import com.example.paceleague.member.service.JwtTokenProvider;
+import com.example.paceleague.common.security.jwt.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

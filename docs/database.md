@@ -73,7 +73,7 @@ MySQL, Spring Data JPA(Hibernate) 사용. 로컬은 `ddl-auto: update`, 운영�
 | create_at / update_at | LocalDateTime | |
 | utc_offset | String(50) | |
 
-- `(member_sno, season_sno)` 동시 갱신은 `MemberScoreRepository.findByMemberSnoAndSeasonSnoForUpdate`가 `PESSIMISTIC_WRITE` 락으로 보호합니다(레이스 컨디션으로 점수가 유실되지 않도록).
+- `(member_sno, season_sno)` 동시 갱신은 `rank.application.port.out.MemberScoreRepositoryPort.findByMemberSnoAndSeasonSnoForUpdate`(어댑터 구현: `MemberScoreJpaRepository`)가 `PESSIMISTIC_WRITE` 락으로 보호합니다(레이스 컨디션으로 점수가 유실되지 않도록).
 - DB 레벨 유니크 제약이 코드상 명시되어 있지는 않음(엔티티에 `@Table(uniqueConstraints=...)` 없음) — 애플리케이션 로직으로만 1인 1시즌 1행을 보장.
 
 ## `season`
@@ -155,7 +155,7 @@ DDL로 시딩만 하고(자유게시판/질문/인증 3개), 생성/수정 API�
 
 ## Redis
 
-애플리케이션 코드가 사용하는 것은 refresh token 저장뿐입니다(`RefreshTokenService`).
+애플리케이션 코드가 사용하는 것은 refresh token 저장뿐입니다(`member.adapter.out.token.RedisRefreshTokenAdapter`).
 
 | 키 패턴 | 값 | TTL |
 |---|---|---|
