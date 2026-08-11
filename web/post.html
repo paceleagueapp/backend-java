@@ -25,13 +25,12 @@
     .post-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
     .post-meta { font-size: 12px; color: #888; margin-bottom: 14px; display: flex; gap: 10px; align-items: center; }
     .author-tier { background: #262626; color: #ccc; border-radius: 10px; padding: 1px 8px; font-size: 11px; }
-    .post-content { font-size: 14px; line-height: 1.6; white-space: pre-wrap; margin-bottom: 14px; }
+    .post-content { font-size: 14px; line-height: 1.6; margin-bottom: 14px; word-break: break-word; }
+    .post-content p { margin-bottom: 8px; }
+    .post-content img, .post-content video { max-width: 100%; border-radius: 8px; display: block; margin: 8px 0; }
+    .post-content a { color: #64b5f6; word-break: break-all; }
     .attached-record { background: #0f0f0f; border: 1px solid #333; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 13px; color: #ccc; }
     .attached-record .attached-record-heading { font-size: 11px; color: #888; margin-bottom: 4px; }
-    .attachments { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
-    .attachments-heading { font-size: 11px; color: #888; }
-    .attachment-image img, .attachment-video video { max-width: 100%; border-radius: 8px; display: block; }
-    .attachment-link a { color: #64b5f6; word-break: break-all; font-size: 13px; }
     .vote-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .vote-btn {
       background: #0f0f0f; border: 1px solid #333; color: #ccc; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;
@@ -127,22 +126,6 @@
         '</div>';
       }
 
-      var attachmentsHtml = '';
-      if (post.attachments && post.attachments.length > 0) {
-        attachmentsHtml = '<div class="attachments">' +
-          '<div class="attachments-heading">📎 ' + t('attachmentsHeading') + '</div>' +
-          post.attachments.map(function (a) {
-            if (a.type === 'IMAGE') {
-              return '<div class="attachment-image"><img src="' + escapeHtml(a.url) + '" loading="lazy" alt=""></div>';
-            }
-            if (a.type === 'VIDEO') {
-              return '<div class="attachment-video"><video src="' + escapeHtml(a.url) + '" controls></video></div>';
-            }
-            return '<div class="attachment-link"><a href="' + escapeHtml(a.url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(a.url) + '</a></div>';
-          }).join('') +
-        '</div>';
-      }
-
       document.getElementById('post-box').innerHTML =
         '<div class="post-title" id="post-title">' + escapeHtml(post.title) + '</div>' +
         '<div class="post-meta">' +
@@ -152,8 +135,7 @@
           '<span>' + escapeHtml(formatLocalTime(post.createAt)) + '</span>' +
         '</div>' +
         recordHtml +
-        attachmentsHtml +
-        '<div class="post-content" id="post-content">' + escapeHtml(post.content) + '</div>' +
+        '<div class="post-content" id="post-content">' + post.content + '</div>' +
         '<div class="vote-row">' +
           '<button class="vote-btn' + upClass + '" id="post-up">' + t('voteUp') + '</button>' +
           '<span class="score-text" id="post-score">' + post.score + '</span>' +
@@ -182,7 +164,7 @@
 
       if (showingPostTranslation) {
         document.getElementById('post-title').textContent = postOriginal.title;
-        document.getElementById('post-content').textContent = postOriginal.content;
+        document.getElementById('post-content').innerHTML = postOriginal.content;
         showingPostTranslation = false;
         btn.textContent = t('translateShow');
         return;

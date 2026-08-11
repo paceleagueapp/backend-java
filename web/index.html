@@ -73,10 +73,9 @@
     .pager button:disabled { opacity: 0.3; cursor: default; }
 
     dialog#write-dialog { background: #1a1a1a; color: #fff; border: none; border-radius: 12px; padding: 20px; width: 90%; max-width: 480px; }
-    dialog#write-dialog input, dialog#write-dialog textarea {
+    dialog#write-dialog input {
       width: 100%; background: #0f0f0f; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 14px;
     }
-    dialog#write-dialog textarea { min-height: 120px; resize: vertical; }
     dialog#write-dialog label { display: block; font-size: 12px; color: #888; margin-bottom: 6px; }
     dialog#write-dialog select { width: 100%; background: #0f0f0f; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; }
     dialog#write-dialog .actions { display: flex; justify-content: flex-end; gap: 8px; }
@@ -84,20 +83,22 @@
     dialog#write-dialog button.cancel { background: #333; color: #ccc; border: none; }
     dialog#write-dialog button { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; }
 
-    .media-link-row { display: flex; gap: 6px; margin-bottom: 10px; }
-    .media-link-row input { flex: 1; margin-bottom: 0; }
-    .media-link-row button { background: #333; color: #ccc; border: none; padding: 0 14px; border-radius: 8px; cursor: pointer; font-size: 13px; flex-shrink: 0; }
-    .media-chip-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-    .media-chip {
-      display: flex; align-items: center; gap: 5px; background: #0f0f0f; border: 1px solid #333;
-      border-radius: 14px; padding: 4px 10px; font-size: 12px; color: #ccc; max-width: 100%;
+    .editor-toolbar { display: flex; gap: 6px; margin-bottom: 6px; }
+    .editor-toolbar button {
+      background: #0f0f0f; border: 1px solid #333; color: #ccc; width: 32px; height: 32px;
+      border-radius: 6px; cursor: pointer; font-size: 14px; padding: 0;
     }
-    .media-chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
-    .media-chip-remove { cursor: pointer; color: #888; flex-shrink: 0; }
-    .media-chip-remove:hover { color: #fff; }
-    .media-chip-uploading, .media-chip-moderating { border-color: #3949ab; color: #9aa5e8; }
-    .media-chip-rejected { border-color: #e53935; color: #ff8a80; }
-    .media-chip-approved { border-color: #2e7d32; color: #a5d6a7; }
+    .editor-toolbar button:hover { background: #262626; }
+    .editor-content {
+      width: 100%; min-height: 120px; max-height: 320px; overflow-y: auto;
+      background: #0f0f0f; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px;
+      margin-bottom: 10px; font-size: 14px; line-height: 1.5;
+    }
+    .editor-content.is-empty:before { content: attr(data-placeholder); color: #666; }
+    .editor-content img, .editor-content video { max-width: 100%; border-radius: 6px; display: block; margin: 6px 0; }
+    .editor-content a { color: #64b5f6; }
+    .media-placeholder { display: inline-block; background: #262626; color: #9aa5e8; border-radius: 10px; padding: 2px 8px; font-size: 12px; }
+    .media-placeholder.rejected { color: #ff8a80; }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18338881972"></script>
@@ -129,16 +130,17 @@
 
   <dialog id="write-dialog">
     <input type="text" id="write-title" maxlength="200">
-    <textarea id="write-content"></textarea>
+    <div class="editor-toolbar" id="editor-toolbar">
+      <button type="button" id="fmt-bold"><b>B</b></button>
+      <button type="button" id="fmt-italic"><i>I</i></button>
+      <button type="button" id="fmt-link">🔗</button>
+      <button type="button" id="fmt-image">🖼️</button>
+      <button type="button" id="fmt-video">🎬</button>
+    </div>
+    <div id="write-content" class="editor-content is-empty" contenteditable="true"></div>
+    <input type="file" id="write-media-file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime" style="display:none">
     <label id="write-record-label" for="write-record"></label>
     <select id="write-record"></select>
-    <label id="write-media-label" for="write-media-file"></label>
-    <input type="file" id="write-media-file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime">
-    <div class="media-link-row">
-      <input type="text" id="write-media-link-input">
-      <button type="button" id="write-media-link-add"></button>
-    </div>
-    <div class="media-chip-list" id="media-chip-list"></div>
     <div class="error" id="write-error" style="color:#ff6b6b;font-size:13px;margin-bottom:8px;"></div>
     <div class="actions">
       <button class="cancel" id="write-cancel"></button>
@@ -149,88 +151,112 @@
   <script src="/js/app.js"></script>
   <script src="/js/i18n.js"></script>
   <script>
-    var mediaAttachments = [];
-    var mediaLocalIdSeq = 0;
-    var mediaPollTimers = {};
+    var mediaPlaceholderSeq = 0;
+    var mediaPlaceholderPollTimers = {};
 
     renderHeader();
     renderFeed();
     renderTop10();
 
-    function resetMediaAttachments() {
-      Object.keys(mediaPollTimers).forEach(function (id) { clearInterval(mediaPollTimers[id]); });
-      mediaPollTimers = {};
-      mediaAttachments = [];
-      renderMediaChips();
+    function clearMediaPollTimers() {
+      Object.keys(mediaPlaceholderPollTimers).forEach(function (id) { clearInterval(mediaPlaceholderPollTimers[id]); });
+      mediaPlaceholderPollTimers = {};
     }
 
-    function renderMediaChips() {
-      var listEl = document.getElementById('media-chip-list');
-      var iconByKind = { image: '🖼️', video: '🎬', link: '🔗' };
-
-      listEl.innerHTML = mediaAttachments.map(function (item) {
-        var statusLabel = item.status === 'uploading' ? t('attachMediaUploading')
-          : item.status === 'moderating' ? t('attachMediaModerating')
-          : item.status === 'rejected' ? t('attachMediaRejected')
-          : item.label;
-        return '<span class="media-chip media-chip-' + item.status + '" title="' + escapeHtml(item.label) + '">' +
-          '<span>' + iconByKind[item.kind] + '</span>' +
-          '<span class="media-chip-label">' + escapeHtml(statusLabel) + '</span>' +
-          '<span class="media-chip-remove" data-local-id="' + item.localId + '">✕</span>' +
-          '</span>';
-      }).join('');
-
-      listEl.querySelectorAll('.media-chip-remove').forEach(function (el) {
-        el.addEventListener('click', function () {
-          removeMediaAttachment(Number(el.getAttribute('data-local-id')));
-        });
-      });
+    function setEditorEmptyState() {
+      var el = document.getElementById('write-content');
+      el.classList.toggle('is-empty', el.textContent.trim() === '' && el.querySelectorAll('img, video').length === 0);
     }
 
-    function removeMediaAttachment(localId) {
-      if (mediaPollTimers[localId]) {
-        clearInterval(mediaPollTimers[localId]);
-        delete mediaPollTimers[localId];
+    function isEditorEffectivelyBlank() {
+      var el = document.getElementById('write-content');
+      return el.textContent.trim() === '' && el.querySelectorAll('img, video').length === 0;
+    }
+
+    function insertedMediaCount() {
+      return document.getElementById('write-content').querySelectorAll('img, video, .media-placeholder').length;
+    }
+
+    // 업로드/모더레이션이 비동기라 그 사이 사용자가 다른 곳(제목 등)을 클릭하면 Range가 무효해질 수 있어,
+    // 삽입 즉시 커서 위치에 placeholder를 만들고 이후 단계는 전부 이 id로 엘리먼트를 다시 찾아서 처리한다.
+    function insertMediaPlaceholder(label) {
+      var editor = document.getElementById('write-content');
+      editor.focus();
+      var sel = window.getSelection();
+      var range;
+      if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+        range = sel.getRangeAt(0);
+      } else {
+        range = document.createRange();
+        range.selectNodeContents(editor);
+        range.collapse(false);
       }
-      mediaAttachments = mediaAttachments.filter(function (item) { return item.localId !== localId; });
-      renderMediaChips();
+      var span = document.createElement('span');
+      var placeholderId = 'media-placeholder-' + (++mediaPlaceholderSeq);
+      span.id = placeholderId;
+      span.className = 'media-placeholder';
+      span.setAttribute('contenteditable', 'false');
+      span.setAttribute('data-media-pending', 'true');
+      span.textContent = label;
+      range.deleteContents();
+      range.insertNode(span);
+      range.setStartAfter(span);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      setEditorEmptyState();
+      return placeholderId;
     }
 
-    function hasPendingMediaAttachments() {
-      return mediaAttachments.some(function (item) { return item.status === 'uploading' || item.status === 'moderating'; });
+    function replacePlaceholderWithMedia(placeholderId, kind, url) {
+      var span = document.getElementById(placeholderId);
+      if (!span) return;
+      var el = document.createElement(kind === 'image' ? 'img' : 'video');
+      el.src = url;
+      if (kind === 'video') el.controls = true;
+      span.replaceWith(el);
+      setEditorEmptyState();
     }
 
-    function approvedMediaIds() {
-      return mediaAttachments
-        .filter(function (item) { return item.status === 'approved'; })
-        .map(function (item) { return item.mediaSno; });
+    function markPlaceholderRejected(placeholderId, message) {
+      var span = document.getElementById(placeholderId);
+      if (!span) return;
+      span.textContent = message;
+      span.classList.add('rejected');
+      span.removeAttribute('data-media-pending');
+      setTimeout(function () {
+        if (span.parentNode) span.remove();
+        setEditorEmptyState();
+      }, 2000);
+    }
+
+    function hasPendingMediaPlaceholders() {
+      return document.getElementById('write-content').querySelector('[data-media-pending="true"]') !== null;
     }
 
     // 이미지는 /complete가 동기 모더레이션 결과(APPROVED/REJECTED)를 바로 주지만, 동영상은 PENDING을 주고
     // 비동기 작업만 시작되므로 그 경우에만 /status를 주기적으로 폴링해서 최종 결과를 받는다.
-    function applyMediaStatus(item, statusData) {
+    function applyMediaStatus(placeholderId, kind, statusData) {
       if (statusData.status === 'APPROVED') {
-        item.status = 'approved';
-        renderMediaChips();
+        replacePlaceholderWithMedia(placeholderId, kind, statusData.url);
       } else if (statusData.status === 'REJECTED') {
-        item.status = 'rejected';
-        renderMediaChips();
+        markPlaceholderRejected(placeholderId, t('attachMediaRejected'));
       } else {
-        item.status = 'moderating';
-        renderMediaChips();
-        mediaPollTimers[item.localId] = setInterval(function () {
-          apiFetch('/api/media/' + item.mediaSno + '/status').then(function (json) {
+        var span = document.getElementById(placeholderId);
+        if (span) span.textContent = t('attachMediaModerating');
+        mediaPlaceholderPollTimers[placeholderId] = setInterval(function () {
+          apiFetch('/api/media/' + statusData.mediaSno + '/status').then(function (json) {
             if (!json.success || json.data.status === 'PENDING') return;
-            clearInterval(mediaPollTimers[item.localId]);
-            delete mediaPollTimers[item.localId];
-            applyMediaStatus(item, json.data);
+            clearInterval(mediaPlaceholderPollTimers[placeholderId]);
+            delete mediaPlaceholderPollTimers[placeholderId];
+            applyMediaStatus(placeholderId, kind, json.data);
           });
         }, 3000);
       }
     }
 
     function addFileAttachment(file) {
-      if (mediaAttachments.length >= 10) {
+      if (insertedMediaCount() >= 10) {
         alert(t('attachMediaMaxReached'));
         return;
       }
@@ -245,52 +271,27 @@
         return;
       }
 
-      var item = { localId: ++mediaLocalIdSeq, kind: kind, status: 'uploading', label: file.name, mediaSno: null };
-      mediaAttachments.push(item);
-      renderMediaChips();
+      var placeholderId = insertMediaPlaceholder(t('attachMediaUploading'));
+      var mediaSno = null;
 
       apiFetch('/api/media/uploads', {
         method: 'POST',
         body: { type: kind.toUpperCase(), mimeType: file.type, fileSizeBytes: file.size }
       }).then(function (json) {
         if (!json.success) { throw new Error(json.message || 'upload init failed'); }
-        item.mediaSno = json.data.mediaSno;
+        mediaSno = json.data.mediaSno;
         // S3가 대상이라 apiFetch(API_BASE로 감)가 아닌 순수 fetch로 presigned URL에 직접 PUT.
         return fetch(json.data.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
       }).then(function (putRes) {
         if (!putRes.ok) { throw new Error('s3 put failed'); }
-        item.status = 'moderating';
-        renderMediaChips();
-        return apiFetch('/api/media/' + item.mediaSno + '/complete', { method: 'POST' });
+        var span = document.getElementById(placeholderId);
+        if (span) span.textContent = t('attachMediaModerating');
+        return apiFetch('/api/media/' + mediaSno + '/complete', { method: 'POST' });
       }).then(function (json) {
         if (!json.success) { throw new Error(json.message || 'complete failed'); }
-        applyMediaStatus(item, json.data);
+        applyMediaStatus(placeholderId, kind, json.data);
       }).catch(function () {
-        item.status = 'rejected';
-        item.label = t('attachMediaUploadFailed');
-        renderMediaChips();
-      });
-    }
-
-    function addLinkAttachment(url) {
-      if (mediaAttachments.length >= 10) {
-        alert(t('attachMediaMaxReached'));
-        return;
-      }
-
-      var item = { localId: ++mediaLocalIdSeq, kind: 'link', status: 'uploading', label: url, mediaSno: null };
-      mediaAttachments.push(item);
-      renderMediaChips();
-
-      apiFetch('/api/media/links', { method: 'POST', body: { url: url } }).then(function (json) {
-        if (!json.success) { throw new Error(json.message || 'link failed'); }
-        item.mediaSno = json.data;
-        item.status = 'approved';
-        renderMediaChips();
-      }).catch(function () {
-        item.status = 'rejected';
-        item.label = t('attachMediaUploadFailed');
-        renderMediaChips();
+        markPlaceholderRejected(placeholderId, t('attachMediaUploadFailed'));
       });
     }
 
@@ -343,35 +344,57 @@
       renderLangSelect(document.getElementById('lang-select'));
 
       document.getElementById('write-title').placeholder = t('titlePlaceholder');
-      document.getElementById('write-content').placeholder = t('contentPlaceholder');
+      document.getElementById('write-content').setAttribute('data-placeholder', t('contentPlaceholder'));
       document.getElementById('write-record-label').textContent = t('attachRecordLabel');
-      document.getElementById('write-media-label').textContent = t('attachMediaLabel');
-      document.getElementById('write-media-link-input').placeholder = t('attachMediaLinkPlaceholder');
-      document.getElementById('write-media-link-add').textContent = t('attachMediaAddLink');
       document.getElementById('write-cancel').textContent = t('cancel');
       document.getElementById('write-submit').textContent = t('submit');
 
+      document.getElementById('fmt-bold').title = t('editorBoldTitle');
+      document.getElementById('fmt-italic').title = t('editorItalicTitle');
+      document.getElementById('fmt-link').title = t('editorLinkTitle');
+      document.getElementById('fmt-image').title = t('editorImageTitle');
+      document.getElementById('fmt-video').title = t('editorVideoTitle');
+
+      // 툴바 버튼은 에디터 밖에 있어 클릭하면 선택 영역이 풀릴 수 있으므로, mousedown에서
+      // preventDefault로 포커스 이동 자체를 막아 클릭 시점에도 커서 위치가 그대로 유지되게 한다.
+      document.querySelectorAll('#editor-toolbar button').forEach(function (btn) {
+        btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      });
+      document.getElementById('fmt-bold').addEventListener('click', function () { document.execCommand('bold'); });
+      document.getElementById('fmt-italic').addEventListener('click', function () { document.execCommand('italic'); });
+      document.getElementById('fmt-link').addEventListener('click', function () {
+        var url = prompt(t('editorLinkPrompt'));
+        if (!url) return;
+        if (!/^https?:\/\//i.test(url)) { alert(t('editorLinkInvalid')); return; }
+        document.execCommand('createLink', false, url);
+      });
+      document.getElementById('fmt-image').addEventListener('click', function () {
+        var input = document.getElementById('write-media-file');
+        input.accept = 'image/jpeg,image/png,image/webp,image/gif';
+        input.click();
+      });
+      document.getElementById('fmt-video').addEventListener('click', function () {
+        var input = document.getElementById('write-media-file');
+        input.accept = 'video/mp4,video/quicktime';
+        input.click();
+      });
       document.getElementById('write-media-file').addEventListener('change', function (e) {
         var file = e.target.files[0];
         if (file) addFileAttachment(file);
         e.target.value = '';
       });
-      document.getElementById('write-media-link-add').addEventListener('click', function () {
-        var input = document.getElementById('write-media-link-input');
-        var url = input.value.trim();
-        if (!url) return;
-        addLinkAttachment(url);
-        input.value = '';
-      });
+      document.getElementById('write-content').addEventListener('input', setEditorEmptyState);
 
       // 비로그인 상태에서 글쓰기를 누르면 로그인 페이지로 보낸다(작성/댓글/추천만 로그인 필요).
       document.getElementById('write-btn').addEventListener('click', function () {
         if (redirectToLoginIfNeeded()) return;
         document.getElementById('write-title').value = '';
-        document.getElementById('write-content').value = '';
+        var editor = document.getElementById('write-content');
+        editor.innerHTML = '';
+        editor.classList.add('is-empty');
         document.getElementById('write-error').textContent = '';
         loadRecordOptions();
-        resetMediaAttachments();
+        clearMediaPollTimers();
         document.getElementById('write-dialog').showModal();
       });
     }
@@ -532,14 +555,14 @@
 
       document.getElementById('write-submit').addEventListener('click', function () {
         var title = document.getElementById('write-title').value.trim();
-        var content = document.getElementById('write-content').value.trim();
+        var content = document.getElementById('write-content').innerHTML.trim();
         var errorEl = document.getElementById('write-error');
 
-        if (!title || !content) {
+        if (!title || isEditorEffectivelyBlank()) {
           errorEl.textContent = t('writeErrorEmpty');
           return;
         }
-        if (hasPendingMediaAttachments()) {
+        if (hasPendingMediaPlaceholders()) {
           errorEl.textContent = t('attachMediaPendingBlockSubmit');
           return;
         }
@@ -550,14 +573,14 @@
           method: 'POST',
           body: {
             title: title, content: content,
-            recordSno: recordSnoValue ? Number(recordSnoValue) : null,
-            attachmentMediaIds: approvedMediaIds()
+            recordSno: recordSnoValue ? Number(recordSnoValue) : null
           }
         }).then(function (json) {
           if (!json.success) {
             errorEl.textContent = json.message || t('writeFailed');
             return;
           }
+          clearMediaPollTimers();
           window.location.href = '/post.html?post=' + json.data.sno;
         });
       });

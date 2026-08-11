@@ -7,6 +7,7 @@ import com.example.paceleague.board.application.port.out.CommentRepositoryPort;
 import com.example.paceleague.board.application.port.out.PostRepositoryPort;
 import com.example.paceleague.board.domain.entity.Comment;
 import com.example.paceleague.board.domain.entity.Post;
+import com.example.paceleague.board.domain.policy.PostContentSanitizer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -50,9 +51,14 @@ public class TranslationServiceImpl implements TranslationService {
         Post post = postRepositoryPort.findById(postSno)
                 .orElseThrow(() -> new IllegalArgumentException("post not found"));
 
+        // AWS Translate는 HTML을 이해하지 못해 태그가 섞인 채로 넘기면 그대로 깨져서 번역되므로,
+        // 평문만 추출해 번역한다(이미지/동영상 전용 글처럼 평문이 없으면 호출 자체를 생략).
+        String contentPlainText = PostContentSanitizer.toPlainText(post.getContent());
+        String translatedContent = contentPlainText.isBlank() ? "" : translateText(contentPlainText, lang);
+
         PostTranslationResponse response = new PostTranslationResponse(
                 translateText(post.getTitle(), lang),
-                translateText(post.getContent(), lang)
+                translatedContent
         );
 
         redis.opsForValue().set(cacheKey, writeJson(response), CACHE_TTL);

@@ -113,17 +113,15 @@ add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" alway
 
 `iam:*`/`s3:CreateBucket`/`s3:PutBucketPolicy`/`s3:PutBucketCORS`도 원래 스코프 밖이었지만, 2026-08-11 실제로 시도해보니 `s3:*`(버킷 생성/정책/CORS 설정까지)는 되고 `iam:PutRolePolicy`만 막혀 있는 것으로 확인됐습니다(아래 섹션 참고) — 이 사용자의 실제 권한 경계가 문서화된 것보다 넓다는 뜻이므로, 향후 세션에서도 "문서에 없는 권한 = 무조건 안 됨"으로 단정하지 말고 읽기 전용 명령으로 먼저 확인할 것.
 
-## 미디어(S3 + Rekognition) 인프라 — 2026-08-11 추가, IAM 권한 부여 미완료
+## 미디어(S3 + Rekognition) 인프라 — 2026-08-11 추가, 프로비저닝 완료
 
 게시글 이미지/동영상/링크 첨부 기능(`api/.../media` 도메인, [architecture.md](./architecture.md#게시글-미디어-첨부이미지동영상링크--2026-08-11-추가))을 위해 아래를 프로비저닝했습니다.
 
-**완료**:
 - S3 버킷 `paceleague-media` 생성 (리전 `ap-northeast-2`)
 - 퍼블릭 액세스 블록: ACL은 차단, 버킷 정책(`BlockPublicPolicy`)은 허용 — 아래 버킷 정책으로만 공개 범위를 좁게 열기 위함
-- 버킷 정책: `media/*` prefix만 `s3:GetObject` 공개 허용(그 외 경로/버킷 전체는 비공개)
+- 버킷 정책: `media/*` prefix만 `s3:GetObject` 공개 허용(그 외 경로/버킷 전체는 비공개) — 실제로 `media/` 밖 경로는 403, 안쪽은 200으로 재현 확인함
 - 버킷 CORS: `https://paceleague.co.kr`, `https://www.paceleague.co.kr`, `http://localhost:*` 오리진에서 `PUT`/`GET` 허용(브라우저가 presigned URL로 직접 업로드할 수 있도록) — 이건 Spring `CorsConfig`와 완전히 별개의, S3 버킷 자체의 CORS 설정입니다.
-
-**미완료 — 별도 조치 필요**: EC2 인스턴스 프로필 역할 `paceleague-s3-read`(원래 `AwsTranslateConfig`가 Translate 호출용으로 쓰던 역할)에 아래 인라인 정책을 추가하려 했으나 `github-actions-deploy`에 `iam:PutRolePolicy` 권한이 없어 실패했습니다. **콘솔에서 관리자가 직접 추가하거나, 이 IAM 사용자에게 `iam:PutRolePolicy`(리소스를 `role/paceleague-s3-read`로 제한 가능)를 임시로 부여해야** 실제 업로드/모더레이션이 동작합니다(2026-08-10 보안조치 때 EC2 보안그룹 권한을 임시로 받았던 것과 동일한 패턴).
+- EC2 인스턴스 프로필 역할 `paceleague-s3-read`(원래 `AwsTranslateConfig`가 Translate 호출용으로 쓰던 역할)에 아래 인라인 정책 추가 — `github-actions-deploy`에는 `iam:PutRolePolicy` 권한이 없어 처음엔 실패했고(2026-08-10 보안조치 때처럼 이 IAM 사용자의 권한 밖 작업), 사용자가 AWS 콘솔에서 직접 역할에 인라인 정책을 추가한 뒤 **EC2 인스턴스 자체 자격증명으로 `s3:PutObject`/`HeadObject`/`DeleteObject`와 `rekognition:DetectModerationLabels` 호출을 실제로 성공시켜 반영을 확인**했습니다(SSM으로 EC2에서 직접 `aws s3api put-object`/`aws rekognition detect-moderation-labels` 실행, Rekognition은 진짜 이미지가 아니라 `InvalidImageFormatException`이 났는데 이건 권한이 있다는 뜻 — `AccessDenied`가 아니므로).
 
 ```json
 {

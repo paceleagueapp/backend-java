@@ -96,7 +96,19 @@ com.example.paceleague
 
 **모더레이션 흐름**: `Media.status`는 `PENDING`(업로드 직후) → `APPROVED`/`REJECTED`로 전이합니다. `IMAGE`는 Rekognition `DetectModerationLabels`(동기 API)로 `/complete` 호출 안에서 바로 결과가 나오지만, `VIDEO`는 `StartContentModeration`(비동기 작업)만 시작하고 `PENDING`을 유지하다가, 클라이언트가 `GET /status`를 폴링할 때마다 `GetContentModeration`으로 작업 상태를 재조회해 갱신합니다(SNS/웹훅 없이 순수 폴링 — 인프라를 늘리지 않기 위한 선택). `REJECTED`가 확정되면(모더레이션 거부든 용량 초과든) S3 객체를 즉시 `DeleteObject`로 삭제합니다 — 버킷의 `media/` prefix가 전체 공개 읽기라, API가 URL을 응답에 노출하지 않아도 객체가 남아있으면 키를 아는 사람이 직접 접근할 수 있기 때문입니다(`docs/database.md#media` 참고). `LINK` 타입은 업로드/모더레이션 대상이 아니라 생성 즉시 `APPROVED`입니다.
 
-**S3/Rekognition 인프라**: 버킷 `paceleague-media`(리전 `ap-northeast-2`, `media/` prefix만 공개 읽기, presigned `PUT`을 위한 버킷 CORS 별도 설정 — Spring `CorsConfig`와는 무관한 설정입니다). EC2 인스턴스 프로필 역할 `paceleague-s3-read`(`AwsTranslateConfig`가 이미 쓰던 역할)에 `s3:PutObject`/`GetObject`/`DeleteObject`(해당 prefix 한정)와 `rekognition:DetectModerationLabels`/`StartContentModeration`/`GetContentModeration`(Rekognition 모더레이션 액션은 리소스 레벨 ARN을 지원하지 않아 `"*"`) 권한이 필요합니다. 자세한 프로비저닝 기록과 현재 상태(IAM 정책 부여分 완료/미완료 여부)는 [infra.md](./infra.md) 참고.
+**S3/Rekognition 인프라**: 버킷 `paceleague-media`(리전 `ap-northeast-2`, `media/` prefix만 공개 읽기, presigned `PUT`을 위한 버킷 CORS 별도 설정 — Spring `CorsConfig`와는 무관한 설정입니다). EC2 인스턴스 프로필 역할 `paceleague-s3-read`(`AwsTranslateConfig`가 이미 쓰던 역할)에 `s3:PutObject`/`GetObject`/`DeleteObject`(해당 prefix 한정)와 `rekognition:DetectModerationLabels`/`StartContentModeration`/`GetContentModeration`(Rekognition 모더레이션 액션은 리소스 레벨 ARN을 지원하지 않아 `"*"`) 권한이 필요합니다 — 2026-08-11 EC2 인스턴스 자체 권한으로 S3 PutObject/HeadObject/DeleteObject + Rekognition 호출을 직접 검증 완료(자세한 내용은 [infra.md](./infra.md) 참고).
+
+### 게시글 본문 인라인 에디터 + 서버측 HTML sanitize — 2026-08-11 추가
+
+위 미디어 첨부 기능이 나온 직후, 게시글 작성 UI 자체가 일반 `<textarea>`+분리된 업로드/링크 입력에서 **인라인 리치 에디터**(`contenteditable`, 굵게/기울임/링크/이미지/동영상만 지원)로 바뀌면서, `Post.content`가 평문에서 **공격자가 영향을 줄 수 있는 HTML**로 바뀌었습니다. 게시판은 비로그인도 읽을 수 있는 공개 콘텐츠이고 `web/js/app.js`가 JWT를 localStorage에 저장하므로, 저장형 XSS는 곧 토큰 탈취로 직결됩니다 — 그래서 **서버측 화이트리스트 sanitize가 필수**입니다(클라이언트 sanitize만으로는 절대 충분하지 않음).
+
+`board.domain.policy.PostContentSanitizer`가 이 sanitize를 전담합니다. OWASP Java HTML Sanitizer(`com.googlecode.owasp-java-html-sanitizer`)를 쓰되, 번들 `Sanitizers.FORMATTING`/`Sanitizers.LINKS`/`Sanitizers.IMAGES`는 쓰지 않고 **커스텀 `HtmlPolicyBuilder`로 전체 화이트리스트를 직접 구성**합니다 — `Sanitizers.FORMATTING`은 `font,s,u,o,sup,sub,ins,del,strike,tt,code,big,small,span` 등 "굵게/기울임/링크만"보다 훨씬 넓은 태그를 허용해버리고, `video` 태그는 애초에 어떤 번들에도 없기 때문입니다. 최종 화이트리스트: `p, br, div, b, strong, i, em, a[href], img[src,alt], video[src,controls]` — 그 외(`script`, `style`, `on*` 속성, `class`, `javascript:` URL 등)는 라이브러리 기본 동작("명시 허용 외 전부 차단")으로 제거됩니다.
+
+`BoardServiceImpl.createPost`가 클라이언트 입력을 받아 `Post.content`를 쓰는 유일한 경로이므로, 이 한 지점에서만 sanitize하면 됩니다(읽을 때마다 다시 sanitize하지 않음 — `web/post.html`이 `post.content`를 그대로 `innerHTML`에 꽂는 게 안전한 이유). "본문이 비어있는지" 판정도 여기서 재정의됩니다: sanitize 후 태그를 뺀 순수 텍스트가 비어 있어도 `<img>`/`<video>`가 하나라도 있으면 유효한 게시글로 인정합니다(이미지/동영상만 있는 글 허용) — `PostContentSanitizer.toPlainText`(정규식 기반 태그 제거, sanitize를 이미 거친 안전한 HTML에만 쓰므로 이 정도 수준으로 충분)와 `containsMedia`로 판정합니다.
+
+`TranslationServiceImpl.translatePost`도 영향을 받습니다: AWS Translate는 HTML을 이해하지 못해 태그가 섞인 채로 넘기면 그대로 깨져서 번역되므로, `PostContentSanitizer.toPlainText(post.getContent())`로 평문만 추출해 번역합니다. 평문이 비어있으면(이미지 전용 글) Translate 호출 자체를 생략하고 빈 문자열을 반환합니다.
+
+이미 구축된 `media` 도메인의 presign→PUT→complete→poll 파이프라인은 **전혀 변경되지 않았습니다** — 에디터는 그 결과(승인된 `url`)를 커서 위치의 placeholder에 삽입하는 방식으로만 바뀌었을 뿐입니다. `POST /api/media/links`도 API에는 남아 있지만, 웹 에디터는 더 이상 호출하지 않습니다(링크는 업로드/모더레이션이 필요 없어 `document.execCommand('createLink', ...)`로 즉시 삽입하고, sanitizer의 URL 프로토콜 화이트리스트가 유일한 검증). `PostSummaryResponse.attachmentCount`/`PostDetailResponse.attachments`(`GetPostAttachmentsPort` 기반)도 API에는 그대로 남아 있으나, 웹 클라이언트는 이미지/동영상이 `content` 안에 인라인으로 있으므로 더 이상 별도 갤러리를 그리지 않습니다(중복 표시 방지).
 
 ### 정적 UI 라벨 다국어(i18n) — 2026-08-11 추가
 

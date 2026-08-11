@@ -14,6 +14,7 @@ import com.example.paceleague.board.domain.entity.CommentVote;
 import com.example.paceleague.board.domain.entity.Post;
 import com.example.paceleague.board.domain.entity.PostVote;
 import com.example.paceleague.board.domain.enums.VoteType;
+import com.example.paceleague.board.domain.policy.PostContentSanitizer;
 import com.example.paceleague.media.application.port.in.MediaService;
 import com.example.paceleague.record.application.port.in.RecordQueryService;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,12 @@ public class BoardServiceImpl implements BoardService {
     @Transactional
     public Long createPost(Long memberSno, Long boardSno, PostCreateRequest req) {
         requireNonBlank(req.title(), "title", TITLE_MAX_LENGTH);
-        requireNonBlank(req.content(), "content", CONTENT_MAX_LENGTH);
+        // sanitize 전에 원본 길이부터 제한 — 무제한 문자열을 HTML 파서에 그대로 넘기지 않기 위한 방어.
+        if (req.content() == null || req.content().length() > CONTENT_MAX_LENGTH) {
+            throw new IllegalArgumentException("content is too long (max " + CONTENT_MAX_LENGTH + ")");
+        }
+        String sanitizedContent = PostContentSanitizer.sanitize(req.content());
+        requireContentHasSubstance(sanitizedContent);
         if (req.attachmentMediaIds() != null && req.attachmentMediaIds().size() > MEDIA_MAX_ATTACHMENTS_PER_POST) {
             throw new IllegalArgumentException("too many attachments (max " + MEDIA_MAX_ATTACHMENTS_PER_POST + ")");
         }
@@ -59,7 +65,7 @@ public class BoardServiceImpl implements BoardService {
             recordQueryService.getOne(memberSno, req.recordSno());
         }
 
-        Post post = Post.create(boardSno, memberSno, req.recordSno(), req.title(), req.content());
+        Post post = Post.create(boardSno, memberSno, req.recordSno(), req.title(), sanitizedContent);
         postRepositoryPort.save(post);
 
         // 미디어는 게시글이 저장되어 sno가 생긴 뒤에만 연결할 수 있다 — 소유권/APPROVED 상태/중복첨부 검증 실패 시
@@ -204,6 +210,16 @@ public class BoardServiceImpl implements BoardService {
         }
         if (value.length() > maxLength) {
             throw new IllegalArgumentException(fieldName + " is too long (max " + maxLength + ")");
+        }
+    }
+
+    // sanitize 후에는 순수 텍스트가 비어 있어도 이미지/동영상이 하나라도 있으면 유효한 게시글로 인정한다
+    // (이미지/동영상만 있는 글도 허용하기 위함).
+    private void requireContentHasSubstance(String sanitizedContent) {
+        boolean hasText = !PostContentSanitizer.toPlainText(sanitizedContent).isBlank();
+        boolean hasMedia = PostContentSanitizer.containsMedia(sanitizedContent);
+        if (!hasText && !hasMedia) {
+            throw new IllegalArgumentException("content is required");
         }
     }
 }

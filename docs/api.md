@@ -595,16 +595,20 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 ### POST `/api/board/{boardSno}/posts` — 게시글 작성 (인증 필요)
 
 ```json
-{ "title": "오늘 10km 완주!", "content": "날씨가 좋아서 기분 좋게 뛰었습니다.", "recordSno": 123, "attachmentMediaIds": [11, 12] }
+{ "title": "오늘 10km 완주!", "content": "<p>날씨가 좋아서 기분 좋게 뛰었습니다.</p><img src=\"https://paceleague-media.s3.ap-northeast-2.amazonaws.com/media/image/5/....jpg\">", "recordSno": 123, "attachmentMediaIds": null }
 ```
+
+`content`는 **서버에서 sanitize된 HTML**로 저장됩니다(2026-08-11부터 — 그 전에는 순수 텍스트였음). 웹 클라이언트(`web/index.html`)는 굵게/기울임/링크/이미지/동영상을 지원하는 인라인 에디터(`contenteditable`)로 작성하며, 제출 시 에디터의 `innerHTML`을 그대로 보냅니다. 서버(`board.domain.policy.PostContentSanitizer`, OWASP Java HTML Sanitizer 기반)는 `p, br, div, b, strong, i, em, a[href], img[src,alt], video[src,controls]`만 화이트리스트로 허용하고 그 외(`script`, `style`, `on*` 속성, `class`, `javascript:` URL 등)는 전부 제거합니다 — 저장형 XSS 방지가 목적이며, 이 서버측 sanitize가 유일한 신뢰 경계입니다.
+
+`content`가 "비어있는지" 판정은 sanitize 후 태그를 뺀 순수 텍스트 기준이며, 텍스트가 없어도 `<img>`/`<video>`가 하나라도 있으면 유효한 게시글로 인정합니다(이미지/동영상만 있는 글 허용).
 
 `recordSno`는 선택 항목입니다. 지정하면 본인 소유 기록인지 검증합니다(`GET /api/record/recent-30-days` 등으로 조회한 본인 기록의 `recordSno`만 사용 가능 — 기간 제한은 없고, 다른 회원 소유이거나 존재하지 않는 `recordSno`면 거부됩니다).
 
-`attachmentMediaIds`도 선택 항목입니다(최대 10개). [Media API](#media-api-apimedia--인증-필요)로 미리 업로드/모더레이션까지 끝낸(`APPROVED` 상태) 본인 소유 `mediaSno`만 나열할 수 있고, 아직 다른 게시글에 첨부되지 않은 것이어야 합니다.
+`attachmentMediaIds`도 선택 항목입니다(최대 10개). **웹 에디터는 더 이상 이 필드를 쓰지 않습니다** — 이미지/동영상을 에디터에 삽입하면 승인된 URL이 `content`의 `<img>`/`<video>` 태그 안에 바로 박히기 때문입니다. 이 필드는 [Media API](#media-api-apimedia--인증-필요)로 미리 업로드/모더레이션까지 끝낸(`APPROVED` 상태) 본인 소유 `mediaSno`를 게시글과 명시적으로 연결하고 싶은 다른 클라이언트(모바일 앱 등)를 위해 API에는 남아 있습니다 — 아직 다른 게시글에 첨부되지 않은 것이어야 합니다.
 
 **Response** `200 OK` — `data`: `{ "sno": 123 }`
 
-**실패**: `title`/`content` 공백 또는 `title` 200자 초과 → 400, 존재하지 않는 `boardSno` → 400, `recordSno`가 존재하지 않거나 본인 소유가 아님 → 400 `"record not found"`, `attachmentMediaIds`가 10개 초과 → 400, 존재하지 않거나/본인 소유가 아니거나/`APPROVED`가 아니거나/이미 다른 게시글에 첨부된 `mediaSno`가 섞여 있으면 → 400(이 경우 게시글 자체도 저장되지 않음 — 같은 트랜잭션에서 롤백)
+**실패**: `title` 공백 또는 200자 초과 → 400, `content`가 (원본 기준) 10,000자 초과 → 400, sanitize 후 텍스트도 이미지/동영상도 없음(실질적으로 빈 본문) → 400, 존재하지 않는 `boardSno` → 400, `recordSno`가 존재하지 않거나 본인 소유가 아님 → 400 `"record not found"`, `attachmentMediaIds`가 10개 초과 → 400, 존재하지 않거나/본인 소유가 아니거나/`APPROVED`가 아니거나/이미 다른 게시글에 첨부된 `mediaSno`가 섞여 있으면 → 400(이 경우 게시글 자체도 저장되지 않음 — 같은 트랜잭션에서 롤백)
 
 ### GET `/api/board/posts/{postSno}` — 게시글 상세 조회 (공개)
 
@@ -622,15 +626,15 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 ```json
 {
   "sno": 123, "boardSno": 1, "boardName": "자유게시판",
-  "title": "오늘 10km 완주!", "content": "...",
+  "title": "오늘 10km 완주!",
+  "content": "<p>날씨가 좋아서 기분 좋게 뛰었습니다.</p><img src=\"https://paceleague-media.s3.ap-northeast-2.amazonaws.com/media/image/5/....jpg\">",
   "memberSno": 5, "nickname": "러너1", "authorTier": "GOLD", "authorTierLabel": "Gold",
   "attachedRecord": {
     "recordSno": 456, "startTime": "2026-08-08T06:30:00", "endTime": "2026-08-08T07:05:00",
     "distance": 10230.5, "createAt": "2026-08-08T07:05:10"
   },
   "attachments": [
-    { "mediaSno": 11, "type": "IMAGE", "url": "https://paceleague-media.s3.ap-northeast-2.amazonaws.com/media/image/5/....jpg" },
-    { "mediaSno": 12, "type": "LINK", "url": "https://example.com" }
+    { "mediaSno": 11, "type": "IMAGE", "url": "https://paceleague-media.s3.ap-northeast-2.amazonaws.com/media/image/5/....jpg" }
   ],
   "viewCount": 12, "score": 3, "myVote": 1,
   "createAt": "2026-08-08T10:00:00", "updateAt": "2026-08-08T10:00:00"
@@ -639,8 +643,9 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 
 - `boardName`: 목록 조회(`GET /api/board`)와 동일한 번역 테이블로 `lang`에 맞게 번역됨
 - `authorTier`/`authorTierLabel`: 목록 조회와 동일 — `authorTier`는 원본 코드, `authorTierLabel`이 번역된 표시 문자열
+- `content`: 서버에서 sanitize된 HTML(위 작성 API 설명 참고). 클라이언트는 이 값을 `innerHTML`로 그대로 렌더링해도 되는 것을 서버가 보장함(sanitize가 쓰기 시점 1곳에서만 이뤄지는 게 이 API의 신뢰 경계).
 - `attachedRecord`: 첨부한 기록이 없으면 `null`. 첨부된 기록이 이후 삭제된 경우에도 `null`로 응답(참조 무결성을 강제하지 않음)
-- `attachments`: 첨부된 이미지/동영상/링크 목록(없으면 빈 배열). `type`은 `IMAGE`/`VIDEO`/`LINK`, `url`은 브라우저가 바로 불러올 수 있는 공개 URL — [Media API](#media-api-apimedia--인증-필요) 참고
+- `attachments`: `attachmentMediaIds`로 명시적으로 연결된 첨부 목록(없으면 빈 배열) — **웹 클라이언트는 더 이상 이 필드를 화면에 쓰지 않습니다**(이미지/동영상이 이미 `content` 안에 인라인으로 포함돼 있어서 별도로 그리면 중복 표시됨). 다른 클라이언트를 위해 API에는 계속 남아 있음 — [Media API](#media-api-apimedia--인증-필요) 참고
 
 **실패**: 존재하지 않는 `postSno` → 400
 
@@ -707,6 +712,8 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 ```
 
 지원 언어: `ko`, `en`, `ja`, `zh`, `es`, `fr`, `de`, `pt`, `vi`, `th`. **Response** `200 OK` — `data`: `{ "title": "...", "content": "..." }`
+
+`content`는 항상 **평문**입니다(원본이 HTML이어도 태그를 전부 제거한 뒤 번역하고, 번역 결과도 평문 그대로 반환 — AWS Translate가 HTML을 이해하지 못해 태그가 섞이면 번역이 깨지기 때문). 이미지/동영상만 있고 텍스트가 없는 게시글은 `content`가 빈 문자열(`""`)로 반환되며, 이 경우 AWS Translate 자체를 호출하지 않습니다(빈 입력을 굳이 번역 API로 보내지 않아 비용도 아낌).
 
 **실패**: `targetLanguage`가 지원 목록 밖 → 400, 존재하지 않는 `postSno` → 400
 
