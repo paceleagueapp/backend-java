@@ -1,9 +1,11 @@
 package com.example.paceleague.board.application.dto;
 
+import com.example.paceleague.media.application.dto.MediaAttachmentResponse;
 import com.example.paceleague.rank.domain.enums.RankTier;
 import com.example.paceleague.record.application.dto.RunningRecordResponse;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record PostDetailResponse(
         Long sno,
@@ -16,6 +18,7 @@ public record PostDetailResponse(
         RankTier authorTier,
         String authorTierLabel,
         RunningRecordResponse attachedRecord,
+        List<MediaAttachmentResponse> attachments,
         int viewCount,
         int score,
         Integer myVote,

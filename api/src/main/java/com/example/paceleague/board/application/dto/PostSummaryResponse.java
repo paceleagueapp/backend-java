@@ -14,12 +14,15 @@ public record PostSummaryResponse(
         RankTier authorTier,
         String authorTierLabel,
         Long recordSno,
+        long attachmentCount,
         int viewCount,
         int score,
         long commentCount,
         LocalDateTime createAt
 ) {
-    public static PostSummaryResponse from(Post post, String nickname, RankTier authorTier, Language lang, long commentCount) {
+    public static PostSummaryResponse from(
+            Post post, String nickname, RankTier authorTier, Language lang, long attachmentCount, long commentCount
+    ) {
         return new PostSummaryResponse(
                 post.getSno(),
                 post.getTitle(),
@@ -27,6 +30,7 @@ public record PostSummaryResponse(
                 authorTier,
                 RankTierLabelPolicy.label(authorTier, lang),
                 post.getRecordSno(),
+                attachmentCount,
                 post.getViewCount(),
                 post.getScore(),
                 commentCount,

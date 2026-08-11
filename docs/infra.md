@@ -105,8 +105,38 @@ add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" alway
 2. GitHub Actions가 이 이미지를 ECR에 push합니다.
 3. `.github/ssm-commands.json`이 EC2에서 이미지를 pull한 뒤 **앱 컨테이너부터 먼저 재시작**하고(`api.paceleague.co.kr`가 오래 끊기지 않는 게 최우선), 그 다음 `/web-dist`를 꺼내 `/var/www/paceleague`로 교체합니다. 정적 파일 추출이 실패해도 기존 `/var/www/paceleague`는 그대로 남도록 가드되어 있습니다.
 
-즉 **`main`에 push 한 번으로 `api.paceleague.co.kr`(Java 앱)과 `paceleague.co.kr`(정적 사이트)이 동시에 갱신**됩니다. 새 AWS 리소스(S3 등)는 추가하지 않고 기존 EC2/ECR 구조 그대로 사용합니다.
+즉 **`main`에 push 한 번으로 `api.paceleague.co.kr`(Java 앱)과 `paceleague.co.kr`(정적 사이트)이 동시에 갱신**됩니다. (2026-08-11 갱신: 아래 미디어 첨부 기능을 위해 S3 버킷 `paceleague-media`가 처음으로 추가됐습니다 — 그 전까지는 새 AWS 리소스 없이 기존 EC2/ECR 구조만 썼습니다.)
 
 ## AWS 자격증명 관련 참고
 
 배포용 IAM 사용자(`github-actions-deploy`)는 ECR push, SSM 명령 실행 등 **배포에 필요한 권한으로 좁게 스코프**되어 있습니다. `ec2:DescribeInstances`, `route53:ListHostedZones` 등 조회 권한은 없어서, 이 문서의 인프라 정보는 SSM(`AWS-RunShellScript`)으로 EC2 내부에서 직접 조회해 확인한 것입니다. EC2 인스턴스 목록/Route53 레코드 등을 다시 확인하려면 별도의 조회 권한이 있는 IAM 사용자나 AWS 콘솔이 필요합니다.
+
+`iam:*`/`s3:CreateBucket`/`s3:PutBucketPolicy`/`s3:PutBucketCORS`도 원래 스코프 밖이었지만, 2026-08-11 실제로 시도해보니 `s3:*`(버킷 생성/정책/CORS 설정까지)는 되고 `iam:PutRolePolicy`만 막혀 있는 것으로 확인됐습니다(아래 섹션 참고) — 이 사용자의 실제 권한 경계가 문서화된 것보다 넓다는 뜻이므로, 향후 세션에서도 "문서에 없는 권한 = 무조건 안 됨"으로 단정하지 말고 읽기 전용 명령으로 먼저 확인할 것.
+
+## 미디어(S3 + Rekognition) 인프라 — 2026-08-11 추가, IAM 권한 부여 미완료
+
+게시글 이미지/동영상/링크 첨부 기능(`api/.../media` 도메인, [architecture.md](./architecture.md#게시글-미디어-첨부이미지동영상링크--2026-08-11-추가))을 위해 아래를 프로비저닝했습니다.
+
+**완료**:
+- S3 버킷 `paceleague-media` 생성 (리전 `ap-northeast-2`)
+- 퍼블릭 액세스 블록: ACL은 차단, 버킷 정책(`BlockPublicPolicy`)은 허용 — 아래 버킷 정책으로만 공개 범위를 좁게 열기 위함
+- 버킷 정책: `media/*` prefix만 `s3:GetObject` 공개 허용(그 외 경로/버킷 전체는 비공개)
+- 버킷 CORS: `https://paceleague.co.kr`, `https://www.paceleague.co.kr`, `http://localhost:*` 오리진에서 `PUT`/`GET` 허용(브라우저가 presigned URL로 직접 업로드할 수 있도록) — 이건 Spring `CorsConfig`와 완전히 별개의, S3 버킷 자체의 CORS 설정입니다.
+
+**미완료 — 별도 조치 필요**: EC2 인스턴스 프로필 역할 `paceleague-s3-read`(원래 `AwsTranslateConfig`가 Translate 호출용으로 쓰던 역할)에 아래 인라인 정책을 추가하려 했으나 `github-actions-deploy`에 `iam:PutRolePolicy` 권한이 없어 실패했습니다. **콘솔에서 관리자가 직접 추가하거나, 이 IAM 사용자에게 `iam:PutRolePolicy`(리소스를 `role/paceleague-s3-read`로 제한 가능)를 임시로 부여해야** 실제 업로드/모더레이션이 동작합니다(2026-08-10 보안조치 때 EC2 보안그룹 권한을 임시로 받았던 것과 동일한 패턴).
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {"Sid": "MediaS3", "Effect": "Allow",
+     "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
+     "Resource": "arn:aws:s3:::paceleague-media/media/*"},
+    {"Sid": "MediaRekognition", "Effect": "Allow",
+     "Action": ["rekognition:DetectModerationLabels", "rekognition:StartContentModeration", "rekognition:GetContentModeration"],
+     "Resource": "*"}
+  ]
+}
+```
+
+이 정책이 붙기 전까지는 EC2에서 실행 중인 앱이 S3 업로드 완료 처리(`/api/media/{id}/complete`)나 Rekognition 모더레이션 호출 시 `AccessDenied`로 실패합니다 — 코드 배포 자체는 문제없이 되지만 미디어 첨부 기능만 이 정책이 붙을 때까지 동작하지 않습니다. Rekognition 리전 지원 여부는 `ap-northeast-2`로 확인됨(읽기 전용 API 호출 시 `AccessDeniedException`이 떴을 뿐 엔드포인트 자체는 인식됨 — 리전 미지원이었다면 다른 종류의 에러가 났을 것).

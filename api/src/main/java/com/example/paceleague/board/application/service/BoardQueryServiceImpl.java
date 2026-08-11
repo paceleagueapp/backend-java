@@ -15,6 +15,8 @@ import com.example.paceleague.board.domain.entity.Comment;
 import com.example.paceleague.board.domain.entity.Post;
 import com.example.paceleague.board.domain.policy.BoardLabelPolicy;
 import com.example.paceleague.common.i18n.Language;
+import com.example.paceleague.media.application.dto.MediaAttachmentResponse;
+import com.example.paceleague.media.application.port.in.GetPostAttachmentsPort;
 import com.example.paceleague.member.application.port.in.GetMemberNicknamePort;
 import com.example.paceleague.rank.application.port.in.GetMemberTierPort;
 import com.example.paceleague.rank.domain.enums.RankTier;
@@ -45,6 +47,7 @@ public class BoardQueryServiceImpl implements BoardQueryService {
     private final GetMemberNicknamePort getMemberNicknamePort;
     private final GetMemberTierPort getMemberTierPort;
     private final GetRecordSummaryPort getRecordSummaryPort;
+    private final GetPostAttachmentsPort getPostAttachmentsPort;
 
     public List<BoardResponse> listBoards(String lang) {
         Language language = Language.fromCode(lang);
@@ -68,6 +71,7 @@ public class BoardQueryServiceImpl implements BoardQueryService {
         return postRepositoryPort.findByBoardSno(boardSno, pageable)
                 .map(post -> PostSummaryResponse.from(
                         post, nicknameOf(post.getMemberSno()), tierOf(post.getMemberSno()), language,
+                        getPostAttachmentsPort.countByPostSno(post.getSno()),
                         commentRepositoryPort.countByPostSno(post.getSno())
                 ));
     }
@@ -90,11 +94,13 @@ public class BoardQueryServiceImpl implements BoardQueryService {
                 : getRecordSummaryPort.getSummary(post.getRecordSno()).orElse(null);
         RankTier authorTier = tierOf(post.getMemberSno());
         String boardName = BoardLabelPolicy.name(board.getSlug(), language, board.getName());
+        List<MediaAttachmentResponse> attachments = getPostAttachmentsPort.getByPostSno(post.getSno());
 
         // post.getViewCount()는 위 incrementViewCount()가 반영되기 전 값이므로 +1 해서 응답한다.
         return new PostDetailResponse(
                 post.getSno(), post.getBoardSno(), boardName, post.getTitle(), post.getContent(),
                 post.getMemberSno(), nicknameOf(post.getMemberSno()), authorTier, RankTierLabelPolicy.label(authorTier, language), attachedRecord,
+                attachments,
                 post.getViewCount() + 1, post.getScore(), myVote,
                 post.getCreateAt(), post.getUpdateAt()
         );

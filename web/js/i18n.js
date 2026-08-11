@@ -30,7 +30,12 @@ var TRANSLATIONS = {
     translateShow: '번역 보기', translateHide: '원문 보기', translateFailed: '번역에 실패했습니다.',
     top10Heading: '이번 시즌 TOP 10', top10Empty: '아직 랭킹 데이터가 없습니다.', top10LoadFailed: '랭킹을 불러오지 못했습니다.',
     attachRecordLabel: '내 러닝기록 첨부 (선택)', attachRecordNone: '선택 안 함',
-    attachRecordEmpty: '최근 30일 내 기록이 없습니다', attachedRecordHeading: '첨부된 기록'
+    attachRecordEmpty: '최근 30일 내 기록이 없습니다', attachedRecordHeading: '첨부된 기록',
+    attachMediaLabel: '이미지/동영상 첨부', attachMediaAddLink: '링크 추가', attachMediaLinkPlaceholder: 'URL 입력',
+    attachMediaMaxReached: '최대 10개까지 첨부할 수 있습니다.', attachMediaUploading: '업로드 중...', attachMediaModerating: '검사 중...',
+    attachMediaRejected: '거부됨', attachMediaUploadFailed: '업로드 실패', attachMediaInvalidType: '지원하지 않는 파일 형식입니다.',
+    attachMediaTooLarge: '파일 용량이 너무 큽니다.', attachMediaPendingBlockSubmit: '첨부 파일 처리가 끝날 때까지 기다려주세요.',
+    attachmentsHeading: '첨부'
   },
   en: {
     login: 'Login', write: 'Write', logout: 'Logout', sortNew: 'New', sortTop: 'Top',
@@ -47,7 +52,12 @@ var TRANSLATIONS = {
     translateShow: 'Show translation', translateHide: 'Show original', translateFailed: 'Translation failed.',
     top10Heading: 'This Season TOP 10', top10Empty: 'No ranking data yet.', top10LoadFailed: 'Failed to load ranking.',
     attachRecordLabel: 'Attach a run (optional)', attachRecordNone: 'None',
-    attachRecordEmpty: 'No runs in the last 30 days', attachedRecordHeading: 'Attached run'
+    attachRecordEmpty: 'No runs in the last 30 days', attachedRecordHeading: 'Attached run',
+    attachMediaLabel: 'Attach image/video', attachMediaAddLink: 'Add link', attachMediaLinkPlaceholder: 'Enter URL',
+    attachMediaMaxReached: 'You can attach up to 10 items.', attachMediaUploading: 'Uploading...', attachMediaModerating: 'Checking...',
+    attachMediaRejected: 'Rejected', attachMediaUploadFailed: 'Upload failed', attachMediaInvalidType: 'Unsupported file type.',
+    attachMediaTooLarge: 'File is too large.', attachMediaPendingBlockSubmit: 'Please wait until attachments finish processing.',
+    attachmentsHeading: 'Attachments'
   },
   ja: {
     login: 'ログイン', write: '投稿する', logout: 'ログアウト', sortNew: '新着順', sortTop: '人気順',
@@ -64,7 +74,12 @@ var TRANSLATIONS = {
     translateShow: '翻訳を見る', translateHide: '原文を見る', translateFailed: '翻訳に失敗しました。',
     top10Heading: '今シーズン TOP 10', top10Empty: 'まだランキングデータがありません。', top10LoadFailed: 'ランキングを読み込めませんでした。',
     attachRecordLabel: 'ランニング記録を添付（任意）', attachRecordNone: '選択しない',
-    attachRecordEmpty: '過去30日間の記録がありません', attachedRecordHeading: '添付された記録'
+    attachRecordEmpty: '過去30日間の記録がありません', attachedRecordHeading: '添付された記録',
+    attachMediaLabel: '画像/動画を添付', attachMediaAddLink: 'リンクを追加', attachMediaLinkPlaceholder: 'URLを入力',
+    attachMediaMaxReached: '最大10個まで添付できます。', attachMediaUploading: 'アップロード中...', attachMediaModerating: '確認中...',
+    attachMediaRejected: '拒否されました', attachMediaUploadFailed: 'アップロードに失敗しました', attachMediaInvalidType: 'サポートされていないファイル形式です。',
+    attachMediaTooLarge: 'ファイルサイズが大きすぎます。', attachMediaPendingBlockSubmit: '添付ファイルの処理が終わるまでお待ちください。',
+    attachmentsHeading: '添付ファイル'
   },
   zh: {
     login: '登录', write: '写帖子', logout: '登出', sortNew: '最新', sortTop: '热门',
@@ -81,7 +96,12 @@ var TRANSLATIONS = {
     translateShow: '查看翻译', translateHide: '查看原文', translateFailed: '翻译失败。',
     top10Heading: '本赛季 TOP 10', top10Empty: '暂无排名数据。', top10LoadFailed: '排名加载失败。',
     attachRecordLabel: '附加跑步记录（可选）', attachRecordNone: '不选择',
-    attachRecordEmpty: '最近30天没有记录', attachedRecordHeading: '附加的记录'
+    attachRecordEmpty: '最近30天没有记录', attachedRecordHeading: '附加的记录',
+    attachMediaLabel: '添加图片/视频', attachMediaAddLink: '添加链接', attachMediaLinkPlaceholder: '输入网址',
+    attachMediaMaxReached: '最多可添加10个附件。', attachMediaUploading: '上传中...', attachMediaModerating: '审核中...',
+    attachMediaRejected: '已拒绝', attachMediaUploadFailed: '上传失败', attachMediaInvalidType: '不支持的文件类型。',
+    attachMediaTooLarge: '文件过大。', attachMediaPendingBlockSubmit: '请等待附件处理完成。',
+    attachmentsHeading: '附件'
   },
   es: {
     login: 'Iniciar sesión', write: 'Publicar', logout: 'Cerrar sesión', sortNew: 'Recientes', sortTop: 'Popular',
@@ -98,7 +118,12 @@ var TRANSLATIONS = {
     translateShow: 'Ver traducción', translateHide: 'Ver original', translateFailed: 'Error al traducir.',
     top10Heading: 'TOP 10 de la temporada', top10Empty: 'Aún no hay datos de clasificación.', top10LoadFailed: 'Error al cargar la clasificación.',
     attachRecordLabel: 'Adjuntar una carrera (opcional)', attachRecordNone: 'Ninguna',
-    attachRecordEmpty: 'No hay carreras en los últimos 30 días', attachedRecordHeading: 'Carrera adjunta'
+    attachRecordEmpty: 'No hay carreras en los últimos 30 días', attachedRecordHeading: 'Carrera adjunta',
+    attachMediaLabel: 'Adjuntar imagen/video', attachMediaAddLink: 'Añadir enlace', attachMediaLinkPlaceholder: 'Introduce la URL',
+    attachMediaMaxReached: 'Puedes adjuntar hasta 10 elementos.', attachMediaUploading: 'Subiendo...', attachMediaModerating: 'Verificando...',
+    attachMediaRejected: 'Rechazado', attachMediaUploadFailed: 'Error al subir', attachMediaInvalidType: 'Tipo de archivo no compatible.',
+    attachMediaTooLarge: 'El archivo es demasiado grande.', attachMediaPendingBlockSubmit: 'Espera a que termine el procesamiento de los adjuntos.',
+    attachmentsHeading: 'Adjuntos'
   },
   fr: {
     login: 'Connexion', write: 'Publier', logout: 'Déconnexion', sortNew: 'Récent', sortTop: 'Populaire',
@@ -115,7 +140,12 @@ var TRANSLATIONS = {
     translateShow: 'Voir la traduction', translateHide: "Voir l'original", translateFailed: 'Échec de la traduction.',
     top10Heading: 'TOP 10 de la saison', top10Empty: 'Aucune donnée de classement pour le moment.', top10LoadFailed: 'Échec du chargement du classement.',
     attachRecordLabel: 'Joindre une course (facultatif)', attachRecordNone: 'Aucune',
-    attachRecordEmpty: 'Aucune course au cours des 30 derniers jours', attachedRecordHeading: 'Course jointe'
+    attachRecordEmpty: 'Aucune course au cours des 30 derniers jours', attachedRecordHeading: 'Course jointe',
+    attachMediaLabel: 'Joindre une image/vidéo', attachMediaAddLink: 'Ajouter un lien', attachMediaLinkPlaceholder: 'Saisir une URL',
+    attachMediaMaxReached: "Vous pouvez joindre jusqu'à 10 éléments.", attachMediaUploading: 'Téléversement...', attachMediaModerating: 'Vérification...',
+    attachMediaRejected: 'Refusé', attachMediaUploadFailed: 'Échec du téléversement', attachMediaInvalidType: 'Type de fichier non pris en charge.',
+    attachMediaTooLarge: 'Le fichier est trop volumineux.', attachMediaPendingBlockSubmit: 'Veuillez attendre la fin du traitement des pièces jointes.',
+    attachmentsHeading: 'Pièces jointes'
   },
   de: {
     login: 'Anmelden', write: 'Beitrag erstellen', logout: 'Abmelden', sortNew: 'Neu', sortTop: 'Beliebt',
@@ -132,7 +162,12 @@ var TRANSLATIONS = {
     translateShow: 'Übersetzung anzeigen', translateHide: 'Original anzeigen', translateFailed: 'Übersetzung fehlgeschlagen.',
     top10Heading: 'TOP 10 der Saison', top10Empty: 'Noch keine Ranglistendaten.', top10LoadFailed: 'Rangliste konnte nicht geladen werden.',
     attachRecordLabel: 'Lauf anhängen (optional)', attachRecordNone: 'Keine',
-    attachRecordEmpty: 'Keine Läufe in den letzten 30 Tagen', attachedRecordHeading: 'Angehängter Lauf'
+    attachRecordEmpty: 'Keine Läufe in den letzten 30 Tagen', attachedRecordHeading: 'Angehängter Lauf',
+    attachMediaLabel: 'Bild/Video anhängen', attachMediaAddLink: 'Link hinzufügen', attachMediaLinkPlaceholder: 'URL eingeben',
+    attachMediaMaxReached: 'Du kannst bis zu 10 Anhänge hinzufügen.', attachMediaUploading: 'Wird hochgeladen...', attachMediaModerating: 'Wird geprüft...',
+    attachMediaRejected: 'Abgelehnt', attachMediaUploadFailed: 'Upload fehlgeschlagen', attachMediaInvalidType: 'Nicht unterstützter Dateityp.',
+    attachMediaTooLarge: 'Datei ist zu groß.', attachMediaPendingBlockSubmit: 'Bitte warte, bis die Anhänge fertig verarbeitet sind.',
+    attachmentsHeading: 'Anhänge'
   },
   pt: {
     login: 'Entrar', write: 'Publicar', logout: 'Sair', sortNew: 'Recentes', sortTop: 'Populares',
@@ -149,7 +184,12 @@ var TRANSLATIONS = {
     translateShow: 'Ver tradução', translateHide: 'Ver original', translateFailed: 'Falha na tradução.',
     top10Heading: 'TOP 10 da temporada', top10Empty: 'Ainda não há dados de classificação.', top10LoadFailed: 'Falha ao carregar a classificação.',
     attachRecordLabel: 'Anexar uma corrida (opcional)', attachRecordNone: 'Nenhuma',
-    attachRecordEmpty: 'Nenhuma corrida nos últimos 30 dias', attachedRecordHeading: 'Corrida anexada'
+    attachRecordEmpty: 'Nenhuma corrida nos últimos 30 dias', attachedRecordHeading: 'Corrida anexada',
+    attachMediaLabel: 'Anexar imagem/vídeo', attachMediaAddLink: 'Adicionar link', attachMediaLinkPlaceholder: 'Digite a URL',
+    attachMediaMaxReached: 'Você pode anexar até 10 itens.', attachMediaUploading: 'Enviando...', attachMediaModerating: 'Verificando...',
+    attachMediaRejected: 'Rejeitado', attachMediaUploadFailed: 'Falha no envio', attachMediaInvalidType: 'Tipo de arquivo não suportado.',
+    attachMediaTooLarge: 'O arquivo é muito grande.', attachMediaPendingBlockSubmit: 'Aguarde o processamento dos anexos terminar.',
+    attachmentsHeading: 'Anexos'
   },
   vi: {
     login: 'Đăng nhập', write: 'Viết bài', logout: 'Đăng xuất', sortNew: 'Mới nhất', sortTop: 'Nổi bật',
@@ -166,7 +206,12 @@ var TRANSLATIONS = {
     translateShow: 'Xem bản dịch', translateHide: 'Xem nguyên văn', translateFailed: 'Dịch thất bại.',
     top10Heading: 'TOP 10 mùa này', top10Empty: 'Chưa có dữ liệu xếp hạng.', top10LoadFailed: 'Tải xếp hạng thất bại.',
     attachRecordLabel: 'Đính kèm bài chạy (tùy chọn)', attachRecordNone: 'Không chọn',
-    attachRecordEmpty: 'Không có bài chạy nào trong 30 ngày qua', attachedRecordHeading: 'Bài chạy đính kèm'
+    attachRecordEmpty: 'Không có bài chạy nào trong 30 ngày qua', attachedRecordHeading: 'Bài chạy đính kèm',
+    attachMediaLabel: 'Đính kèm ảnh/video', attachMediaAddLink: 'Thêm liên kết', attachMediaLinkPlaceholder: 'Nhập URL',
+    attachMediaMaxReached: 'Bạn có thể đính kèm tối đa 10 mục.', attachMediaUploading: 'Đang tải lên...', attachMediaModerating: 'Đang kiểm tra...',
+    attachMediaRejected: 'Đã bị từ chối', attachMediaUploadFailed: 'Tải lên thất bại', attachMediaInvalidType: 'Định dạng tệp không được hỗ trợ.',
+    attachMediaTooLarge: 'Tệp quá lớn.', attachMediaPendingBlockSubmit: 'Vui lòng đợi xử lý tệp đính kèm xong.',
+    attachmentsHeading: 'Tệp đính kèm'
   },
   th: {
     login: 'เข้าสู่ระบบ', write: 'เขียนโพสต์', logout: 'ออกจากระบบ', sortNew: 'ใหม่ล่าสุด', sortTop: 'ยอดนิยม',
@@ -183,7 +228,12 @@ var TRANSLATIONS = {
     translateShow: 'ดูคำแปล', translateHide: 'ดูต้นฉบับ', translateFailed: 'แปลไม่สำเร็จ',
     top10Heading: 'TOP 10 ซีซั่นนี้', top10Empty: 'ยังไม่มีข้อมูลอันดับ', top10LoadFailed: 'โหลดอันดับไม่สำเร็จ',
     attachRecordLabel: 'แนบบันทึกการวิ่ง (ไม่บังคับ)', attachRecordNone: 'ไม่เลือก',
-    attachRecordEmpty: 'ไม่มีบันทึกการวิ่งใน 30 วันที่ผ่านมา', attachedRecordHeading: 'บันทึกการวิ่งที่แนบมา'
+    attachRecordEmpty: 'ไม่มีบันทึกการวิ่งใน 30 วันที่ผ่านมา', attachedRecordHeading: 'บันทึกการวิ่งที่แนบมา',
+    attachMediaLabel: 'แนบรูปภาพ/วิดีโอ', attachMediaAddLink: 'เพิ่มลิงก์', attachMediaLinkPlaceholder: 'ใส่ URL',
+    attachMediaMaxReached: 'แนบได้สูงสุด 10 รายการ', attachMediaUploading: 'กำลังอัปโหลด...', attachMediaModerating: 'กำลังตรวจสอบ...',
+    attachMediaRejected: 'ถูกปฏิเสธ', attachMediaUploadFailed: 'อัปโหลดไม่สำเร็จ', attachMediaInvalidType: 'ไม่รองรับประเภทไฟล์นี้',
+    attachMediaTooLarge: 'ไฟล์มีขนาดใหญ่เกินไป', attachMediaPendingBlockSubmit: 'โปรดรอจนกว่าการประมวลผลไฟล์แนบจะเสร็จสิ้น',
+    attachmentsHeading: 'ไฟล์แนบ'
   }
 };
 

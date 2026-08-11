@@ -327,6 +327,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 | 파라미터 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
 | lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | 티어 라벨(`currentTierLabel`/`nextTierLabel`) 표시 언어. 미지원 값은 `ko`로 처리(400 아님) |
+| country | string (ISO 3166-1 alpha-2, 예: `KR`) | - | 주어지면 `lang` 대신 이 국가에 맞는 언어로 응답(`common.i18n.CountryLanguageResolver`로 변환, 매핑에 없으면 `en`) |
 
 **Response** `200 OK` — `data`: `RankMeResponse`
 
@@ -360,6 +361,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 | 파라미터 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
 | lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | 각 항목의 `tierLabel` 표시 언어. 미지원 값은 `ko`로 처리 |
+| country | string (ISO 3166-1 alpha-2, 예: `KR`) | - | 주어지면 `lang` 대신 이 국가에 맞는 언어로 응답 |
 
 **Response** `200 OK` — `data`: `RankingPageResponse`
 
@@ -392,6 +394,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 | 파라미터 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
 | lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | 각 항목의 `tierLabel` 표시 언어. 미지원 값은 `ko`로 처리 |
+| country | string (ISO 3166-1 alpha-2, 예: `KR`) | - | 주어지면 `lang` 대신 이 국가에 맞는 언어로 응답 |
 
 **Response** `200 OK` — `data`: `RankingUserResponse[]`
 
@@ -410,6 +413,8 @@ join/login/reissue가 공통으로 반환하는 구조:
 ## Locale API (`/api/common`) — 공개
 
 국가 코드로 이 서비스가 지원하는 언어를 판별하는 유틸리티 API. 특정 도메인에 속하지 않는 순수 조회 기능이라 `common` 패키지에 있음 — 자세한 설계 배경은 [architecture.md](./architecture.md#정적-ui-라벨-다국어i18n--2026-08-11-추가) 참고.
+
+> **참고**: 아래 `GET /api/common/language`는 언어 코드만 반환하는 별도 조회용 엔드포인트다. 실제 카테고리명/티어 라벨 데이터를 국가 기준으로 바로 받고 싶다면 이 엔드포인트를 먼저 호출할 필요 없이, `lang`을 받는 각 엔드포인트(Board/Rank/Ranking API)에 `country`를 직접 넘기면 된다 — 두 파라미터를 모두 주면 `country`가 우선한다(`common.i18n.LocaleResolver`).
 
 ### GET `/api/common/language` — 국가 코드로 언어 조회 (공개, 인증 불필요)
 
@@ -468,6 +473,75 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 **실패**: 해당 `platform`에 대한 정책이 DB에 없음 → 400 `"앱 버전 정책이 존재하지 않습니다. platform=..."`
 
+## Media API (`/api/media`) — 인증 필요
+
+게시글에 첨부할 이미지/동영상/링크를 관리하는 API. S3 presigned URL로 브라우저가 파일을 직접 업로드하고(백엔드는 파일 바이트를 프록시하지 않음), AWS Rekognition으로 유해 콘텐츠 여부를 모더레이션합니다. 인프라(S3 버킷/IAM) 배경은 [infra.md](./infra.md), 스키마는 [database.md](./database.md#media) 참고.
+
+전체 흐름: `POST /uploads`로 presigned URL 발급 → 브라우저가 그 URL에 파일을 직접 `PUT` → `POST /{mediaSno}/complete`로 완료 통보(이미지는 즉시 결과, 동영상은 `PENDING`) → 동영상이면 `GET /{mediaSno}/status`를 폴링 → `APPROVED`된 `mediaSno`만 게시글 작성 시 `attachmentMediaIds`로 전달. 링크는 업로드 없이 `POST /links`로 바로 생성됩니다.
+
+### POST `/api/media/uploads` — 업로드 URL 발급 (인증 필요)
+
+```json
+{ "type": "IMAGE", "mimeType": "image/jpeg", "fileSizeBytes": 2048000 }
+```
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| type | `IMAGE`\|`VIDEO` | `LINK`는 이 엔드포인트를 쓰지 않음(아래 `/links` 참고) |
+| mimeType | string | 이미지: `image/jpeg`\|`image/png`\|`image/webp`\|`image/gif`, 동영상: `video/mp4`\|`video/quicktime`만 허용 |
+| fileSizeBytes | number | 클라이언트가 신고하는 파일 크기(신고값 기준 1차 검증 — 실제 크기는 `/complete`에서 S3 `HeadObject`로 재검증) |
+
+**Response** `200 OK` — `data`: `{ "mediaSno": 11, "uploadUrl": "https://paceleague-media.s3.ap-northeast-2.amazonaws.com/...", "expiresInSeconds": 300 }`
+
+`uploadUrl`은 5분간 유효한 presigned `PUT` URL입니다. 클라이언트는 이 URL에 `Content-Type` 헤더를 업로드 요청과 동일하게 맞춰서 파일 바이트를 그대로 `PUT`해야 합니다(서명에 포함된 값과 다르면 S3가 `SignatureDoesNotMatch`로 거부).
+
+**실패**: `type`이 `IMAGE`/`VIDEO`가 아님 → 400, `mimeType`이 허용 목록에 없음 → 400, `fileSizeBytes`가 이미지 10MB/동영상 200MB 초과 → 400
+
+### POST `/api/media/{mediaSno}/complete` — 업로드 완료 처리 (인증 필요)
+
+S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거나 존재하지 않는 `mediaSno` → 400. 이미 처리된(`APPROVED`/`REJECTED`) 미디어에 다시 호출하면 그 상태를 그대로 반환합니다(멱등).
+
+**Response** `200 OK` — `data`: `MediaStatusResponse`
+
+```json
+{ "mediaSno": 11, "status": "APPROVED", "url": "https://paceleague-media.s3.ap-northeast-2.amazonaws.com/media/image/5/....jpg", "moderationReason": null }
+```
+
+- 실제 업로드된 파일 크기가 제한(이미지 10MB/동영상 200MB)을 넘으면 S3 객체를 삭제하고 `REJECTED`
+- `IMAGE`는 Rekognition `DetectModerationLabels`를 동기 호출해 이 응답에서 바로 `APPROVED`/`REJECTED`가 결정됨
+- `VIDEO`는 Rekognition `StartContentModeration`(비동기 작업)만 시작하고 `status: "PENDING"`으로 응답 — `GET /{mediaSno}/status`로 폴링해야 함
+- `REJECTED`(모더레이션 거부/용량 초과 모두)면 `moderationReason`에 감지된 라벨명(최대 500자)이 채워지고, `url`은 계속 `null`이며 S3 객체 자체도 즉시 삭제됨(공개 버킷에 유해 콘텐츠가 남아있지 않도록)
+
+**실패**: `mediaSno`가 없거나 본인 소유가 아님 → 400, `LINK` 타입에 호출 → 400, 아직 S3에 파일이 업로드되지 않은 상태(presigned URL로 PUT하기 전에 호출) → 400
+
+### GET `/api/media/{mediaSno}/status` — 업로드/모더레이션 상태 폴링 (인증 필요)
+
+동영상처럼 `PENDING` 상태인 미디어의 진행 상황을 확인합니다. 호출 시점에 Rekognition 비동기 작업이 끝나 있으면(`GetContentModeration` 재조회) 그 결과로 상태가 갱신되어 응답됩니다. 응답 형식은 `/complete`와 동일한 `MediaStatusResponse`.
+
+**실패**: `mediaSno`가 없거나 본인 소유가 아님 → 400
+
+### POST `/api/media/links` — 링크 첨부 생성 (인증 필요)
+
+```json
+{ "url": "https://example.com" }
+```
+
+업로드/모더레이션 없이 URL만 저장하고 생성 즉시 `APPROVED`됩니다. `http://`/`https://`로 시작하는 URL만 허용됩니다(`javascript:` 등 다른 스킴은 거부 — 프론트엔드가 이 URL을 그대로 `<a href>`에 렌더링하므로 XSS 방지 목적).
+
+**Response** `200 OK` — `data`: `mediaSno` (숫자)
+
+**실패**: `url`이 비어있거나 `http(s)://`로 시작하지 않음 → 400, 1000자 초과 → 400
+
+### 게시글 첨부까지의 제한값
+
+| 항목 | 값 |
+|---|---|
+| 게시글당 최대 첨부 개수 | 10개(`attachmentMediaIds`) |
+| 이미지 허용 형식/최대 용량 | jpeg/png/webp/gif, 10MB |
+| 동영상 허용 형식/최대 용량 | mp4/quicktime(mov), 200MB |
+| Rekognition 모더레이션 임계값 | 라벨 신뢰도(confidence) 60 이상이면 거부 |
+| presigned 업로드 URL 만료 | 5분 |
+
 ## Board API (`/api/board`) — 조회는 공개, 작성/삭제/추천은 인증 필요
 
 커뮤니티(보드/게시글/댓글/추천). 레딧처럼 **조회(GET)는 비로그인도 가능**하고, 글/댓글 작성·삭제·추천처럼 쓰기 작업(POST/DELETE)만 로그인이 필요합니다. 웹(`paceleague.co.kr`/`www.paceleague.co.kr`)에서 브라우저로 직접 호출하므로 CORS가 열려 있습니다(`CorsConfig`의 `/api/board/**` 등록, [architecture.md](./architecture.md) 참고).
@@ -485,6 +559,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 | 파라미터 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
 | lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | `name`/`description` 표시 언어. 미지원 값은 `ko`로 처리 |
+| country | string (ISO 3166-1 alpha-2, 예: `KR`) | - | 주어지면 `lang` 대신 이 국가에 맞는 언어로 응답 |
 
 **Response** `200 OK` — `data`: `BoardResponse[]`
 
@@ -506,26 +581,30 @@ join/login/reissue가 공통으로 반환하는 구조:
 | size | int | 20 | |
 | sort | string (`new`\|`top`) | `new` | `top`은 `score DESC, create_at DESC` |
 | lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | `authorTierLabel` 표시 언어. 미지원 값은 `ko`로 처리 |
+| country | string (ISO 3166-1 alpha-2, 예: `KR`) | - | 주어지면 `lang` 대신 이 국가에 맞는 언어로 응답 |
 
-**Response** `200 OK` — `data`: Spring `Page<PostSummaryResponse>` (`sno`, `title`, `nickname`, `authorTier`, `authorTierLabel`, `recordSno`, `viewCount`, `score`, `commentCount`, `createAt`)
+**Response** `200 OK` — `data`: Spring `Page<PostSummaryResponse>` (`sno`, `title`, `nickname`, `authorTier`, `authorTierLabel`, `recordSno`, `attachmentCount`, `viewCount`, `score`, `commentCount`, `createAt`)
 
 - `authorTier`: 작성자의 현재 시즌 티어(`RankTier` enum, `rank.GetMemberTierPort`로 조회, 이번 시즌 기록이 없으면 기본값 `SILVER`) — 언어와 무관한 원본 코드
 - `authorTierLabel`: `authorTier`를 `lang`에 맞게 번역한 화면 표시용 문자열(`rank.domain.policy.RankTierLabelPolicy`)
 - `recordSno`: 작성 시 첨부한 기록의 PK(없으면 `null`). 목록에서는 첨부 여부 표시용으로만 쓰고, 기록 상세 내용은 게시글 상세 조회에서만 내려줌
+- `attachmentCount`: 첨부된 이미지/동영상/링크 개수(목록에서는 개수만, 실제 URL 등 상세 내용은 게시글 상세 조회에서만 내려줌) — [Media API](#media-api-apimedia--인증-필요) 참고
 
 **실패**: 존재하지 않는 `boardSno` → 400
 
 ### POST `/api/board/{boardSno}/posts` — 게시글 작성 (인증 필요)
 
 ```json
-{ "title": "오늘 10km 완주!", "content": "날씨가 좋아서 기분 좋게 뛰었습니다.", "recordSno": 123 }
+{ "title": "오늘 10km 완주!", "content": "날씨가 좋아서 기분 좋게 뛰었습니다.", "recordSno": 123, "attachmentMediaIds": [11, 12] }
 ```
 
 `recordSno`는 선택 항목입니다. 지정하면 본인 소유 기록인지 검증합니다(`GET /api/record/recent-30-days` 등으로 조회한 본인 기록의 `recordSno`만 사용 가능 — 기간 제한은 없고, 다른 회원 소유이거나 존재하지 않는 `recordSno`면 거부됩니다).
 
+`attachmentMediaIds`도 선택 항목입니다(최대 10개). [Media API](#media-api-apimedia--인증-필요)로 미리 업로드/모더레이션까지 끝낸(`APPROVED` 상태) 본인 소유 `mediaSno`만 나열할 수 있고, 아직 다른 게시글에 첨부되지 않은 것이어야 합니다.
+
 **Response** `200 OK` — `data`: `{ "sno": 123 }`
 
-**실패**: `title`/`content` 공백 또는 `title` 200자 초과 → 400, 존재하지 않는 `boardSno` → 400, `recordSno`가 존재하지 않거나 본인 소유가 아님 → 400 `"record not found"`
+**실패**: `title`/`content` 공백 또는 `title` 200자 초과 → 400, 존재하지 않는 `boardSno` → 400, `recordSno`가 존재하지 않거나 본인 소유가 아님 → 400 `"record not found"`, `attachmentMediaIds`가 10개 초과 → 400, 존재하지 않거나/본인 소유가 아니거나/`APPROVED`가 아니거나/이미 다른 게시글에 첨부된 `mediaSno`가 섞여 있으면 → 400(이 경우 게시글 자체도 저장되지 않음 — 같은 트랜잭션에서 롤백)
 
 ### GET `/api/board/posts/{postSno}` — 게시글 상세 조회 (공개)
 
@@ -536,6 +615,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 | 파라미터 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
 | lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | `boardName`/`authorTierLabel` 표시 언어. 미지원 값은 `ko`로 처리 |
+| country | string (ISO 3166-1 alpha-2, 예: `KR`) | - | 주어지면 `lang` 대신 이 국가에 맞는 언어로 응답 |
 
 **Response** `200 OK` — `data`: `PostDetailResponse`
 
@@ -548,6 +628,10 @@ join/login/reissue가 공통으로 반환하는 구조:
     "recordSno": 456, "startTime": "2026-08-08T06:30:00", "endTime": "2026-08-08T07:05:00",
     "distance": 10230.5, "createAt": "2026-08-08T07:05:10"
   },
+  "attachments": [
+    { "mediaSno": 11, "type": "IMAGE", "url": "https://paceleague-media.s3.ap-northeast-2.amazonaws.com/media/image/5/....jpg" },
+    { "mediaSno": 12, "type": "LINK", "url": "https://example.com" }
+  ],
   "viewCount": 12, "score": 3, "myVote": 1,
   "createAt": "2026-08-08T10:00:00", "updateAt": "2026-08-08T10:00:00"
 }
@@ -556,6 +640,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 - `boardName`: 목록 조회(`GET /api/board`)와 동일한 번역 테이블로 `lang`에 맞게 번역됨
 - `authorTier`/`authorTierLabel`: 목록 조회와 동일 — `authorTier`는 원본 코드, `authorTierLabel`이 번역된 표시 문자열
 - `attachedRecord`: 첨부한 기록이 없으면 `null`. 첨부된 기록이 이후 삭제된 경우에도 `null`로 응답(참조 무결성을 강제하지 않음)
+- `attachments`: 첨부된 이미지/동영상/링크 목록(없으면 빈 배열). `type`은 `IMAGE`/`VIDEO`/`LINK`, `url`은 브라우저가 바로 불러올 수 있는 공개 URL — [Media API](#media-api-apimedia--인증-필요) 참고
 
 **실패**: 존재하지 않는 `postSno` → 400
 

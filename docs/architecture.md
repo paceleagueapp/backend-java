@@ -65,10 +65,12 @@ com.example.paceleague
 ├── season       시즌 정보 (시작/종료일, 현재 시즌 조회) — 컨트롤러 없음, GetCurrentSeasonPort만 다른 도메인에 노출
 ├── appversion   모바일 앱 강제/선택 업데이트, 점검 여부 체크
 ├── board        커뮤니티(보드/게시글/댓글/추천) — record 도메인과 동일하게 query/write 유스케이스 분리
+├── media        게시글 첨부(이미지/동영상/링크) — S3 presigned URL 업로드 + Rekognition 모더레이션. 2026-08-11 추가
 └── common       횡단 관심사: 설정, 응답 포맷, 에러 처리, JWT 필터. 위 도메인별 구조에 억지로 끼워맞추지 않고 지금 형태를 유지.
-    ├── config       SecurityConfig, JwtConfig/JwtProperties, RedisConfig, JpaConfig, OpenApiConfig, WebMvcConfig
+    ├── config       SecurityConfig, JwtConfig/JwtProperties, RedisConfig, JpaConfig, OpenApiConfig, WebMvcConfig, AwsTranslateConfig/AwsS3Config/AwsRekognitionConfig
+    ├── i18n         Language(10개 언어 enum), CountryLanguageResolver, LocaleResolver — 정적 UI 라벨 다국어(아래 참고)
     ├── security     JwtAuthenticationFilter (+ AuthPrincipal), security/jwt/JwtTokenProvider
-    ├── web          MemberSno(애너테이션), MemberSnoArgumentResolver — 인증 컨트롤러 공통 파라미터 리졸버
+    ├── web          MemberSno(애너테이션), MemberSnoArgumentResolver, LocaleController — 인증 컨트롤러 공통 파라미터 리졸버 + 국가→언어 조회
     ├── response     ResponseApi<T>
     └── error        ApiError, ErrorCode, GlobalExceptionHandler
 ```
@@ -81,9 +83,20 @@ com.example.paceleague
 
 - `record` → `season.application.port.in.GetCurrentSeasonPort`(현재 시즌 조회), `rank.application.port.in.ApplyScoreUseCase`(점수 반영 — 예전 `RecordServiceImpl.saveRank`/`applyScoreToSeason` 로직이 통째로 `rank` 도메인 소유로 이전됨)에만 의존.
 - `board` → `member.application.port.in.GetMemberNicknamePort`(작성자 닉네임), `rank.application.port.in.GetMemberTierPort`(작성자 티어뱃지), `record.application.port.in.RecordQueryService`(게시글 작성 시 첨부한 기록이 본인 소유인지 검증 — `getOne`은 원래 `record` 자신의 use-case지만 board가 그대로 재사용), `record.application.port.in.GetRecordSummaryPort`(게시글 조회 시 첨부 기록 요약 표시, 작성자가 아닌 제3자가 봐도 되도록 memberSno 소유권 검사 없이 recordSno만으로 조회)에 의존. 2026-08-11 "게시글에 러닝기록 첨부 + 작성자 프로필(티어)" 기능 추가 시 도입.
+- `board` → `media.application.port.in.MediaService`(게시글 작성 시 첨부 확정 — `attachToPost`), `media.application.port.in.GetPostAttachmentsPort`(게시글 조회 시 첨부 목록/개수 조회, `record.GetRecordSummaryPort`와 동일하게 소유권 검사 없이 postSno로만 조회)에 의존. `media`는 반대로 `board`를 전혀 모른다(단방향 의존) — `attachToPost`가 `postSno`를 그냥 값으로 받아 저장할 뿐, board 도메인 타입을 참조하지 않음. 2026-08-11 "게시글에 이미지/동영상/링크 첨부" 기능 추가 시 도입.
 - `rank`/`ranking` → `season.application.port.in.GetCurrentSeasonPort`에만 의존.
 
 **예외 — 순수 정적 정책 클래스는 포트 없이 직접 import**: `board.application.service.BoardQueryServiceImpl`이 `rank.domain.policy.RankTierLabelPolicy`(티어 → 언어별 라벨 고정 테이블)를 포트 없이 바로 호출합니다. 위 "도메인 간 의존은 포트로만" 원칙의 예외인데, 이 클래스가 Spring 빈도 아니고 DB/Redis 접근도 없는 순수 정적 조회 함수(`RankTier`, `Language` 두 enum만 받아 `String`을 반환)라 포트/어댑터를 만드는 비용이 실익보다 크다고 판단했기 때문입니다 — `common` 패키지의 `StringRedisTemplate` 같은 범용 인프라 클라이언트를 포트화하지 않는 것과 같은 이유. 상태를 갖거나 DB에 접근하는 진짜 크로스 도메인 접근(리포지토리 등)이라면 반드시 포트를 통해야 합니다.
+
+### 게시글 미디어 첨부(이미지/동영상/링크) — 2026-08-11 추가
+
+`media` 도메인은 `record`/`rank`와 동일하게 query/write 유스케이스를 분리합니다(`MediaService`가 쓰기, `GetPostAttachmentsPort`를 구현하는 `MediaQueryServiceImpl`이 읽기). S3(`AwsS3Config`의 `S3Client`/`S3Presigner`)와 Rekognition(`AwsRekognitionConfig`의 `RekognitionClient`)은 `TranslateClient`와 동일하게 포트화하지 않고 `MediaServiceImpl`에 직접 주입합니다.
+
+**record 첨부와 다른 지점 — `postSno` 연결 시점**: `record`는 게시글보다 먼저 존재하는 리소스를 참조만 하므로 `BoardServiceImpl.createPost`가 게시글을 저장하기 *전에* `recordQueryService.getOne(...)`으로 사전 검증합니다. 반면 미디어는 업로드 자체는 게시글 작성 이전에 끝나 있어도(파일 선택 즉시 S3 업로드+모더레이션이 진행됨) `media.post_sno`는 게시글이 실제로 저장돼 `post.sno`가 생긴 *이후에만* 채울 수 있습니다. 그래서 `BoardServiceImpl.createPost`는 `postRepositoryPort.save(post)` 다음에 `mediaService.attachToPost(memberSno, ids, post.getSno())`를 호출하고, 여기서 소유권/`APPROVED` 상태/중복첨부 검증에 실패해 예외가 던져지면 같은 `@Transactional` 메서드 안이므로 방금 저장한 게시글 insert까지 통째로 롤백됩니다 — "사전 검증 후 저장"이 아니라 "저장 후 검증 실패 시 롤백"으로 같은 원자성을 얻는 방식입니다.
+
+**모더레이션 흐름**: `Media.status`는 `PENDING`(업로드 직후) → `APPROVED`/`REJECTED`로 전이합니다. `IMAGE`는 Rekognition `DetectModerationLabels`(동기 API)로 `/complete` 호출 안에서 바로 결과가 나오지만, `VIDEO`는 `StartContentModeration`(비동기 작업)만 시작하고 `PENDING`을 유지하다가, 클라이언트가 `GET /status`를 폴링할 때마다 `GetContentModeration`으로 작업 상태를 재조회해 갱신합니다(SNS/웹훅 없이 순수 폴링 — 인프라를 늘리지 않기 위한 선택). `REJECTED`가 확정되면(모더레이션 거부든 용량 초과든) S3 객체를 즉시 `DeleteObject`로 삭제합니다 — 버킷의 `media/` prefix가 전체 공개 읽기라, API가 URL을 응답에 노출하지 않아도 객체가 남아있으면 키를 아는 사람이 직접 접근할 수 있기 때문입니다(`docs/database.md#media` 참고). `LINK` 타입은 업로드/모더레이션 대상이 아니라 생성 즉시 `APPROVED`입니다.
+
+**S3/Rekognition 인프라**: 버킷 `paceleague-media`(리전 `ap-northeast-2`, `media/` prefix만 공개 읽기, presigned `PUT`을 위한 버킷 CORS 별도 설정 — Spring `CorsConfig`와는 무관한 설정입니다). EC2 인스턴스 프로필 역할 `paceleague-s3-read`(`AwsTranslateConfig`가 이미 쓰던 역할)에 `s3:PutObject`/`GetObject`/`DeleteObject`(해당 prefix 한정)와 `rekognition:DetectModerationLabels`/`StartContentModeration`/`GetContentModeration`(Rekognition 모더레이션 액션은 리소스 레벨 ARN을 지원하지 않아 `"*"`) 권한이 필요합니다. 자세한 프로비저닝 기록과 현재 상태(IAM 정책 부여分 완료/미완료 여부)는 [infra.md](./infra.md) 참고.
 
 ### 정적 UI 라벨 다국어(i18n) — 2026-08-11 추가
 
@@ -94,6 +107,7 @@ com.example.paceleague
 - `board.domain.policy.BoardLabelPolicy` — slug(`free`/`qna`/`verify`) × `Language` 9개(한국어 제외) 고정 테이블. 한국어는 DB의 `board.name`/`board.description`이 이미 원본이므로 테이블에 중복 저장하지 않고, `lang=ko`거나 테이블에 없는 slug(신규 보드 추가 시)면 항상 DB 값을 그대로 반환한다.
 - 관련 GET 엔드포인트(`/api/board`, `/api/board/{boardSno}/posts`, `/api/board/posts/{postSno}`, `/api/rank/me`, `/api/ranking/getRanking`, `/api/ranking/top10`)가 전부 `lang` 쿼리 파라미터(기본값 `ko`)를 받는다 — 커스텀 헤더가 아닌 쿼리 파라미터라 기존 CORS 설정(`CorsConfig`) 변경이 필요 없었다.
 - `common.i18n.CountryLanguageResolver` + `common.web.LocaleController`(`GET /api/common/language?country=KR`, 공개) — ISO 3166-1 alpha-2 국가코드를 위 10개 언어 코드 중 하나로 변환해, 위 `lang` 파라미터에 그대로 넣어 쓸 수 있게 한다. 매핑에 없는 국가나 값 미전달 시 `EN`으로 폴백하는데, 이는 `Language.fromCode`가 `KO`로 폴백하는 것과 의도적으로 다른 선택 — "브라우저가 이미 보내는 언어 문자열을 못 알아들었다"와 "국가 자체를 매핑 테이블에 안 넣어놨다"는 서로 다른 상황이라 각각 자연스러운 기본값(전자는 이 서비스의 원래 언어인 한국어, 후자는 국제 공용어인 영어)을 골랐다. DB 접근이 없는 순수 정적 조회라 도메인/포트/서비스 계층 없이 컨트롤러가 리졸버를 바로 호출한다. `web/js/i18n.js`는 이미 브라우저에서 자체적으로 언어를 판별하므로 이 엔드포인트를 쓰지 않음 — 국가 기반 판별이 필요한 모바일 앱 등 다른 클라이언트를 위한 API.
+- `common.i18n.LocaleResolver` — 위 `/api/common/language`만으로는 "언어 코드를 알아내는 것"과 "그 언어로 번역된 실제 데이터를 받는 것" 사이에 호출이 한 번 더 필요해서(클라이언트가 언어를 알아낸 뒤 그 코드로 다시 요청해야 함), `lang`을 받는 모든 엔드포인트(`/api/board`, `/api/board/{boardSno}/posts`, `/api/board/posts/{postSno}`, `/api/rank/me`, `/api/ranking/getRanking`, `/api/ranking/top10`)가 `country` 파라미터도 함께 받도록 했다. `LocaleResolver.resolve(lang, country)`가 `country`가 있으면 그걸 우선시하고(`CountryLanguageResolver`로 변환), 없으면 `lang`을 그대로 쓴다 — 컨트롤러 레벨에서만 해석하고 `Language.toCode()`로 문자열로 바꿔 기존 서비스 시그니처(`String lang`)에 그대로 흘려보내므로 서비스/포트 계층은 변경되지 않았다.
 
 `record`가 `ApplyScoreUseCase.applyScore(...)`를 자신의 `@Transactional` 메서드 안에서 호출하는데, 둘 다 스프링이 관리하는 별개 빈이라 기본 `REQUIRED` 전파로 호출자의 트랜잭션에 합류합니다 — 기록 저장 + 점수 로그 저장 + 시즌 누적 점수 갱신이 예전과 동일하게 하나의 트랜잭션으로 묶입니다.
 

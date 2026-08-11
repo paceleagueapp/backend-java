@@ -50,6 +50,10 @@ public class CorsConfig {
         source.registerCorsConfiguration("/api/member/**", authAndBoard);
         source.registerCorsConfiguration("/api/board/**", authAndBoard);
         source.registerCorsConfiguration("/api/record/recent-30-days", recordSelectForBoard);
+        // 게시글 작성 화면의 이미지/동영상/링크 첨부(presigned URL 발급/완료/폴링/링크 생성) — 이 API 자체는
+        // 파일 바이트를 다루지 않고 메타데이터/URL만 오간다. 실제 파일 PUT은 브라우저가 S3에 직접 하며,
+        // 그건 이 Spring CORS와 무관한 S3 버킷 자체의 CORS 설정(docs/infra.md)이 담당한다.
+        source.registerCorsConfiguration("/api/media/**", authAndBoard);
         return source;
     }
 }

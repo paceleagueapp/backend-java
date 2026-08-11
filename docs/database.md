@@ -19,6 +19,7 @@ MySQL, Spring Data JPA(Hibernate) 사용. 로컬은 `ddl-auto: update`, 운영�
 | `comment` | `Comment` | 댓글(1단계 중첩 — `parent_comment_sno`) |
 | `post_vote` | `PostVote` | 게시글 추천/비추천 기록 |
 | `comment_vote` | `CommentVote` | 댓글 추천/비추천 기록 |
+| `media` | `Media` | 게시글 첨부(이미지/동영상/링크) — S3 업로드 상태 + Rekognition 모더레이션 결과 |
 
 ## `member`
 
@@ -153,6 +154,26 @@ DDL로 시딩만 하고(자유게시판/질문/인증 3개), 생성/수정 API�
 | create_at / update_at | LocalDateTime | |
 
 **`(member_sno, post_sno)` / `(member_sno, comment_sno)`에 실제 DB `UNIQUE` 제약을 걸어둡니다.** 위 `member_score`가 "DB 유니크 제약 없이 앱 로직만으로 보장"하는 것과 다른 예외적 선택인데, 추천 중복 저장은 점수 조작으로 바로 이어지는 버그라 신규 테이블 도입 시점에 제약을 거는 비용이 나중에 정리하는 비용보다 훨씬 적기 때문입니다.
+
+## `media`
+
+게시글에 첨부하는 이미지/동영상/링크. `type`이 `IMAGE`/`VIDEO`면 S3 업로드 + Rekognition 모더레이션을 거치고, `LINK`면 업로드 없이 URL만 저장되고 생성 즉시 `APPROVED`. [migrations/2026-08-11_media_attachments.sql](./migrations/2026-08-11_media_attachments.sql) 참고, 인프라(S3 버킷/IAM) 배경은 [infra.md](./infra.md) 참고.
+
+| 컬럼 | 타입(Java) | 설명 |
+|---|---|---|
+| sno | Long (PK, IDENTITY) | |
+| member_sno | Long, not null | 업로드한 회원, `member.sno` FK 값 |
+| post_sno | Long, nullable | 첨부된 게시글의 `post.sno` FK 값. 업로드 시점엔 아직 게시글이 없어 `NULL`이었다가 게시글 작성 시 연결됨 |
+| type | String enum(`IMAGE`/`VIDEO`/`LINK`) | |
+| status | String enum(`PENDING`/`APPROVED`/`REJECTED`) | `LINK`는 생성 즉시 `APPROVED`, `IMAGE`/`VIDEO`는 모더레이션 결과에 따라 결정 |
+| s3_key | String, nullable | `IMAGE`/`VIDEO`만 값 있음(`LINK`는 `NULL`) |
+| url | String, nullable | `APPROVED`가 되기 전까지 `NULL`(모더레이션 통과 전 URL을 노출하지 않기 위함). `LINK`는 생성 시 바로 채워짐 |
+| mime_type / file_size_bytes | String / Long, nullable | `IMAGE`/`VIDEO`만 값 있음 |
+| rekognition_job_id | String, nullable | 동영상 비동기 모더레이션(`StartContentModeration`) 잡 ID, 폴링(`GetContentModeration`)에 사용. 이미지는 동기 API라 값 없음 |
+| moderation_reason | String, nullable | `REJECTED`일 때 감지된 라벨명(최대 500자로 자름) |
+| create_at / update_at | LocalDateTime | |
+
+**주의**: `REJECTED`(모더레이션 거부 또는 용량 초과)로 판정되면 S3 객체 자체를 즉시 삭제합니다(`s3:DeleteObject`) — 버킷의 `media/` prefix가 공개 읽기이므로, API가 URL을 응답에 노출하지 않더라도 객체가 남아있으면 키를 아는 사람이 직접 접근할 수 있기 때문입니다. `post_sno`에 DB 레벨 FK 제약은 없습니다(이 저장소의 다른 테이블과 동일하게 애플리케이션 레벨 조인).
 
 ## Redis
 

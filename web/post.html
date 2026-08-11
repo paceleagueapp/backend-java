@@ -28,6 +28,10 @@
     .post-content { font-size: 14px; line-height: 1.6; white-space: pre-wrap; margin-bottom: 14px; }
     .attached-record { background: #0f0f0f; border: 1px solid #333; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 13px; color: #ccc; }
     .attached-record .attached-record-heading { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .attachments { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+    .attachments-heading { font-size: 11px; color: #888; }
+    .attachment-image img, .attachment-video video { max-width: 100%; border-radius: 8px; display: block; }
+    .attachment-link a { color: #64b5f6; word-break: break-all; font-size: 13px; }
     .vote-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .vote-btn {
       background: #0f0f0f; border: 1px solid #333; color: #ccc; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;
@@ -123,6 +127,22 @@
         '</div>';
       }
 
+      var attachmentsHtml = '';
+      if (post.attachments && post.attachments.length > 0) {
+        attachmentsHtml = '<div class="attachments">' +
+          '<div class="attachments-heading">📎 ' + t('attachmentsHeading') + '</div>' +
+          post.attachments.map(function (a) {
+            if (a.type === 'IMAGE') {
+              return '<div class="attachment-image"><img src="' + escapeHtml(a.url) + '" loading="lazy" alt=""></div>';
+            }
+            if (a.type === 'VIDEO') {
+              return '<div class="attachment-video"><video src="' + escapeHtml(a.url) + '" controls></video></div>';
+            }
+            return '<div class="attachment-link"><a href="' + escapeHtml(a.url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(a.url) + '</a></div>';
+          }).join('') +
+        '</div>';
+      }
+
       document.getElementById('post-box').innerHTML =
         '<div class="post-title" id="post-title">' + escapeHtml(post.title) + '</div>' +
         '<div class="post-meta">' +
@@ -132,6 +152,7 @@
           '<span>' + escapeHtml(formatLocalTime(post.createAt)) + '</span>' +
         '</div>' +
         recordHtml +
+        attachmentsHtml +
         '<div class="post-content" id="post-content">' + escapeHtml(post.content) + '</div>' +
         '<div class="vote-row">' +
           '<button class="vote-btn' + upClass + '" id="post-up">' + t('voteUp') + '</button>' +

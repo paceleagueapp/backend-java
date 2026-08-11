@@ -14,6 +14,7 @@ import com.example.paceleague.board.domain.entity.CommentVote;
 import com.example.paceleague.board.domain.entity.Post;
 import com.example.paceleague.board.domain.entity.PostVote;
 import com.example.paceleague.board.domain.enums.VoteType;
+import com.example.paceleague.media.application.port.in.MediaService;
 import com.example.paceleague.record.application.port.in.RecordQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ public class BoardServiceImpl implements BoardService {
     private static final int COMMENT_MAX_LENGTH = 1000;
     // 번역 API 비용이 글자 수에 비례하므로 게시글 본문 길이를 제한한다(기존엔 무제한이었음).
     private static final int CONTENT_MAX_LENGTH = 10_000;
+    private static final int MEDIA_MAX_ATTACHMENTS_PER_POST = 10;
 
     private final BoardRepositoryPort boardRepositoryPort;
     private final PostRepositoryPort postRepositoryPort;
@@ -39,11 +41,15 @@ public class BoardServiceImpl implements BoardService {
     private final PostVoteRepositoryPort postVoteRepositoryPort;
     private final CommentVoteRepositoryPort commentVoteRepositoryPort;
     private final RecordQueryService recordQueryService;
+    private final MediaService mediaService;
 
     @Transactional
     public Long createPost(Long memberSno, Long boardSno, PostCreateRequest req) {
         requireNonBlank(req.title(), "title", TITLE_MAX_LENGTH);
         requireNonBlank(req.content(), "content", CONTENT_MAX_LENGTH);
+        if (req.attachmentMediaIds() != null && req.attachmentMediaIds().size() > MEDIA_MAX_ATTACHMENTS_PER_POST) {
+            throw new IllegalArgumentException("too many attachments (max " + MEDIA_MAX_ATTACHMENTS_PER_POST + ")");
+        }
 
         boardRepositoryPort.findById(boardSno)
                 .orElseThrow(() -> new IllegalArgumentException("board not found"));
@@ -55,6 +61,12 @@ public class BoardServiceImpl implements BoardService {
 
         Post post = Post.create(boardSno, memberSno, req.recordSno(), req.title(), req.content());
         postRepositoryPort.save(post);
+
+        // 미디어는 게시글이 저장되어 sno가 생긴 뒤에만 연결할 수 있다 — 소유권/APPROVED 상태/중복첨부 검증 실패 시
+        // 예외가 던져지면 같은 트랜잭션 안이므로 방금 저장한 게시글까지 통째로 롤백된다(record 첨부는 사전 검증하는 것과 다른 지점).
+        if (req.attachmentMediaIds() != null && !req.attachmentMediaIds().isEmpty()) {
+            mediaService.attachToPost(memberSno, req.attachmentMediaIds(), post.getSno());
+        }
 
         return post.getSno();
     }

@@ -1,5 +1,6 @@
 package com.example.paceleague.ranking.adapter.in.web;
 
+import com.example.paceleague.common.i18n.LocaleResolver;
 import com.example.paceleague.common.response.ResponseApi;
 import com.example.paceleague.common.web.MemberSno;
 import com.example.paceleague.ranking.application.dto.RankingPageResponse;
@@ -30,10 +31,11 @@ public class RankingController {
     @GetMapping("/getRanking")
     public ResponseApi<RankingPageResponse> getRanking(
             @MemberSno Long memberSno,
-            @Parameter(description = "티어 라벨 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang
+            @Parameter(description = "티어 라벨 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang,
+            @Parameter(description = "ISO 3166-1 alpha-2 국가코드(예: KR). 주어지면 lang 대신 이 국가에 맞는 언어로 응답") @RequestParam(required = false) String country
     ) {
         return ResponseApi.success(
-                getRankingUseCase.getRankingPage(memberSno, lang)
+                getRankingUseCase.getRankingPage(memberSno, LocaleResolver.resolve(lang, country).toCode())
         );
     }
 
@@ -42,8 +44,9 @@ public class RankingController {
     @SecurityRequirements
     @GetMapping("/top10")
     public ResponseApi<List<RankingUserResponse>> getTop10(
-            @Parameter(description = "티어 라벨 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang
+            @Parameter(description = "티어 라벨 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang,
+            @Parameter(description = "ISO 3166-1 alpha-2 국가코드(예: KR). 주어지면 lang 대신 이 국가에 맞는 언어로 응답") @RequestParam(required = false) String country
     ) {
-        return ResponseApi.success(getRankingUseCase.getTop10(lang));
+        return ResponseApi.success(getRankingUseCase.getTop10(LocaleResolver.resolve(lang, country).toCode()));
     }
 }

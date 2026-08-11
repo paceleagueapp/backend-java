@@ -4,6 +4,7 @@ import com.example.paceleague.board.application.dto.*;
 import com.example.paceleague.board.application.port.in.BoardQueryService;
 import com.example.paceleague.board.application.port.in.BoardService;
 import com.example.paceleague.board.application.port.in.TranslationService;
+import com.example.paceleague.common.i18n.LocaleResolver;
 import com.example.paceleague.common.response.ResponseApi;
 import com.example.paceleague.common.web.MemberSno;
 
@@ -36,9 +37,10 @@ public class BoardController {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
     public ResponseApi<List<BoardResponse>> listBoards(
-            @Parameter(description = "보드명/설명 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang
+            @Parameter(description = "보드명/설명 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang,
+            @Parameter(description = "ISO 3166-1 alpha-2 국가코드(예: KR). 주어지면 lang 대신 이 국가에 맞는 언어로 응답") @RequestParam(required = false) String country
     ) {
-        return ResponseApi.success(boardQueryService.listBoards(lang));
+        return ResponseApi.success(boardQueryService.listBoards(resolveLang(lang, country)));
     }
 
     @Operation(summary = "게시글 목록 조회", description = "sort=new(기본)|top")
@@ -49,9 +51,10 @@ public class BoardController {
             @Parameter(description = "페이지 번호(0-base)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "new") String sort,
-            @Parameter(description = "작성자 티어뱃지 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang
+            @Parameter(description = "작성자 티어뱃지 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang,
+            @Parameter(description = "ISO 3166-1 alpha-2 국가코드(예: KR). 주어지면 lang 대신 이 국가에 맞는 언어로 응답") @RequestParam(required = false) String country
     ) {
-        return ResponseApi.success(boardQueryService.listPosts(boardSno, page, size, sort, lang));
+        return ResponseApi.success(boardQueryService.listPosts(boardSno, page, size, sort, resolveLang(lang, country)));
     }
 
     @Operation(summary = "게시글 작성")
@@ -73,9 +76,10 @@ public class BoardController {
     public ResponseApi<PostDetailResponse> getPost(
             @MemberSno(required = false) Long memberSno,
             @PathVariable Long postSno,
-            @Parameter(description = "보드명/티어뱃지 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang
+            @Parameter(description = "보드명/티어뱃지 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang,
+            @Parameter(description = "ISO 3166-1 alpha-2 국가코드(예: KR). 주어지면 lang 대신 이 국가에 맞는 언어로 응답") @RequestParam(required = false) String country
     ) {
-        return ResponseApi.success(boardQueryService.getPost(memberSno, postSno, lang));
+        return ResponseApi.success(boardQueryService.getPost(memberSno, postSno, resolveLang(lang, country)));
     }
 
     @Operation(summary = "게시글 삭제", description = "본인 게시글만 삭제 가능하며, 댓글/추천도 함께 삭제됩니다.")
@@ -162,5 +166,9 @@ public class BoardController {
             @RequestBody VoteRequest req
     ) {
         return ResponseApi.success(boardService.voteComment(memberSno, commentSno, req.voteValue()));
+    }
+
+    private String resolveLang(String lang, String country) {
+        return LocaleResolver.resolve(lang, country).toCode();
     }
 }
