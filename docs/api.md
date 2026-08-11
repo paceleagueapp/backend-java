@@ -69,6 +69,7 @@
 - `POST /api/member/logout`
 - `GET /api/app/version-check`
 - `GET /api/ranking/top10`
+- `GET /api/common/language`
 - `GET /robots.txt` (검색엔진 크롤링 전면 차단용, [infra.md](./infra.md#검색엔진-크롤링-차단-apipaceleaguecokr) 참고)
 - `/v3/api-docs/**`, `/swagger-ui.html`, `/swagger-ui/**`
 - `GET /api/board`, `GET /api/board/{boardSno}/posts`, `GET /api/board/posts/{postSno}`, `GET /api/board/posts/{postSno}/comments` (게시판 조회 4종만 공개 — 작성/삭제/추천은 인증 필요, [Board API](#board-api-apiboard--조회는-공개-작성삭제추천은-인증-필요) 참고)
@@ -403,6 +404,30 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 - 로그인 컨텍스트가 없으므로 `me`는 항상 `false`.
 - CORS: `https://paceleague.co.kr`, `https://www.paceleague.co.kr` 오리진에서만 브라우저 `fetch`로 호출 가능하도록 이 경로에만 한정해 CORS를 허용합니다 (`common.config.CorsConfig`). 다른 API는 CORS를 열지 않았으므로 브라우저에서 다른 오리진으로는 호출할 수 없습니다. `lang`은 일반 쿼리 파라미터라 CORS 프리플라이트에 영향 없음(커스텀 헤더가 아님).
+
+---
+
+## Locale API (`/api/common`) — 공개
+
+국가 코드로 이 서비스가 지원하는 언어를 판별하는 유틸리티 API. 특정 도메인에 속하지 않는 순수 조회 기능이라 `common` 패키지에 있음 — 자세한 설계 배경은 [architecture.md](./architecture.md#정적-ui-라벨-다국어i18n--2026-08-11-추가) 참고.
+
+### GET `/api/common/language` — 국가 코드로 언어 조회 (공개, 인증 불필요)
+
+**Query Parameters**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| country | string (ISO 3166-1 alpha-2, 예: `KR`, `US`, `JP`) | N | 대소문자 무관. 생략하거나 매핑에 없는 국가면 `en` 반환 |
+
+**Response** `200 OK` — `data`: `{ "language": "ko" }`
+
+```json
+{ "language": "ko" }
+```
+
+- 반환되는 `language`는 board/rank/ranking API들의 `lang` 쿼리 파라미터에 그대로 넣어 쓸 수 있는 10개 코드(`ko`/`en`/`ja`/`zh`/`es`/`fr`/`de`/`pt`/`vi`/`th`) 중 하나.
+- `country`가 비어있거나 매핑 테이블(`common.i18n.CountryLanguageResolver`)에 없는 국가면 `en`을 기본값으로 반환한다 — 잘못된 값이어도 400을 던지지 않고 항상 200으로 응답(관대한 폴백, `Language.fromCode`가 미지원 언어 코드를 `ko`로 조용히 폴백하는 것과 같은 스타일).
+- 웹(`web/js/i18n.js`)은 이미 브라우저 `navigator.language`/localStorage 기반으로 자체 언어를 판별하므로 이 엔드포인트를 호출하지 않는다 — 국가 기반 판별이 필요한 다른 클라이언트(모바일 앱 등)를 위한 API.
 
 ---
 

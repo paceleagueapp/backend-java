@@ -39,6 +39,7 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/api/app/version-check",
                                 "/api/ranking/top10",
+                                "/api/common/language",
                                 "/robots.txt"
                         ).permitAll()
                         // 게시판 조회(GET)는 레딧처럼 비로그인도 가능 — 작성/삭제/추천(POST/DELETE)은 아래 anyRequest()에 걸려 로그인 필요.

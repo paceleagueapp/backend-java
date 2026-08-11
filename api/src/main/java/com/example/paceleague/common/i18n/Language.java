@@ -22,4 +22,8 @@ public enum Language {
             default -> KO;
         };
     }
+
+    public String toCode() {
+        return name().toLowerCase();
+    }
 }
