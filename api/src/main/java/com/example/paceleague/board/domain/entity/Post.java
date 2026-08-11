@@ -23,6 +23,9 @@ public class Post {
     @Column(name = "member_sno", nullable = false)
     private Long memberSno;
 
+    @Column(name = "record_sno")
+    private Long recordSno;
+
     @Column(nullable = false, length = 200)
     private String title;
 
@@ -41,9 +44,10 @@ public class Post {
     @Column(name = "update_at")
     private LocalDateTime updateAt;
 
-    public Post(Long boardSno, Long memberSno, String title, String content) {
+    public Post(Long boardSno, Long memberSno, Long recordSno, String title, String content) {
         this.boardSno = boardSno;
         this.memberSno = memberSno;
+        this.recordSno = recordSno;
         this.title = title;
         this.content = content;
         this.viewCount = 0;
@@ -52,8 +56,8 @@ public class Post {
         this.updateAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 
-    public static Post create(Long boardSno, Long memberSno, String title, String content) {
-        return new Post(boardSno, memberSno, title, content);
+    public static Post create(Long boardSno, Long memberSno, Long recordSno, String title, String content) {
+        return new Post(boardSno, memberSno, recordSno, title, content);
     }
 
     public void applyVoteDelta(int delta) {

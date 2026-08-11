@@ -38,10 +38,18 @@ public class CorsConfig {
         authAndBoard.setAllowedMethods(List.of("GET", "POST", "DELETE"));
         authAndBoard.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 
+        // 게시글 작성 화면에서 "내 러닝기록 첨부"를 위해 최근 30일 기록만 조회할 수 있도록 예외적으로 연다.
+        // record 도메인의 나머지 엔드포인트는 여전히 CORS 미허용.
+        CorsConfiguration recordSelectForBoard = new CorsConfiguration();
+        recordSelectForBoard.setAllowedOriginPatterns(origins);
+        recordSelectForBoard.setAllowedMethods(List.of("GET"));
+        recordSelectForBoard.setAllowedHeaders(List.of("Authorization"));
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/ranking/top10", readOnlyPublic);
         source.registerCorsConfiguration("/api/member/**", authAndBoard);
         source.registerCorsConfiguration("/api/board/**", authAndBoard);
+        source.registerCorsConfiguration("/api/record/recent-30-days", recordSelectForBoard);
         return source;
     }
 }

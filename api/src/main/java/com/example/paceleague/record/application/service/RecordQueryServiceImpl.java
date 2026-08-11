@@ -5,6 +5,7 @@ import com.example.paceleague.record.application.dto.RecordResponse;
 import com.example.paceleague.record.application.dto.RecordSummaryDto;
 import com.example.paceleague.record.application.dto.RecordSummaryProjection;
 import com.example.paceleague.record.application.dto.RunningRecordResponse;
+import com.example.paceleague.record.application.port.in.GetRecordSummaryPort;
 import com.example.paceleague.record.application.port.in.RecordQueryService;
 import com.example.paceleague.record.application.port.out.RecordRepositoryPort;
 import com.example.paceleague.record.domain.entity.Record;
@@ -19,10 +20,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
-public class RecordQueryServiceImpl implements RecordQueryService {
+public class RecordQueryServiceImpl implements RecordQueryService, GetRecordSummaryPort {
     private final RecordRepositoryPort recordRepositoryPort;
 
     public RecordQueryServiceImpl(RecordRepositoryPort recordRepositoryPort) {
@@ -83,6 +85,10 @@ public class RecordQueryServiceImpl implements RecordQueryService {
         return records.stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    public Optional<RunningRecordResponse> getSummary(Long recordSno) {
+        return recordRepositoryPort.findBySno(recordSno).map(this::toResponse);
     }
 
     private RunningRecordResponse toResponse(Record record) {

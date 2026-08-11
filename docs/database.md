@@ -121,6 +121,7 @@ DDL로 시딩만 하고(자유게시판/질문/인증 3개), 생성/수정 API�
 | sno | Long (PK, IDENTITY) | |
 | board_sno | Long | `board.sno` FK 값 |
 | member_sno | Long | 작성자, `member.sno` FK 값 |
+| record_sno | Long, nullable | 첨부한 `record.sno` FK 값. 작성 시점에 작성자 본인 소유 기록인지만 검증하고(`RecordQueryService.getOne`) 이후엔 값만 저장 — 기록이 나중에 삭제돼도 `post` 쪽엔 반영되지 않으므로 조회 시(`GetRecordSummaryPort`) 없으면 `attachedRecord: null`로 응답. [migrations/2026-08-11_post_record_attachment.sql](./migrations/2026-08-11_post_record_attachment.sql) 참고. |
 | title | String(200) | |
 | content | String (TEXT) | |
 | view_count | int | 조회할 때마다 원자적 `UPDATE ... SET view_count = view_count + 1`로 증가, 중복 방지 없음 |

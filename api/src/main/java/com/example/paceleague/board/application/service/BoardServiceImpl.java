@@ -14,6 +14,7 @@ import com.example.paceleague.board.domain.entity.CommentVote;
 import com.example.paceleague.board.domain.entity.Post;
 import com.example.paceleague.board.domain.entity.PostVote;
 import com.example.paceleague.board.domain.enums.VoteType;
+import com.example.paceleague.record.application.port.in.RecordQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,7 @@ public class BoardServiceImpl implements BoardService {
     private final CommentRepositoryPort commentRepositoryPort;
     private final PostVoteRepositoryPort postVoteRepositoryPort;
     private final CommentVoteRepositoryPort commentVoteRepositoryPort;
+    private final RecordQueryService recordQueryService;
 
     @Transactional
     public Long createPost(Long memberSno, Long boardSno, PostCreateRequest req) {
@@ -46,7 +48,12 @@ public class BoardServiceImpl implements BoardService {
         boardRepositoryPort.findById(boardSno)
                 .orElseThrow(() -> new IllegalArgumentException("board not found"));
 
-        Post post = Post.create(boardSno, memberSno, req.title(), req.content());
+        // 본인 소유 기록만 첨부할 수 있도록 검증(recordQueryService.getOne은 memberSno+recordSno 조합으로만 조회됨).
+        if (req.recordSno() != null) {
+            recordQueryService.getOne(memberSno, req.recordSno());
+        }
+
+        Post post = Post.create(boardSno, memberSno, req.recordSno(), req.title(), req.content());
         postRepositoryPort.save(post);
 
         return post.getSno();

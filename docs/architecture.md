@@ -80,7 +80,7 @@ com.example.paceleague
 이번 전환 전에는 `record.RecordServiceImpl`이 `rank`/`season`의 리포지토리를 직접 import해서 세 바운디드 컨텍스트가 한 클래스에 뒤섞여 있었고, `board.BoardQueryServiceImpl`도 닉네임 조회를 위해 `member`의 리포지토리를 직접 import했습니다. 지금은:
 
 - `record` → `season.application.port.in.GetCurrentSeasonPort`(현재 시즌 조회), `rank.application.port.in.ApplyScoreUseCase`(점수 반영 — 예전 `RecordServiceImpl.saveRank`/`applyScoreToSeason` 로직이 통째로 `rank` 도메인 소유로 이전됨)에만 의존.
-- `board` → `member.application.port.in.GetMemberNicknamePort`에만 의존.
+- `board` → `member.application.port.in.GetMemberNicknamePort`(작성자 닉네임), `rank.application.port.in.GetMemberTierPort`(작성자 티어뱃지), `record.application.port.in.RecordQueryService`(게시글 작성 시 첨부한 기록이 본인 소유인지 검증 — `getOne`은 원래 `record` 자신의 use-case지만 board가 그대로 재사용), `record.application.port.in.GetRecordSummaryPort`(게시글 조회 시 첨부 기록 요약 표시, 작성자가 아닌 제3자가 봐도 되도록 memberSno 소유권 검사 없이 recordSno만으로 조회)에 의존. 2026-08-11 "게시글에 러닝기록 첨부 + 작성자 프로필(티어)" 기능 추가 시 도입.
 - `rank`/`ranking` → `season.application.port.in.GetCurrentSeasonPort`에만 의존.
 
 `record`가 `ApplyScoreUseCase.applyScore(...)`를 자신의 `@Transactional` 메서드 안에서 호출하는데, 둘 다 스프링이 관리하는 별개 빈이라 기본 `REQUIRED` 전파로 호출자의 트랜잭션에 합류합니다 — 기록 저장 + 점수 로그 저장 + 시즌 누적 점수 갱신이 예전과 동일하게 하나의 트랜잭션으로 묶입니다.

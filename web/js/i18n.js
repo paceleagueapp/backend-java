@@ -28,7 +28,9 @@ var TRANSLATIONS = {
     commentsTitle: '댓글', commentPlaceholder: '댓글을 입력하세요', commentSubmit: '댓글 작성',
     noComments: '아직 댓글이 없습니다.', replyLink: '답글', replyPlaceholder: '답글을 입력하세요',
     translateShow: '번역 보기', translateHide: '원문 보기', translateFailed: '번역에 실패했습니다.',
-    top10Heading: '이번 시즌 TOP 10', top10Empty: '아직 랭킹 데이터가 없습니다.', top10LoadFailed: '랭킹을 불러오지 못했습니다.'
+    top10Heading: '이번 시즌 TOP 10', top10Empty: '아직 랭킹 데이터가 없습니다.', top10LoadFailed: '랭킹을 불러오지 못했습니다.',
+    attachRecordLabel: '내 러닝기록 첨부 (선택)', attachRecordNone: '선택 안 함',
+    attachRecordEmpty: '최근 30일 내 기록이 없습니다', attachedRecordHeading: '첨부된 기록'
   },
   en: {
     login: 'Login', write: 'Write', logout: 'Logout', sortNew: 'New', sortTop: 'Top',
@@ -43,7 +45,9 @@ var TRANSLATIONS = {
     commentsTitle: 'Comments', commentPlaceholder: 'Write a comment', commentSubmit: 'Comment',
     noComments: 'No comments yet.', replyLink: 'Reply', replyPlaceholder: 'Write a reply',
     translateShow: 'Show translation', translateHide: 'Show original', translateFailed: 'Translation failed.',
-    top10Heading: 'This Season TOP 10', top10Empty: 'No ranking data yet.', top10LoadFailed: 'Failed to load ranking.'
+    top10Heading: 'This Season TOP 10', top10Empty: 'No ranking data yet.', top10LoadFailed: 'Failed to load ranking.',
+    attachRecordLabel: 'Attach a run (optional)', attachRecordNone: 'None',
+    attachRecordEmpty: 'No runs in the last 30 days', attachedRecordHeading: 'Attached run'
   },
   ja: {
     login: 'ログイン', write: '投稿する', logout: 'ログアウト', sortNew: '新着順', sortTop: '人気順',
@@ -58,7 +62,9 @@ var TRANSLATIONS = {
     commentsTitle: 'コメント', commentPlaceholder: 'コメントを入力してください', commentSubmit: 'コメントする',
     noComments: 'まだコメントがありません。', replyLink: '返信', replyPlaceholder: '返信を入力してください',
     translateShow: '翻訳を見る', translateHide: '原文を見る', translateFailed: '翻訳に失敗しました。',
-    top10Heading: '今シーズン TOP 10', top10Empty: 'まだランキングデータがありません。', top10LoadFailed: 'ランキングを読み込めませんでした。'
+    top10Heading: '今シーズン TOP 10', top10Empty: 'まだランキングデータがありません。', top10LoadFailed: 'ランキングを読み込めませんでした。',
+    attachRecordLabel: 'ランニング記録を添付（任意）', attachRecordNone: '選択しない',
+    attachRecordEmpty: '過去30日間の記録がありません', attachedRecordHeading: '添付された記録'
   },
   zh: {
     login: '登录', write: '写帖子', logout: '登出', sortNew: '最新', sortTop: '热门',
@@ -73,7 +79,9 @@ var TRANSLATIONS = {
     commentsTitle: '评论', commentPlaceholder: '请输入评论', commentSubmit: '发表评论',
     noComments: '暂无评论。', replyLink: '回复', replyPlaceholder: '请输入回复',
     translateShow: '查看翻译', translateHide: '查看原文', translateFailed: '翻译失败。',
-    top10Heading: '本赛季 TOP 10', top10Empty: '暂无排名数据。', top10LoadFailed: '排名加载失败。'
+    top10Heading: '本赛季 TOP 10', top10Empty: '暂无排名数据。', top10LoadFailed: '排名加载失败。',
+    attachRecordLabel: '附加跑步记录（可选）', attachRecordNone: '不选择',
+    attachRecordEmpty: '最近30天没有记录', attachedRecordHeading: '附加的记录'
   },
   es: {
     login: 'Iniciar sesión', write: 'Publicar', logout: 'Cerrar sesión', sortNew: 'Recientes', sortTop: 'Popular',
@@ -88,7 +96,9 @@ var TRANSLATIONS = {
     commentsTitle: 'Comentarios', commentPlaceholder: 'Escribe un comentario', commentSubmit: 'Comentar',
     noComments: 'Aún no hay comentarios.', replyLink: 'Responder', replyPlaceholder: 'Escribe una respuesta',
     translateShow: 'Ver traducción', translateHide: 'Ver original', translateFailed: 'Error al traducir.',
-    top10Heading: 'TOP 10 de la temporada', top10Empty: 'Aún no hay datos de clasificación.', top10LoadFailed: 'Error al cargar la clasificación.'
+    top10Heading: 'TOP 10 de la temporada', top10Empty: 'Aún no hay datos de clasificación.', top10LoadFailed: 'Error al cargar la clasificación.',
+    attachRecordLabel: 'Adjuntar una carrera (opcional)', attachRecordNone: 'Ninguna',
+    attachRecordEmpty: 'No hay carreras en los últimos 30 días', attachedRecordHeading: 'Carrera adjunta'
   },
   fr: {
     login: 'Connexion', write: 'Publier', logout: 'Déconnexion', sortNew: 'Récent', sortTop: 'Populaire',
@@ -103,7 +113,9 @@ var TRANSLATIONS = {
     commentsTitle: 'Commentaires', commentPlaceholder: 'Écrivez un commentaire', commentSubmit: 'Commenter',
     noComments: 'Aucun commentaire pour le moment.', replyLink: 'Répondre', replyPlaceholder: 'Écrivez une réponse',
     translateShow: 'Voir la traduction', translateHide: "Voir l'original", translateFailed: 'Échec de la traduction.',
-    top10Heading: 'TOP 10 de la saison', top10Empty: 'Aucune donnée de classement pour le moment.', top10LoadFailed: 'Échec du chargement du classement.'
+    top10Heading: 'TOP 10 de la saison', top10Empty: 'Aucune donnée de classement pour le moment.', top10LoadFailed: 'Échec du chargement du classement.',
+    attachRecordLabel: 'Joindre une course (facultatif)', attachRecordNone: 'Aucune',
+    attachRecordEmpty: 'Aucune course au cours des 30 derniers jours', attachedRecordHeading: 'Course jointe'
   },
   de: {
     login: 'Anmelden', write: 'Beitrag erstellen', logout: 'Abmelden', sortNew: 'Neu', sortTop: 'Beliebt',
@@ -118,7 +130,9 @@ var TRANSLATIONS = {
     commentsTitle: 'Kommentare', commentPlaceholder: 'Kommentar schreiben', commentSubmit: 'Kommentieren',
     noComments: 'Noch keine Kommentare.', replyLink: 'Antworten', replyPlaceholder: 'Antwort schreiben',
     translateShow: 'Übersetzung anzeigen', translateHide: 'Original anzeigen', translateFailed: 'Übersetzung fehlgeschlagen.',
-    top10Heading: 'TOP 10 der Saison', top10Empty: 'Noch keine Ranglistendaten.', top10LoadFailed: 'Rangliste konnte nicht geladen werden.'
+    top10Heading: 'TOP 10 der Saison', top10Empty: 'Noch keine Ranglistendaten.', top10LoadFailed: 'Rangliste konnte nicht geladen werden.',
+    attachRecordLabel: 'Lauf anhängen (optional)', attachRecordNone: 'Keine',
+    attachRecordEmpty: 'Keine Läufe in den letzten 30 Tagen', attachedRecordHeading: 'Angehängter Lauf'
   },
   pt: {
     login: 'Entrar', write: 'Publicar', logout: 'Sair', sortNew: 'Recentes', sortTop: 'Populares',
@@ -133,7 +147,9 @@ var TRANSLATIONS = {
     commentsTitle: 'Comentários', commentPlaceholder: 'Escreva um comentário', commentSubmit: 'Comentar',
     noComments: 'Ainda não há comentários.', replyLink: 'Responder', replyPlaceholder: 'Escreva uma resposta',
     translateShow: 'Ver tradução', translateHide: 'Ver original', translateFailed: 'Falha na tradução.',
-    top10Heading: 'TOP 10 da temporada', top10Empty: 'Ainda não há dados de classificação.', top10LoadFailed: 'Falha ao carregar a classificação.'
+    top10Heading: 'TOP 10 da temporada', top10Empty: 'Ainda não há dados de classificação.', top10LoadFailed: 'Falha ao carregar a classificação.',
+    attachRecordLabel: 'Anexar uma corrida (opcional)', attachRecordNone: 'Nenhuma',
+    attachRecordEmpty: 'Nenhuma corrida nos últimos 30 dias', attachedRecordHeading: 'Corrida anexada'
   },
   vi: {
     login: 'Đăng nhập', write: 'Viết bài', logout: 'Đăng xuất', sortNew: 'Mới nhất', sortTop: 'Nổi bật',
@@ -148,7 +164,9 @@ var TRANSLATIONS = {
     commentsTitle: 'Bình luận', commentPlaceholder: 'Nhập bình luận', commentSubmit: 'Bình luận',
     noComments: 'Chưa có bình luận nào.', replyLink: 'Trả lời', replyPlaceholder: 'Nhập trả lời',
     translateShow: 'Xem bản dịch', translateHide: 'Xem nguyên văn', translateFailed: 'Dịch thất bại.',
-    top10Heading: 'TOP 10 mùa này', top10Empty: 'Chưa có dữ liệu xếp hạng.', top10LoadFailed: 'Tải xếp hạng thất bại.'
+    top10Heading: 'TOP 10 mùa này', top10Empty: 'Chưa có dữ liệu xếp hạng.', top10LoadFailed: 'Tải xếp hạng thất bại.',
+    attachRecordLabel: 'Đính kèm bài chạy (tùy chọn)', attachRecordNone: 'Không chọn',
+    attachRecordEmpty: 'Không có bài chạy nào trong 30 ngày qua', attachedRecordHeading: 'Bài chạy đính kèm'
   },
   th: {
     login: 'เข้าสู่ระบบ', write: 'เขียนโพสต์', logout: 'ออกจากระบบ', sortNew: 'ใหม่ล่าสุด', sortTop: 'ยอดนิยม',
@@ -163,7 +181,9 @@ var TRANSLATIONS = {
     commentsTitle: 'ความคิดเห็น', commentPlaceholder: 'แสดงความคิดเห็น', commentSubmit: 'แสดงความคิดเห็น',
     noComments: 'ยังไม่มีความคิดเห็น', replyLink: 'ตอบกลับ', replyPlaceholder: 'พิมพ์การตอบกลับ',
     translateShow: 'ดูคำแปล', translateHide: 'ดูต้นฉบับ', translateFailed: 'แปลไม่สำเร็จ',
-    top10Heading: 'TOP 10 ซีซั่นนี้', top10Empty: 'ยังไม่มีข้อมูลอันดับ', top10LoadFailed: 'โหลดอันดับไม่สำเร็จ'
+    top10Heading: 'TOP 10 ซีซั่นนี้', top10Empty: 'ยังไม่มีข้อมูลอันดับ', top10LoadFailed: 'โหลดอันดับไม่สำเร็จ',
+    attachRecordLabel: 'แนบบันทึกการวิ่ง (ไม่บังคับ)', attachRecordNone: 'ไม่เลือก',
+    attachRecordEmpty: 'ไม่มีบันทึกการวิ่งใน 30 วันที่ผ่านมา', attachedRecordHeading: 'บันทึกการวิ่งที่แนบมา'
   }
 };
 

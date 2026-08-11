@@ -14,6 +14,10 @@ import com.example.paceleague.board.domain.entity.Board;
 import com.example.paceleague.board.domain.entity.Comment;
 import com.example.paceleague.board.domain.entity.Post;
 import com.example.paceleague.member.application.port.in.GetMemberNicknamePort;
+import com.example.paceleague.rank.application.port.in.GetMemberTierPort;
+import com.example.paceleague.rank.domain.enums.RankTier;
+import com.example.paceleague.record.application.dto.RunningRecordResponse;
+import com.example.paceleague.record.application.port.in.GetRecordSummaryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,6 +40,8 @@ public class BoardQueryServiceImpl implements BoardQueryService {
     private final PostVoteRepositoryPort postVoteRepositoryPort;
     private final CommentVoteRepositoryPort commentVoteRepositoryPort;
     private final GetMemberNicknamePort getMemberNicknamePort;
+    private final GetMemberTierPort getMemberTierPort;
+    private final GetRecordSummaryPort getRecordSummaryPort;
 
     public List<BoardResponse> listBoards() {
         return boardRepositoryPort.findAllByOrderByDisplayOrderAsc()
@@ -54,7 +60,10 @@ public class BoardQueryServiceImpl implements BoardQueryService {
         var pageable = PageRequest.of(Math.max(page, 0), pageSize, sortOrder);
 
         return postRepositoryPort.findByBoardSno(boardSno, pageable)
-                .map(post -> PostSummaryResponse.from(post, nicknameOf(post.getMemberSno()), commentRepositoryPort.countByPostSno(post.getSno())));
+                .map(post -> PostSummaryResponse.from(
+                        post, nicknameOf(post.getMemberSno()), tierOf(post.getMemberSno()),
+                        commentRepositoryPort.countByPostSno(post.getSno())
+                ));
     }
 
     @Transactional
@@ -68,11 +77,15 @@ public class BoardQueryServiceImpl implements BoardQueryService {
                 .orElseThrow(() -> new IllegalArgumentException("board not found"));
 
         Integer myVote = myVoteOnPost(memberSno, postSno);
+        RunningRecordResponse attachedRecord = post.getRecordSno() == null
+                ? null
+                : getRecordSummaryPort.getSummary(post.getRecordSno()).orElse(null);
 
         // post.getViewCount()는 위 incrementViewCount()가 반영되기 전 값이므로 +1 해서 응답한다.
         return new PostDetailResponse(
                 post.getSno(), post.getBoardSno(), board.getName(), post.getTitle(), post.getContent(),
-                post.getMemberSno(), nicknameOf(post.getMemberSno()), post.getViewCount() + 1, post.getScore(), myVote,
+                post.getMemberSno(), nicknameOf(post.getMemberSno()), tierOf(post.getMemberSno()), attachedRecord,
+                post.getViewCount() + 1, post.getScore(), myVote,
                 post.getCreateAt(), post.getUpdateAt()
         );
     }
@@ -120,5 +133,9 @@ public class BoardQueryServiceImpl implements BoardQueryService {
 
     private String nicknameOf(Long memberSno) {
         return getMemberNicknamePort.getNickname(memberSno);
+    }
+
+    private RankTier tierOf(Long memberSno) {
+        return getMemberTierPort.getTier(memberSno);
     }
 }

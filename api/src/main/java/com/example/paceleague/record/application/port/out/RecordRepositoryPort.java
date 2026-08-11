@@ -14,6 +14,8 @@ public interface RecordRepositoryPort {
 
     Optional<Record> findBySnoAndUno(Long sno, Long uno);
 
+    Optional<Record> findBySno(Long sno);
+
     Page<Record> findByUnoOrderByStartTimeDesc(Long uno, Pageable pageable);
 
     List<Record> findByUnoAndStartTimeGreaterThanEqualAndStartTimeLessThanOrderByStartTimeAsc(

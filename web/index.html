@@ -63,7 +63,9 @@
     .post-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
     .post-title { font-size: 15px; font-weight: 600; cursor: pointer; }
     .post-translate-link { color: #888; font-size: 11px; cursor: pointer; white-space: nowrap; flex-shrink: 0; padding-top: 2px; }
-    .post-meta { font-size: 12px; color: #888; display: flex; gap: 10px; flex-wrap: wrap; }
+    .post-meta { font-size: 12px; color: #888; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .author-tier { background: #262626; color: #ccc; border-radius: 10px; padding: 1px 8px; font-size: 11px; }
+    .record-badge { font-size: 12px; }
     .empty { text-align: center; color: #666; padding: 30px; }
 
     .pager { display: flex; justify-content: center; gap: 16px; margin-top: 16px; }
@@ -75,6 +77,8 @@
       width: 100%; background: #0f0f0f; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 14px;
     }
     dialog#write-dialog textarea { min-height: 120px; resize: vertical; }
+    dialog#write-dialog label { display: block; font-size: 12px; color: #888; margin-bottom: 6px; }
+    dialog#write-dialog select { width: 100%; background: #0f0f0f; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; }
     dialog#write-dialog .actions { display: flex; justify-content: flex-end; gap: 8px; }
     dialog#write-dialog button.submit { background: #e53935; color: #fff; }
     dialog#write-dialog button.cancel { background: #333; color: #ccc; border: none; }
@@ -111,6 +115,8 @@
   <dialog id="write-dialog">
     <input type="text" id="write-title" maxlength="200">
     <textarea id="write-content"></textarea>
+    <label id="write-record-label" for="write-record"></label>
+    <select id="write-record"></select>
     <div class="error" id="write-error" style="color:#ff6b6b;font-size:13px;margin-bottom:8px;"></div>
     <div class="actions">
       <button class="cancel" id="write-cancel"></button>
@@ -180,6 +186,7 @@
 
       document.getElementById('write-title').placeholder = t('titlePlaceholder');
       document.getElementById('write-content').placeholder = t('contentPlaceholder');
+      document.getElementById('write-record-label').textContent = t('attachRecordLabel');
       document.getElementById('write-cancel').textContent = t('cancel');
       document.getElementById('write-submit').textContent = t('submit');
 
@@ -189,7 +196,24 @@
         document.getElementById('write-title').value = '';
         document.getElementById('write-content').value = '';
         document.getElementById('write-error').textContent = '';
+        loadRecordOptions();
         document.getElementById('write-dialog').showModal();
+      });
+    }
+
+    function loadRecordOptions() {
+      var selectEl = document.getElementById('write-record');
+      selectEl.innerHTML = '<option value="">' + t('attachRecordNone') + '</option>';
+      apiFetch('/api/record/recent-30-days').then(function (json) {
+        var records = (json && json.data) || [];
+        if (records.length === 0) {
+          selectEl.innerHTML += '<option value="" disabled>' + t('attachRecordEmpty') + '</option>';
+          return;
+        }
+        records.forEach(function (r) {
+          var label = formatRecordDateTime(r.startTime) + ' · ' + formatDistanceKm(r.distance);
+          selectEl.innerHTML += '<option value="' + r.recordSno + '">' + escapeHtml(label) + '</option>';
+        });
       });
     }
 
@@ -246,6 +270,8 @@
               '</div>' +
               '<div class="post-meta">' +
                 '<span>' + escapeHtml(p.nickname) + '</span>' +
+                '<span class="author-tier">' + (TIER_LABEL[p.authorTier] || p.authorTier) + '</span>' +
+                (p.recordSno ? '<span class="record-badge" title="' + escapeHtml(t('attachedRecordHeading')) + '">🏃</span>' : '') +
                 '<span>' + t('reactionLabel') + ' ' + p.score + '</span>' +
                 '<span>' + t('commentCountLabel') + ' ' + p.commentCount + '</span>' +
                 '<span>' + t('viewCountLabel') + ' ' + p.viewCount + '</span>' +
@@ -338,9 +364,11 @@
           return;
         }
 
+        var recordSnoValue = document.getElementById('write-record').value;
+
         apiFetch('/api/board/' + currentBoardSno + '/posts', {
           method: 'POST',
-          body: { title: title, content: content }
+          body: { title: title, content: content, recordSno: recordSnoValue ? Number(recordSnoValue) : null }
         }).then(function (json) {
           if (!json.success) {
             errorEl.textContent = json.message || t('writeFailed');

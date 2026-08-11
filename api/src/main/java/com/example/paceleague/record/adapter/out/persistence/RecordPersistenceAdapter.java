@@ -26,6 +26,10 @@ public class RecordPersistenceAdapter implements RecordRepositoryPort {
         return recordJpaRepository.findBySnoAndUno(sno, uno);
     }
 
+    public Optional<Record> findBySno(Long sno) {
+        return recordJpaRepository.findById(sno);
+    }
+
     public Page<Record> findByUnoOrderByStartTimeDesc(Long uno, Pageable pageable) {
         return recordJpaRepository.findByUnoOrderByStartTimeDesc(uno, pageable);
     }

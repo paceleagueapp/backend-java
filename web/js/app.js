@@ -32,6 +32,33 @@ function formatLocalTime(isoString) {
   });
 }
 
+// record의 startTime/endTime은 createAt/updateAt과 달리 "클라이언트가 기록한 그대로의 로컬 시각"이라
+// 타임존 정보가 없다(서버는 저장만 함, utcOffset은 참고용). formatLocalTime처럼 UTC로 간주해 변환하면
+// 오히려 왜곡되므로, 문자열을 그대로 "yyyy-MM-dd HH:mm"으로만 잘라 보여준다.
+function formatRecordDateTime(isoString) {
+  if (!isoString) return '';
+  var m = String(isoString).match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+  return m ? (m[1] + ' ' + m[2]) : isoString;
+}
+
+function formatDistanceKm(meters) {
+  if (meters == null) return '';
+  return (Number(meters) / 1000).toFixed(2) + 'km';
+}
+
+// startTime/endTime 둘 다 타임존 없이 같은 방식으로 해석되므로, 절대 시각이 아닌 "차이(소요시간)"만
+// 구하는 이 계산은 브라우저 로컬 타임존 가정에 영향받지 않는다.
+function formatPace(distanceMeters, startTime, endTime) {
+  var meters = Number(distanceMeters);
+  if (!meters || !startTime || !endTime) return '';
+  var seconds = (new Date(endTime) - new Date(startTime)) / 1000;
+  if (!(seconds > 0)) return '';
+  var paceSecPerKm = Math.round(seconds / (meters / 1000));
+  var min = Math.floor(paceSecPerKm / 60);
+  var sec = paceSecPerKm % 60;
+  return min + ':' + (sec < 10 ? '0' : '') + sec + ' /km';
+}
+
 function isLoggedIn() {
   return !!localStorage.getItem(STORAGE_KEYS.accessToken);
 }

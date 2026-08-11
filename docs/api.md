@@ -309,6 +309,8 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 > 이 엔드포인트는 다른 GET 엔드포인트와 달리 `ResponseEntity`로 감싸지 않고 `ResponseApi<T>`를 직접 반환합니다 (동작상 차이는 없음, 응답 포맷은 동일).
 
+> **CORS**: 게시글 작성 화면에서 "내 러닝기록 첨부" 선택 목록으로 쓰기 위해, `/api/record`의 다른 엔드포인트와 달리 이 경로만 예외적으로 `paceleague.co.kr`/`www.paceleague.co.kr` 오리진에서 브라우저 호출을 허용합니다(`CorsConfig`, GET + `Authorization` 헤더만).
+
 ---
 
 ## Rank API (`/api/rank`) — 인증 필요
@@ -449,19 +451,24 @@ join/login/reissue가 공통으로 반환하는 구조:
 | size | int | 20 | |
 | sort | string (`new`\|`top`) | `new` | `top`은 `score DESC, create_at DESC` |
 
-**Response** `200 OK` — `data`: Spring `Page<PostSummaryResponse>` (`sno`, `title`, `nickname`, `viewCount`, `score`, `commentCount`, `createAt`)
+**Response** `200 OK` — `data`: Spring `Page<PostSummaryResponse>` (`sno`, `title`, `nickname`, `authorTier`, `recordSno`, `viewCount`, `score`, `commentCount`, `createAt`)
+
+- `authorTier`: 작성자의 현재 시즌 티어(`RankTier` enum, `rank.GetMemberTierPort`로 조회, 이번 시즌 기록이 없으면 기본값 `SILVER`)
+- `recordSno`: 작성 시 첨부한 기록의 PK(없으면 `null`). 목록에서는 첨부 여부 표시용으로만 쓰고, 기록 상세 내용은 게시글 상세 조회에서만 내려줌
 
 **실패**: 존재하지 않는 `boardSno` → 400
 
 ### POST `/api/board/{boardSno}/posts` — 게시글 작성 (인증 필요)
 
 ```json
-{ "title": "오늘 10km 완주!", "content": "날씨가 좋아서 기분 좋게 뛰었습니다." }
+{ "title": "오늘 10km 완주!", "content": "날씨가 좋아서 기분 좋게 뛰었습니다.", "recordSno": 123 }
 ```
+
+`recordSno`는 선택 항목입니다. 지정하면 본인 소유 기록인지 검증합니다(`GET /api/record/recent-30-days` 등으로 조회한 본인 기록의 `recordSno`만 사용 가능 — 기간 제한은 없고, 다른 회원 소유이거나 존재하지 않는 `recordSno`면 거부됩니다).
 
 **Response** `200 OK` — `data`: `{ "sno": 123 }`
 
-**실패**: `title`/`content` 공백 또는 `title` 200자 초과 → 400, 존재하지 않는 `boardSno` → 400
+**실패**: `title`/`content` 공백 또는 `title` 200자 초과 → 400, 존재하지 않는 `boardSno` → 400, `recordSno`가 존재하지 않거나 본인 소유가 아님 → 400 `"record not found"`
 
 ### GET `/api/board/posts/{postSno}` — 게시글 상세 조회 (공개)
 
@@ -473,10 +480,18 @@ join/login/reissue가 공통으로 반환하는 구조:
 {
   "sno": 123, "boardSno": 1, "boardName": "자유게시판",
   "title": "오늘 10km 완주!", "content": "...",
-  "memberSno": 5, "nickname": "러너1", "viewCount": 12, "score": 3, "myVote": 1,
+  "memberSno": 5, "nickname": "러너1", "authorTier": "GOLD",
+  "attachedRecord": {
+    "recordSno": 456, "startTime": "2026-08-08T06:30:00", "endTime": "2026-08-08T07:05:00",
+    "distance": 10230.5, "createAt": "2026-08-08T07:05:10"
+  },
+  "viewCount": 12, "score": 3, "myVote": 1,
   "createAt": "2026-08-08T10:00:00", "updateAt": "2026-08-08T10:00:00"
 }
 ```
+
+- `authorTier`: 목록 조회와 동일하게 작성자의 현재 시즌 티어
+- `attachedRecord`: 첨부한 기록이 없으면 `null`. 첨부된 기록이 이후 삭제된 경우에도 `null`로 응답(참조 무결성을 강제하지 않음)
 
 **실패**: 존재하지 않는 `postSno` → 400
 

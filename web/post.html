@@ -23,8 +23,11 @@
 
     .post-box { background: #1a1a1a; border-radius: 10px; padding: 18px; margin-bottom: 20px; }
     .post-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-    .post-meta { font-size: 12px; color: #888; margin-bottom: 14px; display: flex; gap: 10px; }
+    .post-meta { font-size: 12px; color: #888; margin-bottom: 14px; display: flex; gap: 10px; align-items: center; }
+    .author-tier { background: #262626; color: #ccc; border-radius: 10px; padding: 1px 8px; font-size: 11px; }
     .post-content { font-size: 14px; line-height: 1.6; white-space: pre-wrap; margin-bottom: 14px; }
+    .attached-record { background: #0f0f0f; border: 1px solid #333; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 13px; color: #ccc; }
+    .attached-record .attached-record-heading { font-size: 11px; color: #888; margin-bottom: 4px; }
     .vote-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .vote-btn {
       background: #0f0f0f; border: 1px solid #333; color: #ccc; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;
@@ -80,6 +83,11 @@
   <script src="/js/app.js"></script>
   <script src="/js/i18n.js"></script>
   <script>
+    var TIER_LABEL = {
+      BRONZE: '브론즈', SILVER: '실버', GOLD: '골드',
+      PLATINUM: '플래티넘', DIAMOND: '다이아', MASTER: '마스터', CHALLENGER: '챌린저'
+    };
+
     renderLangSelect(document.getElementById('lang-select'));
     document.getElementById('back-link').textContent = t('backToList');
     document.getElementById('main-link').textContent = t('mainLink');
@@ -110,13 +118,25 @@
       var upClass = post.myVote === 1 ? ' active-up' : '';
       var downClass = post.myVote === -1 ? ' active-down' : '';
 
+      var recordHtml = '';
+      if (post.attachedRecord) {
+        var r = post.attachedRecord;
+        recordHtml = '<div class="attached-record">' +
+          '<div class="attached-record-heading">🏃 ' + t('attachedRecordHeading') + '</div>' +
+          '<div>' + formatDistanceKm(r.distance) + ' · ' + formatPace(r.distance, r.startTime, r.endTime) +
+          ' · ' + escapeHtml(formatRecordDateTime(r.startTime)) + '</div>' +
+        '</div>';
+      }
+
       document.getElementById('post-box').innerHTML =
         '<div class="post-title" id="post-title">' + escapeHtml(post.title) + '</div>' +
         '<div class="post-meta">' +
           '<span>' + escapeHtml(post.nickname) + '</span>' +
+          '<span class="author-tier">' + (TIER_LABEL[post.authorTier] || post.authorTier) + '</span>' +
           '<span>' + t('viewCountLabel') + ' ' + post.viewCount + '</span>' +
           '<span>' + escapeHtml(formatLocalTime(post.createAt)) + '</span>' +
         '</div>' +
+        recordHtml +
         '<div class="post-content" id="post-content">' + escapeHtml(post.content) + '</div>' +
         '<div class="vote-row">' +
           '<button class="vote-btn' + upClass + '" id="post-up">' + t('voteUp') + '</button>' +
