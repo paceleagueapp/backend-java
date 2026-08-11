@@ -1,11 +1,13 @@
 package com.example.paceleague.rank.application.service;
 
+import com.example.paceleague.common.i18n.Language;
 import com.example.paceleague.rank.application.dto.RankMeResponse;
 import com.example.paceleague.rank.application.port.in.GetMemberTierPort;
 import com.example.paceleague.rank.application.port.in.GetMyRankUseCase;
 import com.example.paceleague.rank.application.port.out.MemberScoreRepositoryPort;
 import com.example.paceleague.rank.domain.entity.MemberScore;
 import com.example.paceleague.rank.domain.enums.RankTier;
+import com.example.paceleague.rank.domain.policy.RankTierLabelPolicy;
 import com.example.paceleague.season.application.port.in.GetCurrentSeasonPort;
 import com.example.paceleague.season.domain.entity.Season;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +27,9 @@ public class RankQueryServiceImpl implements GetMyRankUseCase, GetMemberTierPort
     private final MemberScoreRepositoryPort memberScoreRepositoryPort;
     private final GetCurrentSeasonPort getCurrentSeasonPort;
 
-    public RankMeResponse getMyRank(Long memberSno) {
+    public RankMeResponse getMyRank(Long memberSno, String lang) {
+        Language language = Language.fromCode(lang);
+
         MemberScore memberScore = findMemberScore(memberSno).orElse(null);
         int totalScore = memberScore == null ? DEFAULT_SCORE : memberScore.getTotalScore();
         RankTier currentTier = memberScore == null ? DEFAULT_TIER : memberScore.getTier();
@@ -37,7 +41,9 @@ public class RankQueryServiceImpl implements GetMyRankUseCase, GetMemberTierPort
         return new RankMeResponse(
                 totalScore,
                 currentTier,
+                RankTierLabelPolicy.label(currentTier, language),
                 nextTier,
+                nextTier == null ? null : RankTierLabelPolicy.label(nextTier, language),
                 nextTierRequiredScore,
                 remainingScore
         );

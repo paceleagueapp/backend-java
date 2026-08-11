@@ -83,11 +83,6 @@
   <script src="/js/app.js"></script>
   <script src="/js/i18n.js"></script>
   <script>
-    var TIER_LABEL = {
-      BRONZE: '브론즈', SILVER: '실버', GOLD: '골드',
-      PLATINUM: '플래티넘', DIAMOND: '다이아', MASTER: '마스터', CHALLENGER: '챌린저'
-    };
-
     renderLangSelect(document.getElementById('lang-select'));
     document.getElementById('back-link').textContent = t('backToList');
     document.getElementById('main-link').textContent = t('mainLink');
@@ -105,7 +100,7 @@
     var showingCommentTranslation = {}; // sno -> boolean
 
     function loadPost() {
-      apiFetch('/api/board/posts/' + postSno).then(function (json) {
+      apiFetch('/api/board/posts/' + postSno + '?lang=' + encodeURIComponent(getLang())).then(function (json) {
         postOriginal = { title: json.data.title, content: json.data.content };
         postTranslated = null;
         showingPostTranslation = false;
@@ -132,7 +127,7 @@
         '<div class="post-title" id="post-title">' + escapeHtml(post.title) + '</div>' +
         '<div class="post-meta">' +
           '<span>' + escapeHtml(post.nickname) + '</span>' +
-          '<span class="author-tier">' + (TIER_LABEL[post.authorTier] || post.authorTier) + '</span>' +
+          '<span class="author-tier">' + escapeHtml(post.authorTierLabel || post.authorTier) + '</span>' +
           '<span>' + t('viewCountLabel') + ' ' + post.viewCount + '</span>' +
           '<span>' + escapeHtml(formatLocalTime(post.createAt)) + '</span>' +
         '</div>' +

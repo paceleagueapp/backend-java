@@ -83,6 +83,17 @@ com.example.paceleague
 - `board` → `member.application.port.in.GetMemberNicknamePort`(작성자 닉네임), `rank.application.port.in.GetMemberTierPort`(작성자 티어뱃지), `record.application.port.in.RecordQueryService`(게시글 작성 시 첨부한 기록이 본인 소유인지 검증 — `getOne`은 원래 `record` 자신의 use-case지만 board가 그대로 재사용), `record.application.port.in.GetRecordSummaryPort`(게시글 조회 시 첨부 기록 요약 표시, 작성자가 아닌 제3자가 봐도 되도록 memberSno 소유권 검사 없이 recordSno만으로 조회)에 의존. 2026-08-11 "게시글에 러닝기록 첨부 + 작성자 프로필(티어)" 기능 추가 시 도입.
 - `rank`/`ranking` → `season.application.port.in.GetCurrentSeasonPort`에만 의존.
 
+**예외 — 순수 정적 정책 클래스는 포트 없이 직접 import**: `board.application.service.BoardQueryServiceImpl`이 `rank.domain.policy.RankTierLabelPolicy`(티어 → 언어별 라벨 고정 테이블)를 포트 없이 바로 호출합니다. 위 "도메인 간 의존은 포트로만" 원칙의 예외인데, 이 클래스가 Spring 빈도 아니고 DB/Redis 접근도 없는 순수 정적 조회 함수(`RankTier`, `Language` 두 enum만 받아 `String`을 반환)라 포트/어댑터를 만드는 비용이 실익보다 크다고 판단했기 때문입니다 — `common` 패키지의 `StringRedisTemplate` 같은 범용 인프라 클라이언트를 포트화하지 않는 것과 같은 이유. 상태를 갖거나 DB에 접근하는 진짜 크로스 도메인 접근(리포지토리 등)이라면 반드시 포트를 통해야 합니다.
+
+### 정적 UI 라벨 다국어(i18n) — 2026-08-11 추가
+
+카테고리명(보드 name/description)과 티어 등급 표시는 웹 UI 언어 선택기(`web/js/i18n.js`, 10개 언어)에 맞춰 서버가 직접 번역된 문자열을 내려주도록 했습니다. 게시글 본문처럼 자유 텍스트가 아니라 **값의 종류가 고정**(보드 3개, 티어 7개)돼 있어 AWS Translate(`board.TranslationServiceImpl`, 유료·조회성 API)를 쓰지 않고, 코드 안에 고정 번역 테이블을 두는 방식을 택했습니다.
+
+- `common.i18n.Language` — `web/js/i18n.js`의 `SUPPORTED_LANGUAGES`와 동일한 10개 코드(ko/en/ja/zh/es/fr/de/pt/vi/th)의 enum. `fromCode(String)`이 `null`/미지원 코드를 항상 `KO`로 폴백한다 (컨트롤러의 `translatePost` 같은 자유 번역 API는 미지원 언어를 400으로 거부하지만, 이건 정적 UI 라벨이라 관대하게 기본값으로 떨어지는 쪽을 택함).
+- `rank.domain.policy.RankTierLabelPolicy` — `RankTier` 7개 × `Language` 10개 고정 테이블. `RankMeResponse`(`currentTierLabel`/`nextTierLabel`), `RankingUserResponse`(`tierLabel`), `PostSummaryResponse`/`PostDetailResponse`(`authorTierLabel`)에서 사용. 원본 `RankTier` enum 필드(`currentTier`/`tier`/`authorTier`)는 그대로 남겨둬서, 로직/필터링이 필요한 클라이언트(모바일 앱 등)는 언어와 무관한 코드를 계속 쓸 수 있다.
+- `board.domain.policy.BoardLabelPolicy` — slug(`free`/`qna`/`verify`) × `Language` 9개(한국어 제외) 고정 테이블. 한국어는 DB의 `board.name`/`board.description`이 이미 원본이므로 테이블에 중복 저장하지 않고, `lang=ko`거나 테이블에 없는 slug(신규 보드 추가 시)면 항상 DB 값을 그대로 반환한다.
+- 관련 GET 엔드포인트(`/api/board`, `/api/board/{boardSno}/posts`, `/api/board/posts/{postSno}`, `/api/rank/me`, `/api/ranking/getRanking`, `/api/ranking/top10`)가 전부 `lang` 쿼리 파라미터(기본값 `ko`)를 받는다 — 커스텀 헤더가 아닌 쿼리 파라미터라 기존 CORS 설정(`CorsConfig`) 변경이 필요 없었다.
+
 `record`가 `ApplyScoreUseCase.applyScore(...)`를 자신의 `@Transactional` 메서드 안에서 호출하는데, 둘 다 스프링이 관리하는 별개 빈이라 기본 `REQUIRED` 전파로 호출자의 트랜잭션에 합류합니다 — 기록 저장 + 점수 로그 저장 + 시즌 누적 점수 갱신이 예전과 동일하게 하나의 트랜잭션으로 묶입니다.
 
 ### 왜 엔티티를 순수 도메인 객체로 분리하지 않았는가

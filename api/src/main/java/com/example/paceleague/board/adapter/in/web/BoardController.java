@@ -35,8 +35,10 @@ public class BoardController {
     @Operation(summary = "보드 목록 조회")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
-    public ResponseApi<List<BoardResponse>> listBoards() {
-        return ResponseApi.success(boardQueryService.listBoards());
+    public ResponseApi<List<BoardResponse>> listBoards(
+            @Parameter(description = "보드명/설명 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang
+    ) {
+        return ResponseApi.success(boardQueryService.listBoards(lang));
     }
 
     @Operation(summary = "게시글 목록 조회", description = "sort=new(기본)|top")
@@ -46,9 +48,10 @@ public class BoardController {
             @PathVariable Long boardSno,
             @Parameter(description = "페이지 번호(0-base)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "new") String sort
+            @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "new") String sort,
+            @Parameter(description = "작성자 티어뱃지 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang
     ) {
-        return ResponseApi.success(boardQueryService.listPosts(boardSno, page, size, sort));
+        return ResponseApi.success(boardQueryService.listPosts(boardSno, page, size, sort, lang));
     }
 
     @Operation(summary = "게시글 작성")
@@ -67,8 +70,12 @@ public class BoardController {
     @Operation(summary = "게시글 상세 조회", description = "조회 시 조회수가 1 증가합니다. 비로그인 시에도 조회 가능(이 경우 myVote는 항상 null).")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/posts/{postSno}")
-    public ResponseApi<PostDetailResponse> getPost(@MemberSno(required = false) Long memberSno, @PathVariable Long postSno) {
-        return ResponseApi.success(boardQueryService.getPost(memberSno, postSno));
+    public ResponseApi<PostDetailResponse> getPost(
+            @MemberSno(required = false) Long memberSno,
+            @PathVariable Long postSno,
+            @Parameter(description = "보드명/티어뱃지 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang
+    ) {
+        return ResponseApi.success(boardQueryService.getPost(memberSno, postSno, lang));
     }
 
     @Operation(summary = "게시글 삭제", description = "본인 게시글만 삭제 가능하며, 댓글/추천도 함께 삭제됩니다.")

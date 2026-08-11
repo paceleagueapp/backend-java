@@ -8,6 +8,7 @@ public record RankingUserResponse(
         String nickname,
         int totalScore,
         RankTier tier,
+        String tierLabel,
         boolean me
 ) {
 }

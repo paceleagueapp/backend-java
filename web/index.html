@@ -127,11 +127,6 @@
   <script src="/js/app.js"></script>
   <script src="/js/i18n.js"></script>
   <script>
-    var TIER_LABEL = {
-      BRONZE: '브론즈', SILVER: '실버', GOLD: '골드',
-      PLATINUM: '플래티넘', DIAMOND: '다이아', MASTER: '마스터', CHALLENGER: '챌린저'
-    };
-
     renderHeader();
     renderFeed();
     renderTop10();
@@ -139,7 +134,7 @@
     function renderTop10() {
       document.getElementById('top10-heading').textContent = t('top10Heading');
 
-      fetch('https://api.paceleague.co.kr/api/ranking/top10')
+      fetch('https://api.paceleague.co.kr/api/ranking/top10?lang=' + encodeURIComponent(getLang()))
         .then(function (res) { return res.json(); })
         .then(function (json) {
           var listEl = document.getElementById('top10-list');
@@ -154,7 +149,7 @@
             return '<li>' +
               '<span class="top10-rank">' + item.rank + '</span>' +
               '<span class="top10-nickname">' + escapeHtml(item.nickname || '-') + '</span>' +
-              '<span class="top10-tier">' + (TIER_LABEL[item.tier] || item.tier) + '</span>' +
+              '<span class="top10-tier">' + escapeHtml(item.tierLabel || item.tier) + '</span>' +
               '<span class="top10-score">' + item.totalScore + '</span>' +
               '</li>';
           }).join('');
@@ -270,7 +265,7 @@
               '</div>' +
               '<div class="post-meta">' +
                 '<span>' + escapeHtml(p.nickname) + '</span>' +
-                '<span class="author-tier">' + (TIER_LABEL[p.authorTier] || p.authorTier) + '</span>' +
+                '<span class="author-tier">' + escapeHtml(p.authorTierLabel || p.authorTier) + '</span>' +
                 (p.recordSno ? '<span class="record-badge" title="' + escapeHtml(t('attachedRecordHeading')) + '">🏃</span>' : '') +
                 '<span>' + t('reactionLabel') + ' ' + p.score + '</span>' +
                 '<span>' + t('commentCountLabel') + ' ' + p.commentCount + '</span>' +
@@ -306,7 +301,7 @@
       }
 
       function loadPosts() {
-        apiFetch('/api/board/' + currentBoardSno + '/posts?page=' + currentPage + '&size=20&sort=' + currentSort)
+        apiFetch('/api/board/' + currentBoardSno + '/posts?page=' + currentPage + '&size=20&sort=' + currentSort + '&lang=' + encodeURIComponent(getLang()))
           .then(function (json) { renderPosts(json.data); });
       }
 
@@ -381,7 +376,7 @@
         document.getElementById('write-dialog').close();
       });
 
-      apiFetch('/api/board').then(function (json) {
+      apiFetch('/api/board?lang=' + encodeURIComponent(getLang())).then(function (json) {
         boards = json.data || [];
         var slug = boardSlugFromQuery();
         var selected = boards.find(function (b) { return b.slug === slug; }) || boards[0];

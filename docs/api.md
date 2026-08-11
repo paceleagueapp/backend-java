@@ -321,20 +321,29 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 현재 시즌 기준 내 누적 점수, 현재 티어, 다음 티어까지 남은 점수를 반환합니다.
 
+**Query Parameters**
+
+| 파라미터 | 타입 | 기본값 | 설명 |
+|---|---|---|---|
+| lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | 티어 라벨(`currentTierLabel`/`nextTierLabel`) 표시 언어. 미지원 값은 `ko`로 처리(400 아님) |
+
 **Response** `200 OK` — `data`: `RankMeResponse`
 
 ```json
 {
   "totalScore": 1620,
   "currentTier": "SILVER",
+  "currentTierLabel": "Silver",
   "nextTier": "GOLD",
+  "nextTierLabel": "Gold",
   "nextTierRequiredScore": 3000,
   "remainingScore": 1380
 }
 ```
 
 - 이번 시즌에 아직 기록이 없는 회원은 기본값(`totalScore = 1500`, `currentTier = SILVER`)으로 응답합니다.
-- `nextTier`/`nextTierRequiredScore`/`remainingScore`는 최고 티어(`CHALLENGER`)에서는 각각 `null`/`0`/`0`.
+- `nextTier`/`nextTierLabel`/`nextTierRequiredScore`/`remainingScore`는 최고 티어(`CHALLENGER`)에서는 각각 `null`/`null`/`0`/`0`.
+- `currentTier`/`nextTier`는 로직/필터링용 원본 enum 코드로 언어와 무관하게 항상 동일. `currentTierLabel`/`nextTierLabel`이 `lang`에 따라 달라지는 화면 표시용 문자열이며, `rank.domain.policy.RankTierLabelPolicy`의 고정 번역 테이블에서 조회한다(AWS Translate 미사용 — 티어명 7개는 값이 고정돼 있어 굳이 API 호출할 이유가 없음).
 - 티어 구간은 [domains.md](./domains.md#티어-rank-tier) 참고.
 
 ---
@@ -345,18 +354,24 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 ### GET `/api/ranking/getRanking` — 랭킹 페이지 조회 (인증 필요)
 
+**Query Parameters**
+
+| 파라미터 | 타입 | 기본값 | 설명 |
+|---|---|---|---|
+| lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | 각 항목의 `tierLabel` 표시 언어. 미지원 값은 `ko`로 처리 |
+
 **Response** `200 OK` — `data`: `RankingPageResponse`
 
 ```json
 {
   "topRanks": [
-    { "rank": 1, "memberSno": 7, "nickname": "페이서", "totalScore": 24500, "tier": "CHALLENGER", "me": false },
-    { "rank": 2, "memberSno": 3, "nickname": "런닝맨", "totalScore": 19800, "tier": "MASTER", "me": false },
-    { "rank": 3, "memberSno": 1, "nickname": "러너01", "totalScore": 15200, "tier": "MASTER", "me": true }
+    { "rank": 1, "memberSno": 7, "nickname": "페이서", "totalScore": 24500, "tier": "CHALLENGER", "tierLabel": "Challenger", "me": false },
+    { "rank": 2, "memberSno": 3, "nickname": "런닝맨", "totalScore": 19800, "tier": "MASTER", "tierLabel": "Master", "me": false },
+    { "rank": 3, "memberSno": 1, "nickname": "러너01", "totalScore": 15200, "tier": "MASTER", "tierLabel": "Master", "me": true }
   ],
   "aroundRanks": [
-    { "rank": 1, "memberSno": 1, "nickname": "러너01", "totalScore": 15200, "tier": "MASTER", "me": true },
-    { "rank": 2, "memberSno": 9, "nickname": "..." , "totalScore": 14990, "tier": "MASTER", "me": false }
+    { "rank": 1, "memberSno": 1, "nickname": "러너01", "totalScore": 15200, "tier": "MASTER", "tierLabel": "Master", "me": true },
+    { "rank": 2, "memberSno": 9, "nickname": "..." , "totalScore": 14990, "tier": "MASTER", "tierLabel": "Master", "me": false }
   ]
 }
 ```
@@ -364,23 +379,30 @@ join/login/reissue가 공통으로 반환하는 구조:
 - `topRanks`: 시즌 전체 1~3위 (항상 최대 3명)
 - `aroundRanks`: 내 순위를 중심으로 앞뒤 포함 **5명** (내 순위가 3위 이하로 밀려있어도 상위 유저부터 잘리지 않도록 `offset = max(0, 내 순위 - 3)`으로 계산)
 - 두 목록 모두 각 항목에 `me: true/false`로 본인 여부 표시
+- `tier`는 원본 enum 코드(로직/필터링용, 언어 무관), `tierLabel`은 `lang`에 따라 달라지는 화면 표시용 문자열(`rank.domain.policy.RankTierLabelPolicy`)
 - 순위 산정 로직(동점자 처리 포함)은 [domains.md](./domains.md#랭킹리더보드-산정-로직) 참고
 
 ### GET `/api/ranking/top10` — 상위 10명 랭킹 조회 (공개, 인증 불필요)
 
 `paceleague.co.kr` 랜딩 페이지(`web/index.html`)에서 표시하기 위한 공개 엔드포인트입니다. 시즌 상위 10명을 그대로 반환합니다 (내부적으로 `getRanking`의 "내 주변 순위" 조회와 같은 쿼리를 `offset=0, limit=10`으로 재사용).
 
+**Query Parameters**
+
+| 파라미터 | 타입 | 기본값 | 설명 |
+|---|---|---|---|
+| lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | 각 항목의 `tierLabel` 표시 언어. 미지원 값은 `ko`로 처리 |
+
 **Response** `200 OK` — `data`: `RankingUserResponse[]`
 
 ```json
 [
-  { "rank": 1, "memberSno": 7, "nickname": "페이서", "totalScore": 24500, "tier": "CHALLENGER", "me": false },
-  { "rank": 2, "memberSno": 3, "nickname": "런닝맨", "totalScore": 19800, "tier": "MASTER", "me": false }
+  { "rank": 1, "memberSno": 7, "nickname": "페이서", "totalScore": 24500, "tier": "CHALLENGER", "tierLabel": "Challenger", "me": false },
+  { "rank": 2, "memberSno": 3, "nickname": "런닝맨", "totalScore": 19800, "tier": "MASTER", "tierLabel": "Master", "me": false }
 ]
 ```
 
 - 로그인 컨텍스트가 없으므로 `me`는 항상 `false`.
-- CORS: `https://paceleague.co.kr`, `https://www.paceleague.co.kr` 오리진에서만 브라우저 `fetch`로 호출 가능하도록 이 경로에만 한정해 CORS를 허용합니다 (`common.config.CorsConfig`). 다른 API는 CORS를 열지 않았으므로 브라우저에서 다른 오리진으로는 호출할 수 없습니다.
+- CORS: `https://paceleague.co.kr`, `https://www.paceleague.co.kr` 오리진에서만 브라우저 `fetch`로 호출 가능하도록 이 경로에만 한정해 CORS를 허용합니다 (`common.config.CorsConfig`). 다른 API는 CORS를 열지 않았으므로 브라우저에서 다른 오리진으로는 호출할 수 없습니다. `lang`은 일반 쿼리 파라미터라 CORS 프리플라이트에 영향 없음(커스텀 헤더가 아님).
 
 ---
 
@@ -433,6 +455,12 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 ### GET `/api/board` — 보드 목록 조회 (공개)
 
+**Query Parameters**
+
+| 파라미터 | 타입 | 기본값 | 설명 |
+|---|---|---|---|
+| lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | `name`/`description` 표시 언어. 미지원 값은 `ko`로 처리 |
+
 **Response** `200 OK` — `data`: `BoardResponse[]`
 
 ```json
@@ -440,6 +468,8 @@ join/login/reissue가 공통으로 반환하는 구조:
   { "sno": 1, "slug": "free", "name": "자유게시판", "description": "자유롭게 이야기하는 공간입니다." }
 ]
 ```
+
+- `slug`는 언어와 무관하게 항상 고정(URL/로직용 식별자), `name`/`description`만 `lang`에 따라 번역되어 내려간다(`board.domain.policy.BoardLabelPolicy`의 고정 번역 테이블 — 보드가 3개뿐이라 AWS Translate 대신 정적 테이블 사용). `lang=ko`이거나 정책에 없는 신규 보드/slug면 DB에 저장된 원본 값을 그대로 반환한다.
 
 ### GET `/api/board/{boardSno}/posts` — 게시글 목록 조회 (공개)
 
@@ -450,10 +480,12 @@ join/login/reissue가 공통으로 반환하는 구조:
 | page | int | 0 | |
 | size | int | 20 | |
 | sort | string (`new`\|`top`) | `new` | `top`은 `score DESC, create_at DESC` |
+| lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | `authorTierLabel` 표시 언어. 미지원 값은 `ko`로 처리 |
 
-**Response** `200 OK` — `data`: Spring `Page<PostSummaryResponse>` (`sno`, `title`, `nickname`, `authorTier`, `recordSno`, `viewCount`, `score`, `commentCount`, `createAt`)
+**Response** `200 OK` — `data`: Spring `Page<PostSummaryResponse>` (`sno`, `title`, `nickname`, `authorTier`, `authorTierLabel`, `recordSno`, `viewCount`, `score`, `commentCount`, `createAt`)
 
-- `authorTier`: 작성자의 현재 시즌 티어(`RankTier` enum, `rank.GetMemberTierPort`로 조회, 이번 시즌 기록이 없으면 기본값 `SILVER`)
+- `authorTier`: 작성자의 현재 시즌 티어(`RankTier` enum, `rank.GetMemberTierPort`로 조회, 이번 시즌 기록이 없으면 기본값 `SILVER`) — 언어와 무관한 원본 코드
+- `authorTierLabel`: `authorTier`를 `lang`에 맞게 번역한 화면 표시용 문자열(`rank.domain.policy.RankTierLabelPolicy`)
 - `recordSno`: 작성 시 첨부한 기록의 PK(없으면 `null`). 목록에서는 첨부 여부 표시용으로만 쓰고, 기록 상세 내용은 게시글 상세 조회에서만 내려줌
 
 **실패**: 존재하지 않는 `boardSno` → 400
@@ -474,13 +506,19 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 조회할 때마다 `view_count`가 1 증가합니다(중복 방지 없음). `myVote`는 내가 이 글에 투표한 값(`1`/`-1`/`null`), 비로그인이면 항상 `null`.
 
+**Query Parameters**
+
+| 파라미터 | 타입 | 기본값 | 설명 |
+|---|---|---|---|
+| lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | `boardName`/`authorTierLabel` 표시 언어. 미지원 값은 `ko`로 처리 |
+
 **Response** `200 OK` — `data`: `PostDetailResponse`
 
 ```json
 {
   "sno": 123, "boardSno": 1, "boardName": "자유게시판",
   "title": "오늘 10km 완주!", "content": "...",
-  "memberSno": 5, "nickname": "러너1", "authorTier": "GOLD",
+  "memberSno": 5, "nickname": "러너1", "authorTier": "GOLD", "authorTierLabel": "Gold",
   "attachedRecord": {
     "recordSno": 456, "startTime": "2026-08-08T06:30:00", "endTime": "2026-08-08T07:05:00",
     "distance": 10230.5, "createAt": "2026-08-08T07:05:10"
@@ -490,7 +528,8 @@ join/login/reissue가 공통으로 반환하는 구조:
 }
 ```
 
-- `authorTier`: 목록 조회와 동일하게 작성자의 현재 시즌 티어
+- `boardName`: 목록 조회(`GET /api/board`)와 동일한 번역 테이블로 `lang`에 맞게 번역됨
+- `authorTier`/`authorTierLabel`: 목록 조회와 동일 — `authorTier`는 원본 코드, `authorTierLabel`이 번역된 표시 문자열
 - `attachedRecord`: 첨부한 기록이 없으면 `null`. 첨부된 기록이 이후 삭제된 경우에도 `null`로 응답(참조 무결성을 강제하지 않음)
 
 **실패**: 존재하지 않는 `postSno` → 400

@@ -14,6 +14,7 @@ public record PostDetailResponse(
         Long memberSno,
         String nickname,
         RankTier authorTier,
+        String authorTierLabel,
         RunningRecordResponse attachedRecord,
         int viewCount,
         int score,

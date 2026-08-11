@@ -1,7 +1,9 @@
 package com.example.paceleague.ranking.application.service;
 
+import com.example.paceleague.common.i18n.Language;
 import com.example.paceleague.rank.domain.entity.MemberScore;
 import com.example.paceleague.rank.domain.enums.RankTier;
+import com.example.paceleague.rank.domain.policy.RankTierLabelPolicy;
 import com.example.paceleague.ranking.application.dto.RankingPageResponse;
 import com.example.paceleague.ranking.application.dto.RankingUserResponse;
 import com.example.paceleague.ranking.application.port.in.GetRankingUseCase;
@@ -28,15 +30,16 @@ public class RankingQueryServiceImpl implements GetRankingUseCase {
     private final RankingRepositoryPort rankingRepositoryPort;
     private final GetCurrentSeasonPort getCurrentSeasonPort;
 
-    public List<RankingUserResponse> getTop10() {
+    public List<RankingUserResponse> getTop10(String lang) {
         // rank.RankQueryServiceImpl은 season.getSeason()을 쓰는 것과 달리 여기는 season.getSno()를 그대로 사용 —
         // 기존부터 있던 두 조회 방식의 불일치이며, 이번 리팩토링에서 의도적으로 고치지 않고 보존함.
         Season season = getCurrentSeasonPort.getCurrentSeason();
         List<RankingProjection> top10 = rankingRepositoryPort.findAroundRanking(season.getSno(), TOP10_LIMIT, 0);
-        return toResponse(top10, null, 1);
+        return toResponse(top10, null, 1, Language.fromCode(lang));
     }
 
-    public RankingPageResponse getRankingPage(Long memberSno) {
+    public RankingPageResponse getRankingPage(Long memberSno, String lang) {
+        Language language = Language.fromCode(lang);
         Season season = getCurrentSeasonPort.getCurrentSeason();
         Long seasonSno = season.getSno();
 
@@ -59,8 +62,8 @@ public class RankingQueryServiceImpl implements GetRankingUseCase {
         );
 
         return new RankingPageResponse(
-                toResponse(top3, memberSno, 1),
-                toResponse(aroundRanks, memberSno, offset + 1)
+                toResponse(top3, memberSno, 1, language),
+                toResponse(aroundRanks, memberSno, offset + 1, language)
         );
     }
 
@@ -81,19 +84,22 @@ public class RankingQueryServiceImpl implements GetRankingUseCase {
     private List<RankingUserResponse> toResponse(
             List<RankingProjection> list,
             Long myMemberSno,
-            int startRank
+            int startRank,
+            Language language
     ) {
         List<RankingUserResponse> result = new ArrayList<>();
 
         for (int i = 0; i < list.size(); i++) {
             RankingProjection ranking = list.get(i);
+            RankTier tier = RankTier.valueOf(ranking.getTier());
 
             result.add(new RankingUserResponse(
                     startRank + i,
                     ranking.getMemberSno(),
                     ranking.getNickname(),
                     ranking.getTotalScore(),
-                    RankTier.valueOf(ranking.getTier()),
+                    tier,
+                    RankTierLabelPolicy.label(tier, language),
                     ranking.getMemberSno().equals(myMemberSno)
             ));
         }

@@ -6,7 +6,7 @@ import com.example.paceleague.ranking.application.dto.RankingUserResponse;
 import java.util.List;
 
 public interface GetRankingUseCase {
-    List<RankingUserResponse> getTop10();
+    List<RankingUserResponse> getTop10(String lang);
 
-    RankingPageResponse getRankingPage(Long memberSno);
+    RankingPageResponse getRankingPage(Long memberSno, String lang);
 }

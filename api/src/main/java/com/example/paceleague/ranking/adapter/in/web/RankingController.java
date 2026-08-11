@@ -6,6 +6,7 @@ import com.example.paceleague.ranking.application.dto.RankingPageResponse;
 import com.example.paceleague.ranking.application.dto.RankingUserResponse;
 import com.example.paceleague.ranking.application.port.in.GetRankingUseCase;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
@@ -27,9 +28,12 @@ public class RankingController {
     @Operation(summary = "랭킹 페이지 조회", description = "시즌 Top3와 내 주변 순위 5명을 함께 반환합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/getRanking")
-    public ResponseApi<RankingPageResponse> getRanking(@MemberSno Long memberSno) {
+    public ResponseApi<RankingPageResponse> getRanking(
+            @MemberSno Long memberSno,
+            @Parameter(description = "티어 라벨 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang
+    ) {
         return ResponseApi.success(
-                getRankingUseCase.getRankingPage(memberSno)
+                getRankingUseCase.getRankingPage(memberSno, lang)
         );
     }
 
@@ -37,7 +41,9 @@ public class RankingController {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @SecurityRequirements
     @GetMapping("/top10")
-    public ResponseApi<List<RankingUserResponse>> getTop10() {
-        return ResponseApi.success(getRankingUseCase.getTop10());
+    public ResponseApi<List<RankingUserResponse>> getTop10(
+            @Parameter(description = "티어 라벨 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang
+    ) {
+        return ResponseApi.success(getRankingUseCase.getTop10(lang));
     }
 }
