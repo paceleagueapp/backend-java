@@ -51,6 +51,18 @@ public final class PostContentSanitizer {
         return sanitizedHtml != null && (sanitizedHtml.contains("<img") || sanitizedHtml.contains("<video"));
     }
 
+    private static final int SNIPPET_MAX_LENGTH = 200;
+
+    // 게시글 목록에서 제목 아래에 보여줄 본문 미리보기 — 태그를 뺀 순수 텍스트를 일정 길이로 잘라서 준다.
+    // 이미지/동영상만 있고 텍스트가 없는 글이면 빈 문자열("")을 반환하므로, 프론트는 이 경우 스니펫 영역을 그냥 숨기면 된다.
+    public static String snippet(String sanitizedHtml) {
+        String plain = toPlainText(sanitizedHtml);
+        if (plain.length() <= SNIPPET_MAX_LENGTH) {
+            return plain;
+        }
+        return plain.substring(0, SNIPPET_MAX_LENGTH).trim() + "…";
+    }
+
     public record MediaPreview(String type, String url) {
     }
 

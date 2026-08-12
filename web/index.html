@@ -60,12 +60,17 @@
 
     .post-list { list-style: none; }
     .post-list li { background: #1a1a1a; border-radius: 10px; padding: 14px; margin-bottom: 8px; }
-    .post-item-row { display: flex; gap: 10px; }
-    .post-item-body { flex: 1; min-width: 0; }
-    .post-thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: #0f0f0f; cursor: pointer; }
     .post-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
     .post-title { font-size: 15px; font-weight: 600; cursor: pointer; }
     .post-translate-link { color: #888; font-size: 11px; cursor: pointer; white-space: nowrap; flex-shrink: 0; padding-top: 2px; }
+    /* 레딧 카드뷰처럼 제목 아래에 본문 스니펫(최대 3줄, 넘치면 말줄임) */
+    .post-snippet {
+      font-size: 13px; color: #ccc; line-height: 1.5; margin-bottom: 10px; cursor: pointer;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    /* 이미지/동영상은 카드 폭에 꽉 채우고 높이만 제한(object-fit: cover로 비율 유지하며 잘라 보여줌) */
+    .post-thumb-wrap { width: 100%; max-height: 360px; overflow: hidden; border-radius: 8px; margin-bottom: 10px; background: #0f0f0f; cursor: pointer; }
+    .post-thumb { width: 100%; max-height: 360px; object-fit: cover; display: block; }
     .post-meta { font-size: 12px; color: #888; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     .author-tier { background: #262626; color: #ccc; border-radius: 10px; padding: 1px 8px; font-size: 11px; }
     .record-badge { font-size: 12px; }
@@ -285,30 +290,35 @@
         } else {
           listEl.innerHTML = items.map(function (p) {
             titleBySno[p.sno] = p.title;
+
+            var snippetHtml = p.contentSnippet
+              ? '<div class="post-snippet post-open" data-sno="' + p.sno + '">' + escapeHtml(p.contentSnippet) + '</div>'
+              : '';
+
             var thumbHtml = '';
             if (p.thumbnailUrl) {
-              thumbHtml = p.thumbnailType === 'VIDEO'
-                ? '<video class="post-thumb post-open" data-sno="' + p.sno + '" src="' + escapeHtml(p.thumbnailUrl) + '" preload="metadata" muted></video>'
-                : '<img class="post-thumb post-open" data-sno="' + p.sno + '" src="' + escapeHtml(p.thumbnailUrl) + '" loading="lazy" alt="">';
+              thumbHtml = '<div class="post-thumb-wrap post-open" data-sno="' + p.sno + '">' +
+                (p.thumbnailType === 'VIDEO'
+                  ? '<video class="post-thumb" src="' + escapeHtml(p.thumbnailUrl) + '" preload="metadata" muted></video>'
+                  : '<img class="post-thumb" src="' + escapeHtml(p.thumbnailUrl) + '" loading="lazy" alt="">') +
+                '</div>';
             }
+
             return '<li>' +
-              '<div class="post-item-row">' +
-                thumbHtml +
-                '<div class="post-item-body">' +
-                  '<div class="post-title-row">' +
-                    '<div class="post-title post-open" data-sno="' + p.sno + '" id="post-title-' + p.sno + '">' + escapeHtml(p.title) + '</div>' +
-                    '<span class="post-translate-link" data-sno="' + p.sno + '">' + t('translateShow') + '</span>' +
-                  '</div>' +
-                  '<div class="post-meta">' +
-                    '<span>' + escapeHtml(p.nickname) + '</span>' +
-                    '<span class="author-tier">' + escapeHtml(p.authorTierLabel || p.authorTier) + '</span>' +
-                    (p.recordSno ? '<span class="record-badge" title="' + escapeHtml(t('attachedRecordHeading')) + '">🏃</span>' : '') +
-                    '<span>' + t('reactionLabel') + ' ' + p.score + '</span>' +
-                    '<span>' + t('commentCountLabel') + ' ' + p.commentCount + '</span>' +
-                    '<span>' + t('viewCountLabel') + ' ' + p.viewCount + '</span>' +
-                    '<span>' + escapeHtml(formatLocalTime(p.createAt)) + '</span>' +
-                  '</div>' +
-                '</div>' +
+              '<div class="post-title-row">' +
+                '<div class="post-title post-open" data-sno="' + p.sno + '" id="post-title-' + p.sno + '">' + escapeHtml(p.title) + '</div>' +
+                '<span class="post-translate-link" data-sno="' + p.sno + '">' + t('translateShow') + '</span>' +
+              '</div>' +
+              snippetHtml +
+              thumbHtml +
+              '<div class="post-meta">' +
+                '<span>' + escapeHtml(p.nickname) + '</span>' +
+                '<span class="author-tier">' + escapeHtml(p.authorTierLabel || p.authorTier) + '</span>' +
+                (p.recordSno ? '<span class="record-badge" title="' + escapeHtml(t('attachedRecordHeading')) + '">🏃</span>' : '') +
+                '<span>' + t('reactionLabel') + ' ' + p.score + '</span>' +
+                '<span>' + t('commentCountLabel') + ' ' + p.commentCount + '</span>' +
+                '<span>' + t('viewCountLabel') + ' ' + p.viewCount + '</span>' +
+                '<span>' + escapeHtml(formatLocalTime(p.createAt)) + '</span>' +
               '</div>' +
             '</li>';
           }).join('');

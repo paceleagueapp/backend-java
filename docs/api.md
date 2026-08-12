@@ -583,12 +583,14 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 | lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | `authorTierLabel` 표시 언어. 미지원 값은 `ko`로 처리 |
 | country | string (ISO 3166-1 alpha-2, 예: `KR`) | - | 주어지면 `lang` 대신 이 국가에 맞는 언어로 응답 |
 
-**Response** `200 OK` — `data`: Spring `Page<PostSummaryResponse>` (`sno`, `title`, `nickname`, `authorTier`, `authorTierLabel`, `recordSno`, `thumbnailUrl`, `thumbnailType`, `viewCount`, `score`, `commentCount`, `createAt`)
+**Response** `200 OK` — `data`: Spring `Page<PostSummaryResponse>` (`sno`, `title`, `nickname`, `authorTier`, `authorTierLabel`, `recordSno`, `contentSnippet`, `thumbnailUrl`, `thumbnailType`, `viewCount`, `score`, `commentCount`, `createAt`)
 
 - `authorTier`: 작성자의 현재 시즌 티어(`RankTier` enum, `rank.GetMemberTierPort`로 조회, 이번 시즌 기록이 없으면 기본값 `SILVER`) — 언어와 무관한 원본 코드
 - `authorTierLabel`: `authorTier`를 `lang`에 맞게 번역한 화면 표시용 문자열(`rank.domain.policy.RankTierLabelPolicy`)
 - `recordSno`: 작성 시 첨부한 기록의 PK(없으면 `null`). 목록에서는 첨부 여부 표시용으로만 쓰고, 기록 상세 내용은 게시글 상세 조회에서만 내려줌
+- `contentSnippet`: 게시글 `content`(sanitize된 HTML)에서 태그를 뺀 순수 텍스트를 최대 200자로 잘라 내려주는 목록용 본문 미리보기(`PostContentSanitizer.snippet`). 이미지/동영상만 있고 텍스트가 없으면 빈 문자열(`""`) — 웹 클라이언트는 이 경우 스니펫 영역 자체를 숨김.
 - `thumbnailUrl`/`thumbnailType`(`IMAGE`\|`VIDEO`, 없으면 둘 다 `null`): 게시글 `content` HTML 안에서 **가장 먼저 등장하는** 이미지/동영상 하나를 서버가 정규식으로 뽑아 목록용 썸네일로 내려줌(`board.domain.policy.PostContentSanitizer.firstMediaPreview`) — 미디어 테이블을 다시 조회하지 않고 이미 응답에 포함된 `content`에서 바로 추출하는 방식. 2026-08-11 이전에는 `attachmentCount`(첨부 개수)였으나, 웹 에디터가 이미지/동영상을 `content`에 인라인으로 삽입하는 방식으로 바뀌면서 `attachmentMediaIds`로 명시 연결되는 미디어가 웹에서는 사실상 없어져 이 필드가 항상 0이 되는 문제가 있어 교체함.
+- 웹 클라이언트(`web/index.html`)는 카드 하나에 제목 → `contentSnippet`(최대 3줄, 넘치면 말줄임) → 썸네일(카드 폭 100%, 최대 높이 360px, `object-fit: cover`로 비율 유지하며 채움) → 메타(닉네임/티어/추천/댓글/조회/시간) 순서로 렌더링(레딧 카드뷰 벤치마킹).
 
 **실패**: 존재하지 않는 `boardSno` → 400
 
