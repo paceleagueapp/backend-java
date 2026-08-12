@@ -82,6 +82,19 @@ public class BoardController {
         return ResponseApi.success(boardQueryService.getPost(memberSno, postSno, resolveLang(lang, country)));
     }
 
+    @Operation(summary = "게시글 수정", description = "본인 게시글만 수정 가능합니다. 요청 형식은 작성과 동일합니다.")
+    @ApiResponse(responseCode = "200", description = "수정 성공")
+    @SecurityRequirement(name = "bearerAuth")
+    @PutMapping("/posts/{postSno}")
+    public ResponseApi<String> updatePost(
+            @MemberSno Long memberSno,
+            @PathVariable Long postSno,
+            @RequestBody PostCreateRequest req
+    ) {
+        boardService.updatePost(memberSno, postSno, req);
+        return ResponseApi.success("게시글이 수정되었습니다.");
+    }
+
     @Operation(summary = "게시글 삭제", description = "본인 게시글만 삭제 가능하며, 댓글/추천도 함께 삭제됩니다.")
     @ApiResponse(responseCode = "200", description = "삭제 성공")
     @SecurityRequirement(name = "bearerAuth")

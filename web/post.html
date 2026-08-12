@@ -39,7 +39,34 @@
     .vote-btn.active-down { background: #3949ab; color: #fff; border-color: #3949ab; }
     .translate-btn { background: none; border: 1px solid #333; color: #888; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
     .score-text { font-size: 14px; font-weight: 700; }
-    .delete-link { margin-left: auto; color: #888; font-size: 12px; cursor: pointer; }
+    .edit-link { margin-left: auto; color: #888; font-size: 12px; cursor: pointer; }
+    .delete-link { margin-left: 10px; color: #888; font-size: 12px; cursor: pointer; }
+
+    #post-edit-box input, #post-edit-box select {
+      width: 100%; background: #0f0f0f; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 14px;
+    }
+    #post-edit-box label { display: block; font-size: 12px; color: #888; margin-bottom: 6px; }
+    #post-edit-box .actions { display: flex; justify-content: flex-end; gap: 8px; }
+    #post-edit-box .actions button { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; }
+    #post-edit-box button.save { background: #e53935; color: #fff; }
+    #post-edit-box button.cancel { background: #333; color: #ccc; }
+
+    .editor-toolbar { display: flex; gap: 6px; margin-bottom: 6px; }
+    .editor-toolbar button {
+      background: #0f0f0f; border: 1px solid #333; color: #ccc; width: 32px; height: 32px;
+      border-radius: 6px; cursor: pointer; font-size: 14px; padding: 0;
+    }
+    .editor-toolbar button:hover { background: #262626; }
+    .editor-content {
+      width: 100%; min-height: 120px; max-height: 320px; overflow-y: auto;
+      background: #0f0f0f; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px;
+      margin-bottom: 10px; font-size: 14px; line-height: 1.5;
+    }
+    .editor-content.is-empty:before { content: attr(data-placeholder); color: #666; }
+    .editor-content img, .editor-content video { max-width: 100%; border-radius: 6px; display: block; margin: 6px 0; }
+    .editor-content a { color: #64b5f6; }
+    .media-placeholder { display: inline-block; background: #262626; color: #9aa5e8; border-radius: 10px; padding: 2px 8px; font-size: 12px; }
+    .media-placeholder.rejected { color: #ff8a80; }
 
     .comments-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
     .comment-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
@@ -75,6 +102,26 @@
 
     <div class="post-box" id="post-box"></div>
 
+    <div class="post-box" id="post-edit-box" style="display:none;">
+      <input type="text" id="edit-title" maxlength="200">
+      <div class="editor-toolbar" id="edit-toolbar">
+        <button type="button" id="edit-fmt-bold"><b>B</b></button>
+        <button type="button" id="edit-fmt-italic"><i>I</i></button>
+        <button type="button" id="edit-fmt-link">🔗</button>
+        <button type="button" id="edit-fmt-image">🖼️</button>
+        <button type="button" id="edit-fmt-video">🎬</button>
+      </div>
+      <div id="edit-content" class="editor-content is-empty" contenteditable="true"></div>
+      <input type="file" id="edit-media-file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime" style="display:none">
+      <label id="edit-record-label" for="edit-record"></label>
+      <select id="edit-record"></select>
+      <div class="error" id="edit-error" style="color:#ff6b6b;font-size:13px;margin-bottom:8px;"></div>
+      <div class="actions">
+        <button class="cancel" id="edit-cancel"></button>
+        <button class="save" id="edit-save"></button>
+      </div>
+    </div>
+
     <div class="comments-title" id="comments-title"></div>
     <div class="comment-form">
       <textarea id="comment-content"></textarea>
@@ -92,6 +139,27 @@
     document.getElementById('comments-title').textContent = t('commentsTitle');
     document.getElementById('comment-content').placeholder = t('commentPlaceholder');
     document.getElementById('comment-submit').textContent = t('commentSubmit');
+
+    document.getElementById('edit-title').placeholder = t('titlePlaceholder');
+    document.getElementById('edit-content').setAttribute('data-placeholder', t('contentPlaceholder'));
+    document.getElementById('edit-record-label').textContent = t('attachRecordLabel');
+    document.getElementById('edit-cancel').textContent = t('cancel');
+    document.getElementById('edit-save').textContent = t('saveLabel');
+    document.getElementById('edit-fmt-bold').title = t('editorBoldTitle');
+    document.getElementById('edit-fmt-italic').title = t('editorItalicTitle');
+    document.getElementById('edit-fmt-link').title = t('editorLinkTitle');
+    document.getElementById('edit-fmt-image').title = t('editorImageTitle');
+    document.getElementById('edit-fmt-video').title = t('editorVideoTitle');
+
+    var editPostEditor = createPostEditor({
+      editorEl: document.getElementById('edit-content'),
+      fileInputEl: document.getElementById('edit-media-file'),
+      boldBtn: document.getElementById('edit-fmt-bold'),
+      italicBtn: document.getElementById('edit-fmt-italic'),
+      linkBtn: document.getElementById('edit-fmt-link'),
+      imageBtn: document.getElementById('edit-fmt-image'),
+      videoBtn: document.getElementById('edit-fmt-video')
+    });
 
     var postSno = new URLSearchParams(window.location.search).get('post');
     var myMemberSno = getMemberSno();
@@ -141,6 +209,7 @@
           '<span class="score-text" id="post-score">' + post.score + '</span>' +
           '<button class="vote-btn' + downClass + '" id="post-down">' + t('voteDown') + '</button>' +
           '<button class="translate-btn" id="post-translate">' + t('translateShow') + '</button>' +
+          (isMine ? '<span class="edit-link" id="post-edit">' + t('editLink') + '</span>' : '') +
           (isMine ? '<span class="delete-link" id="post-delete">' + t('delete') + '</span>' : '') +
         '</div>';
 
@@ -148,6 +217,10 @@
       document.getElementById('post-down').addEventListener('click', function () { votePost(-1); });
       document.getElementById('post-translate').addEventListener('click', togglePostTranslation);
       if (isMine) {
+        document.getElementById('post-edit').addEventListener('click', function () {
+          if (redirectToLoginIfNeeded()) return;
+          openEditMode(post);
+        });
         document.getElementById('post-delete').addEventListener('click', function () {
           if (redirectToLoginIfNeeded()) return;
           if (!confirm(t('confirmDeletePost'))) return;
@@ -157,6 +230,56 @@
         });
       }
     }
+
+    function openEditMode(post) {
+      document.getElementById('edit-title').value = post.title;
+      editPostEditor.reset(post.content);
+      document.getElementById('edit-error').textContent = '';
+      loadRecordOptions(document.getElementById('edit-record'), post.recordSno, post.attachedRecord);
+      document.getElementById('post-box').style.display = 'none';
+      document.getElementById('post-edit-box').style.display = 'block';
+    }
+
+    function closeEditMode() {
+      editPostEditor.clearPollTimers();
+      document.getElementById('post-edit-box').style.display = 'none';
+      document.getElementById('post-box').style.display = 'block';
+    }
+
+    document.getElementById('edit-cancel').addEventListener('click', closeEditMode);
+    document.getElementById('edit-save').addEventListener('click', function () {
+      var title = document.getElementById('edit-title').value.trim();
+      var content = editPostEditor.getContentHtml();
+      var errorEl = document.getElementById('edit-error');
+
+      if (!title || editPostEditor.isBlank()) {
+        errorEl.textContent = t('writeErrorEmpty');
+        return;
+      }
+      if (editPostEditor.hasPending()) {
+        errorEl.textContent = t('attachMediaPendingBlockSubmit');
+        return;
+      }
+
+      var recordSnoValue = document.getElementById('edit-record').value;
+
+      apiFetch('/api/board/posts/' + postSno, {
+        method: 'PUT',
+        body: {
+          title: title, content: content,
+          recordSno: recordSnoValue ? Number(recordSnoValue) : null
+        }
+      }).then(function (json) {
+        if (!json.success) {
+          errorEl.textContent = json.message || t('editFailed');
+          return;
+        }
+        editPostEditor.clearPollTimers();
+        document.getElementById('post-edit-box').style.display = 'none';
+        document.getElementById('post-box').style.display = 'block';
+        loadPost();
+      });
+    });
 
     function togglePostTranslation() {
       if (redirectToLoginIfNeeded()) return;

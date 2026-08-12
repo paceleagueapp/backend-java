@@ -7,6 +7,8 @@ import com.example.paceleague.board.application.dto.VoteResponse;
 public interface BoardService {
     Long createPost(Long memberSno, Long boardSno, PostCreateRequest req);
 
+    void updatePost(Long memberSno, Long postSno, PostCreateRequest req);
+
     void deletePost(Long memberSno, Long postSno);
 
     VoteResponse votePost(Long memberSno, Long postSno, int voteValue);

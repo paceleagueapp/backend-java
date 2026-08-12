@@ -20,6 +20,7 @@ var TRANSLATIONS = {
     titlePlaceholder: '제목', contentPlaceholder: '내용을 입력하세요', cancel: '취소', submit: '등록',
     noPosts: '아직 게시글이 없습니다.', noBoards: '보드가 없습니다.', prevPage: '이전', nextPage: '다음',
     writeErrorEmpty: '제목과 내용을 모두 입력해주세요.', writeFailed: '작성에 실패했습니다.',
+    editLink: '수정', saveLabel: '저장', editFailed: '수정에 실패했습니다.',
     reactionLabel: '추천', commentCountLabel: '댓글', viewCountLabel: '조회',
     loginHeading: 'Pace League 로그인', memberIdPlaceholder: '아이디', passwordPlaceholder: '비밀번호',
     backToMain: '← 메인으로', loginFailed: '로그인에 실패했습니다.',
@@ -36,13 +37,13 @@ var TRANSLATIONS = {
     attachMediaMaxReached: '최대 10개까지 첨부할 수 있습니다.', attachMediaUploading: '업로드 중...', attachMediaModerating: '검사 중...',
     attachMediaRejected: '거부됨', attachMediaUploadFailed: '업로드 실패', attachMediaInvalidType: '지원하지 않는 파일 형식입니다.',
     attachMediaTooLarge: '파일 용량이 너무 큽니다.', attachMediaPendingBlockSubmit: '첨부 파일 처리가 끝날 때까지 기다려주세요.',
-    attachmentsHeading: '첨부'
   },
   en: {
     login: 'Login', write: 'Write', logout: 'Logout', sortNew: 'New', sortTop: 'Top',
     titlePlaceholder: 'Title', contentPlaceholder: 'Write your content', cancel: 'Cancel', submit: 'Post',
     noPosts: 'No posts yet.', noBoards: 'No boards available.', prevPage: 'Prev', nextPage: 'Next',
     writeErrorEmpty: 'Please fill in both title and content.', writeFailed: 'Failed to post.',
+    editLink: 'Edit', saveLabel: 'Save', editFailed: 'Failed to save changes.',
     reactionLabel: 'Votes', commentCountLabel: 'Comments', viewCountLabel: 'Views',
     loginHeading: 'Log in to Pace League', memberIdPlaceholder: 'Username', passwordPlaceholder: 'Password',
     backToMain: '← Back to home', loginFailed: 'Login failed.',
@@ -59,13 +60,13 @@ var TRANSLATIONS = {
     attachMediaMaxReached: 'You can attach up to 10 items.', attachMediaUploading: 'Uploading...', attachMediaModerating: 'Checking...',
     attachMediaRejected: 'Rejected', attachMediaUploadFailed: 'Upload failed', attachMediaInvalidType: 'Unsupported file type.',
     attachMediaTooLarge: 'File is too large.', attachMediaPendingBlockSubmit: 'Please wait until attachments finish processing.',
-    attachmentsHeading: 'Attachments'
   },
   ja: {
     login: 'ログイン', write: '投稿する', logout: 'ログアウト', sortNew: '新着順', sortTop: '人気順',
     titlePlaceholder: 'タイトル', contentPlaceholder: '内容を入力してください', cancel: 'キャンセル', submit: '投稿',
     noPosts: 'まだ投稿がありません。', noBoards: '掲示板がありません。', prevPage: '前へ', nextPage: '次へ',
     writeErrorEmpty: 'タイトルと内容を入力してください。', writeFailed: '投稿に失敗しました。',
+    editLink: '編集', saveLabel: '保存', editFailed: '編集に失敗しました。',
     reactionLabel: '評価', commentCountLabel: 'コメント', viewCountLabel: '閲覧',
     loginHeading: 'Pace League ログイン', memberIdPlaceholder: 'アイディー', passwordPlaceholder: 'パスワード',
     backToMain: '← ホームへ', loginFailed: 'ログインに失敗しました。',
@@ -82,13 +83,13 @@ var TRANSLATIONS = {
     attachMediaMaxReached: '最大10個まで添付できます。', attachMediaUploading: 'アップロード中...', attachMediaModerating: '確認中...',
     attachMediaRejected: '拒否されました', attachMediaUploadFailed: 'アップロードに失敗しました', attachMediaInvalidType: 'サポートされていないファイル形式です。',
     attachMediaTooLarge: 'ファイルサイズが大きすぎます。', attachMediaPendingBlockSubmit: '添付ファイルの処理が終わるまでお待ちください。',
-    attachmentsHeading: '添付ファイル'
   },
   zh: {
     login: '登录', write: '写帖子', logout: '登出', sortNew: '最新', sortTop: '热门',
     titlePlaceholder: '标题', contentPlaceholder: '请输入内容', cancel: '取消', submit: '发布',
     noPosts: '暂无帖子。', noBoards: '暂无版块。', prevPage: '上一页', nextPage: '下一页',
     writeErrorEmpty: '请填写标题和内容。', writeFailed: '发布失败。',
+    editLink: '编辑', saveLabel: '保存', editFailed: '编辑失败。',
     reactionLabel: '点赞', commentCountLabel: '评论', viewCountLabel: '浏览',
     loginHeading: '登录 Pace League', memberIdPlaceholder: '账号', passwordPlaceholder: '密码',
     backToMain: '← 返回首页', loginFailed: '登录失败。',
@@ -105,13 +106,13 @@ var TRANSLATIONS = {
     attachMediaMaxReached: '最多可添加10个附件。', attachMediaUploading: '上传中...', attachMediaModerating: '审核中...',
     attachMediaRejected: '已拒绝', attachMediaUploadFailed: '上传失败', attachMediaInvalidType: '不支持的文件类型。',
     attachMediaTooLarge: '文件过大。', attachMediaPendingBlockSubmit: '请等待附件处理完成。',
-    attachmentsHeading: '附件'
   },
   es: {
     login: 'Iniciar sesión', write: 'Publicar', logout: 'Cerrar sesión', sortNew: 'Recientes', sortTop: 'Popular',
     titlePlaceholder: 'Título', contentPlaceholder: 'Escribe el contenido', cancel: 'Cancelar', submit: 'Publicar',
     noPosts: 'Aún no hay publicaciones.', noBoards: 'No hay foros disponibles.', prevPage: 'Anterior', nextPage: 'Siguiente',
     writeErrorEmpty: 'Completa el título y el contenido.', writeFailed: 'Error al publicar.',
+    editLink: 'Editar', saveLabel: 'Guardar', editFailed: 'Error al guardar los cambios.',
     reactionLabel: 'Votos', commentCountLabel: 'Comentarios', viewCountLabel: 'Vistas',
     loginHeading: 'Inicia sesión en Pace League', memberIdPlaceholder: 'Usuario', passwordPlaceholder: 'Contraseña',
     backToMain: '← Volver al inicio', loginFailed: 'Error al iniciar sesión.',
@@ -128,13 +129,13 @@ var TRANSLATIONS = {
     attachMediaMaxReached: 'Puedes adjuntar hasta 10 elementos.', attachMediaUploading: 'Subiendo...', attachMediaModerating: 'Verificando...',
     attachMediaRejected: 'Rechazado', attachMediaUploadFailed: 'Error al subir', attachMediaInvalidType: 'Tipo de archivo no compatible.',
     attachMediaTooLarge: 'El archivo es demasiado grande.', attachMediaPendingBlockSubmit: 'Espera a que termine el procesamiento de los adjuntos.',
-    attachmentsHeading: 'Adjuntos'
   },
   fr: {
     login: 'Connexion', write: 'Publier', logout: 'Déconnexion', sortNew: 'Récent', sortTop: 'Populaire',
     titlePlaceholder: 'Titre', contentPlaceholder: 'Écrivez le contenu', cancel: 'Annuler', submit: 'Publier',
     noPosts: 'Aucune publication pour le moment.', noBoards: 'Aucun forum disponible.', prevPage: 'Précédent', nextPage: 'Suivant',
     writeErrorEmpty: 'Veuillez remplir le titre et le contenu.', writeFailed: 'Échec de la publication.',
+    editLink: 'Modifier', saveLabel: 'Enregistrer', editFailed: 'Échec de la modification.',
     reactionLabel: 'Votes', commentCountLabel: 'Commentaires', viewCountLabel: 'Vues',
     loginHeading: 'Connexion à Pace League', memberIdPlaceholder: 'Identifiant', passwordPlaceholder: 'Mot de passe',
     backToMain: "← Retour à l'accueil", loginFailed: 'Échec de la connexion.',
@@ -151,13 +152,13 @@ var TRANSLATIONS = {
     attachMediaMaxReached: "Vous pouvez joindre jusqu'à 10 éléments.", attachMediaUploading: 'Téléversement...', attachMediaModerating: 'Vérification...',
     attachMediaRejected: 'Refusé', attachMediaUploadFailed: 'Échec du téléversement', attachMediaInvalidType: 'Type de fichier non pris en charge.',
     attachMediaTooLarge: 'Le fichier est trop volumineux.', attachMediaPendingBlockSubmit: 'Veuillez attendre la fin du traitement des pièces jointes.',
-    attachmentsHeading: 'Pièces jointes'
   },
   de: {
     login: 'Anmelden', write: 'Beitrag erstellen', logout: 'Abmelden', sortNew: 'Neu', sortTop: 'Beliebt',
     titlePlaceholder: 'Titel', contentPlaceholder: 'Inhalt eingeben', cancel: 'Abbrechen', submit: 'Veröffentlichen',
     noPosts: 'Noch keine Beiträge.', noBoards: 'Keine Foren verfügbar.', prevPage: 'Zurück', nextPage: 'Weiter',
     writeErrorEmpty: 'Bitte Titel und Inhalt ausfüllen.', writeFailed: 'Veröffentlichen fehlgeschlagen.',
+    editLink: 'Bearbeiten', saveLabel: 'Speichern', editFailed: 'Bearbeiten fehlgeschlagen.',
     reactionLabel: 'Stimmen', commentCountLabel: 'Kommentare', viewCountLabel: 'Aufrufe',
     loginHeading: 'Bei Pace League anmelden', memberIdPlaceholder: 'Benutzername', passwordPlaceholder: 'Passwort',
     backToMain: '← Zur Startseite', loginFailed: 'Anmeldung fehlgeschlagen.',
@@ -174,13 +175,13 @@ var TRANSLATIONS = {
     attachMediaMaxReached: 'Du kannst bis zu 10 Anhänge hinzufügen.', attachMediaUploading: 'Wird hochgeladen...', attachMediaModerating: 'Wird geprüft...',
     attachMediaRejected: 'Abgelehnt', attachMediaUploadFailed: 'Upload fehlgeschlagen', attachMediaInvalidType: 'Nicht unterstützter Dateityp.',
     attachMediaTooLarge: 'Datei ist zu groß.', attachMediaPendingBlockSubmit: 'Bitte warte, bis die Anhänge fertig verarbeitet sind.',
-    attachmentsHeading: 'Anhänge'
   },
   pt: {
     login: 'Entrar', write: 'Publicar', logout: 'Sair', sortNew: 'Recentes', sortTop: 'Populares',
     titlePlaceholder: 'Título', contentPlaceholder: 'Escreva o conteúdo', cancel: 'Cancelar', submit: 'Publicar',
     noPosts: 'Ainda não há publicações.', noBoards: 'Nenhum fórum disponível.', prevPage: 'Anterior', nextPage: 'Próximo',
     writeErrorEmpty: 'Preencha o título e o conteúdo.', writeFailed: 'Falha ao publicar.',
+    editLink: 'Editar', saveLabel: 'Salvar', editFailed: 'Falha ao editar.',
     reactionLabel: 'Votos', commentCountLabel: 'Comentários', viewCountLabel: 'Visualizações',
     loginHeading: 'Entrar no Pace League', memberIdPlaceholder: 'Usuário', passwordPlaceholder: 'Senha',
     backToMain: '← Voltar ao início', loginFailed: 'Falha ao entrar.',
@@ -197,13 +198,13 @@ var TRANSLATIONS = {
     attachMediaMaxReached: 'Você pode anexar até 10 itens.', attachMediaUploading: 'Enviando...', attachMediaModerating: 'Verificando...',
     attachMediaRejected: 'Rejeitado', attachMediaUploadFailed: 'Falha no envio', attachMediaInvalidType: 'Tipo de arquivo não suportado.',
     attachMediaTooLarge: 'O arquivo é muito grande.', attachMediaPendingBlockSubmit: 'Aguarde o processamento dos anexos terminar.',
-    attachmentsHeading: 'Anexos'
   },
   vi: {
     login: 'Đăng nhập', write: 'Viết bài', logout: 'Đăng xuất', sortNew: 'Mới nhất', sortTop: 'Nổi bật',
     titlePlaceholder: 'Tiêu đề', contentPlaceholder: 'Nhập nội dung', cancel: 'Hủy', submit: 'Đăng',
     noPosts: 'Chưa có bài viết nào.', noBoards: 'Không có bảng nào.', prevPage: 'Trước', nextPage: 'Sau',
     writeErrorEmpty: 'Vui lòng nhập đầy đủ tiêu đề và nội dung.', writeFailed: 'Đăng bài thất bại.',
+    editLink: 'Sửa', saveLabel: 'Lưu', editFailed: 'Chỉnh sửa thất bại.',
     reactionLabel: 'Lượt bình chọn', commentCountLabel: 'Bình luận', viewCountLabel: 'Lượt xem',
     loginHeading: 'Đăng nhập Pace League', memberIdPlaceholder: 'Tên đăng nhập', passwordPlaceholder: 'Mật khẩu',
     backToMain: '← Về trang chủ', loginFailed: 'Đăng nhập thất bại.',
@@ -220,13 +221,13 @@ var TRANSLATIONS = {
     attachMediaMaxReached: 'Bạn có thể đính kèm tối đa 10 mục.', attachMediaUploading: 'Đang tải lên...', attachMediaModerating: 'Đang kiểm tra...',
     attachMediaRejected: 'Đã bị từ chối', attachMediaUploadFailed: 'Tải lên thất bại', attachMediaInvalidType: 'Định dạng tệp không được hỗ trợ.',
     attachMediaTooLarge: 'Tệp quá lớn.', attachMediaPendingBlockSubmit: 'Vui lòng đợi xử lý tệp đính kèm xong.',
-    attachmentsHeading: 'Tệp đính kèm'
   },
   th: {
     login: 'เข้าสู่ระบบ', write: 'เขียนโพสต์', logout: 'ออกจากระบบ', sortNew: 'ใหม่ล่าสุด', sortTop: 'ยอดนิยม',
     titlePlaceholder: 'หัวข้อ', contentPlaceholder: 'กรอกเนื้อหา', cancel: 'ยกเลิก', submit: 'โพสต์',
     noPosts: 'ยังไม่มีโพสต์', noBoards: 'ไม่มีบอร์ด', prevPage: 'ก่อนหน้า', nextPage: 'ถัดไป',
     writeErrorEmpty: 'กรุณากรอกหัวข้อและเนื้อหาให้ครบ', writeFailed: 'โพสต์ไม่สำเร็จ',
+    editLink: 'แก้ไข', saveLabel: 'บันทึก', editFailed: 'แก้ไขไม่สำเร็จ',
     reactionLabel: 'โหวต', commentCountLabel: 'ความคิดเห็น', viewCountLabel: 'เข้าชม',
     loginHeading: 'เข้าสู่ระบบ Pace League', memberIdPlaceholder: 'ชื่อผู้ใช้', passwordPlaceholder: 'รหัสผ่าน',
     backToMain: '← กลับหน้าแรก', loginFailed: 'เข้าสู่ระบบไม่สำเร็จ',
@@ -243,7 +244,6 @@ var TRANSLATIONS = {
     attachMediaMaxReached: 'แนบได้สูงสุด 10 รายการ', attachMediaUploading: 'กำลังอัปโหลด...', attachMediaModerating: 'กำลังตรวจสอบ...',
     attachMediaRejected: 'ถูกปฏิเสธ', attachMediaUploadFailed: 'อัปโหลดไม่สำเร็จ', attachMediaInvalidType: 'ไม่รองรับประเภทไฟล์นี้',
     attachMediaTooLarge: 'ไฟล์มีขนาดใหญ่เกินไป', attachMediaPendingBlockSubmit: 'โปรดรอจนกว่าการประมวลผลไฟล์แนบจะเสร็จสิ้น',
-    attachmentsHeading: 'ไฟล์แนบ'
   }
 };
 

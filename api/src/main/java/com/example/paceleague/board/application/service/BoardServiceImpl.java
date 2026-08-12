@@ -47,23 +47,13 @@ public class BoardServiceImpl implements BoardService {
     @Transactional
     public Long createPost(Long memberSno, Long boardSno, PostCreateRequest req) {
         requireNonBlank(req.title(), "title", TITLE_MAX_LENGTH);
-        // sanitize 전에 원본 길이부터 제한 — 무제한 문자열을 HTML 파서에 그대로 넘기지 않기 위한 방어.
-        if (req.content() == null || req.content().length() > CONTENT_MAX_LENGTH) {
-            throw new IllegalArgumentException("content is too long (max " + CONTENT_MAX_LENGTH + ")");
-        }
-        String sanitizedContent = PostContentSanitizer.sanitize(req.content());
-        requireContentHasSubstance(sanitizedContent);
-        if (req.attachmentMediaIds() != null && req.attachmentMediaIds().size() > MEDIA_MAX_ATTACHMENTS_PER_POST) {
-            throw new IllegalArgumentException("too many attachments (max " + MEDIA_MAX_ATTACHMENTS_PER_POST + ")");
-        }
+        String sanitizedContent = sanitizeAndValidateContent(req.content());
+        validateAttachmentCount(req.attachmentMediaIds());
 
         boardRepositoryPort.findById(boardSno)
                 .orElseThrow(() -> new IllegalArgumentException("board not found"));
 
-        // 본인 소유 기록만 첨부할 수 있도록 검증(recordQueryService.getOne은 memberSno+recordSno 조합으로만 조회됨).
-        if (req.recordSno() != null) {
-            recordQueryService.getOne(memberSno, req.recordSno());
-        }
+        validateRecordOwnership(memberSno, req.recordSno());
 
         Post post = Post.create(boardSno, memberSno, req.recordSno(), req.title(), sanitizedContent);
         postRepositoryPort.save(post);
@@ -75,6 +65,25 @@ public class BoardServiceImpl implements BoardService {
         }
 
         return post.getSno();
+    }
+
+    @Transactional
+    public void updatePost(Long memberSno, Long postSno, PostCreateRequest req) {
+        Post post = postRepositoryPort.findBySnoAndMemberSno(postSno, memberSno)
+                .orElseThrow(() -> new IllegalArgumentException("post not found"));
+
+        requireNonBlank(req.title(), "title", TITLE_MAX_LENGTH);
+        String sanitizedContent = sanitizeAndValidateContent(req.content());
+        validateAttachmentCount(req.attachmentMediaIds());
+        validateRecordOwnership(memberSno, req.recordSno());
+
+        post.edit(req.title(), sanitizedContent, req.recordSno());
+
+        // 수정 중 새로 업로드한 미디어만 연결 대상 — 기존에 본문 안에 이미 인라인으로 박혀 있던 이미지/동영상은
+        // content HTML 자체에 URL이 그대로 남아있으므로 다시 연결할 필요가 없다.
+        if (req.attachmentMediaIds() != null && !req.attachmentMediaIds().isEmpty()) {
+            mediaService.attachToPost(memberSno, req.attachmentMediaIds(), post.getSno());
+        }
     }
 
     @Transactional
@@ -210,6 +219,29 @@ public class BoardServiceImpl implements BoardService {
         }
         if (value.length() > maxLength) {
             throw new IllegalArgumentException(fieldName + " is too long (max " + maxLength + ")");
+        }
+    }
+
+    // sanitize 전에 원본 길이부터 제한 — 무제한 문자열을 HTML 파서에 그대로 넘기지 않기 위한 방어.
+    private String sanitizeAndValidateContent(String rawContent) {
+        if (rawContent == null || rawContent.length() > CONTENT_MAX_LENGTH) {
+            throw new IllegalArgumentException("content is too long (max " + CONTENT_MAX_LENGTH + ")");
+        }
+        String sanitized = PostContentSanitizer.sanitize(rawContent);
+        requireContentHasSubstance(sanitized);
+        return sanitized;
+    }
+
+    private void validateAttachmentCount(List<Long> attachmentMediaIds) {
+        if (attachmentMediaIds != null && attachmentMediaIds.size() > MEDIA_MAX_ATTACHMENTS_PER_POST) {
+            throw new IllegalArgumentException("too many attachments (max " + MEDIA_MAX_ATTACHMENTS_PER_POST + ")");
+        }
+    }
+
+    // 본인 소유 기록만 첨부할 수 있도록 검증(recordQueryService.getOne은 memberSno+recordSno 조합으로만 조회됨).
+    private void validateRecordOwnership(Long memberSno, Long recordSno) {
+        if (recordSno != null) {
+            recordQueryService.getOne(memberSno, recordSno);
         }
     }
 

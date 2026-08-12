@@ -583,12 +583,12 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 | lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | `authorTierLabel` 표시 언어. 미지원 값은 `ko`로 처리 |
 | country | string (ISO 3166-1 alpha-2, 예: `KR`) | - | 주어지면 `lang` 대신 이 국가에 맞는 언어로 응답 |
 
-**Response** `200 OK` — `data`: Spring `Page<PostSummaryResponse>` (`sno`, `title`, `nickname`, `authorTier`, `authorTierLabel`, `recordSno`, `attachmentCount`, `viewCount`, `score`, `commentCount`, `createAt`)
+**Response** `200 OK` — `data`: Spring `Page<PostSummaryResponse>` (`sno`, `title`, `nickname`, `authorTier`, `authorTierLabel`, `recordSno`, `thumbnailUrl`, `thumbnailType`, `viewCount`, `score`, `commentCount`, `createAt`)
 
 - `authorTier`: 작성자의 현재 시즌 티어(`RankTier` enum, `rank.GetMemberTierPort`로 조회, 이번 시즌 기록이 없으면 기본값 `SILVER`) — 언어와 무관한 원본 코드
 - `authorTierLabel`: `authorTier`를 `lang`에 맞게 번역한 화면 표시용 문자열(`rank.domain.policy.RankTierLabelPolicy`)
 - `recordSno`: 작성 시 첨부한 기록의 PK(없으면 `null`). 목록에서는 첨부 여부 표시용으로만 쓰고, 기록 상세 내용은 게시글 상세 조회에서만 내려줌
-- `attachmentCount`: 첨부된 이미지/동영상/링크 개수(목록에서는 개수만, 실제 URL 등 상세 내용은 게시글 상세 조회에서만 내려줌) — [Media API](#media-api-apimedia--인증-필요) 참고
+- `thumbnailUrl`/`thumbnailType`(`IMAGE`\|`VIDEO`, 없으면 둘 다 `null`): 게시글 `content` HTML 안에서 **가장 먼저 등장하는** 이미지/동영상 하나를 서버가 정규식으로 뽑아 목록용 썸네일로 내려줌(`board.domain.policy.PostContentSanitizer.firstMediaPreview`) — 미디어 테이블을 다시 조회하지 않고 이미 응답에 포함된 `content`에서 바로 추출하는 방식. 2026-08-11 이전에는 `attachmentCount`(첨부 개수)였으나, 웹 에디터가 이미지/동영상을 `content`에 인라인으로 삽입하는 방식으로 바뀌면서 `attachmentMediaIds`로 명시 연결되는 미디어가 웹에서는 사실상 없어져 이 필드가 항상 0이 되는 문제가 있어 교체함.
 
 **실패**: 존재하지 않는 `boardSno` → 400
 
@@ -609,6 +609,20 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 **Response** `200 OK` — `data`: `{ "sno": 123 }`
 
 **실패**: `title` 공백 또는 200자 초과 → 400, `content`가 (원본 기준) 10,000자 초과 → 400, sanitize 후 텍스트도 이미지/동영상도 없음(실질적으로 빈 본문) → 400, 존재하지 않는 `boardSno` → 400, `recordSno`가 존재하지 않거나 본인 소유가 아님 → 400 `"record not found"`, `attachmentMediaIds`가 10개 초과 → 400, 존재하지 않거나/본인 소유가 아니거나/`APPROVED`가 아니거나/이미 다른 게시글에 첨부된 `mediaSno`가 섞여 있으면 → 400(이 경우 게시글 자체도 저장되지 않음 — 같은 트랜잭션에서 롤백)
+
+### PUT `/api/board/posts/{postSno}` — 게시글 수정 (인증 필요)
+
+요청 본문/검증 규칙은 작성(`POST`)과 완전히 동일합니다(`PostCreateRequest` 재사용 — 제목/본문/`recordSno`/`attachmentMediaIds` 전부 다시 보내야 하며, 부분 수정(PATCH)이 아닙니다). 본인 게시글만 수정 가능합니다.
+
+```json
+{ "title": "오늘 10km 완주! (수정)", "content": "<p>날씨가 좋아서 기분 좋게 뛰었습니다.</p>", "recordSno": 123, "attachmentMediaIds": null }
+```
+
+`attachmentMediaIds`는 **이번 수정에서 새로 업로드한 미디어**만 나열합니다 — 기존에 본문 HTML 안에 이미 인라인으로 박혀 있던 이미지/동영상은 `content` 문자열 자체에 URL이 그대로 남아있으므로 다시 첨부할 필요가 없습니다.
+
+**Response** `200 OK` — `data`: `"게시글이 수정되었습니다."`
+
+**실패**: 존재하지 않거나 본인 소유가 아님 → 400 `"post not found"`, 그 외 검증 실패는 작성 API와 동일
 
 ### GET `/api/board/posts/{postSno}` — 게시글 상세 조회 (공개)
 

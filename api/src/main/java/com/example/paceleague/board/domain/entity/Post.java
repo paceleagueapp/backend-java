@@ -65,6 +65,13 @@ public class Post {
         this.updateAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 
+    public void edit(String title, String content, Long recordSno) {
+        this.title = title;
+        this.content = content;
+        this.recordSno = recordSno;
+        this.updateAt = LocalDateTime.now(ZoneOffset.UTC);
+    }
+
     @PreUpdate
     public void preUpdate() {
         this.updateAt = LocalDateTime.now(ZoneOffset.UTC);

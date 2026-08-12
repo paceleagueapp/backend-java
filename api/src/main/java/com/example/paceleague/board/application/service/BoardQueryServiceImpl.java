@@ -71,7 +71,6 @@ public class BoardQueryServiceImpl implements BoardQueryService {
         return postRepositoryPort.findByBoardSno(boardSno, pageable)
                 .map(post -> PostSummaryResponse.from(
                         post, nicknameOf(post.getMemberSno()), tierOf(post.getMemberSno()), language,
-                        getPostAttachmentsPort.countByPostSno(post.getSno()),
                         commentRepositoryPort.countByPostSno(post.getSno())
                 ));
     }

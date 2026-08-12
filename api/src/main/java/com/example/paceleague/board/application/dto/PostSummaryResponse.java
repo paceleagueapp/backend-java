@@ -1,6 +1,7 @@
 package com.example.paceleague.board.application.dto;
 
 import com.example.paceleague.board.domain.entity.Post;
+import com.example.paceleague.board.domain.policy.PostContentSanitizer;
 import com.example.paceleague.common.i18n.Language;
 import com.example.paceleague.rank.domain.enums.RankTier;
 import com.example.paceleague.rank.domain.policy.RankTierLabelPolicy;
@@ -14,15 +15,20 @@ public record PostSummaryResponse(
         RankTier authorTier,
         String authorTierLabel,
         Long recordSno,
-        long attachmentCount,
+        String thumbnailUrl,
+        String thumbnailType,
         int viewCount,
         int score,
         long commentCount,
         LocalDateTime createAt
 ) {
     public static PostSummaryResponse from(
-            Post post, String nickname, RankTier authorTier, Language lang, long attachmentCount, long commentCount
+            Post post, String nickname, RankTier authorTier, Language lang, long commentCount
     ) {
+        // 이미지/동영상은 이제 본문 HTML 안에 인라인으로 들어있으므로(media 테이블의 postSno 연결에 의존하지 않고)
+        // 본문에서 첫 미디어를 직접 찾아 목록용 썸네일로 내려준다.
+        PostContentSanitizer.MediaPreview preview = PostContentSanitizer.firstMediaPreview(post.getContent());
+
         return new PostSummaryResponse(
                 post.getSno(),
                 post.getTitle(),
@@ -30,7 +36,8 @@ public record PostSummaryResponse(
                 authorTier,
                 RankTierLabelPolicy.label(authorTier, lang),
                 post.getRecordSno(),
-                attachmentCount,
+                preview == null ? null : preview.url(),
+                preview == null ? null : preview.type(),
                 post.getViewCount(),
                 post.getScore(),
                 commentCount,
