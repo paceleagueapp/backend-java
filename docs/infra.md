@@ -81,7 +81,7 @@ add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" alway
 
 `api.paceleague.co.kr`은 API 전용 도메인이라 검색엔진에 노출될 필요가 없습니다. `api/src/main/resources/static/robots.txt`(Spring Boot 기본 정적 리소스 서빙)로 전체 `Disallow: /`를 응답하며, `SecurityConfig`의 공개 경로 목록에 `/robots.txt`를 추가해 인증 없이 200으로 받을 수 있게 했습니다 — robots.txt가 401/403 등 4xx로 응답되면 대부분의 크롤러가 "제약 없음"으로 해석해 오히려 전체 크롤링을 허용해버리기 때문에, 반드시 인증 예외 목록에 넣어야 의도대로 동작합니다.
 
-`paceleague.co.kr`(정적 사이트, `web/`)에는 별도 robots.txt가 없어 기본값(크롤링 허용)이며, 이미 `sitemap.xml`을 두고 있으므로 의도적으로 인덱싱 대상입니다. 이 차단은 `api.paceleague.co.kr`에만 적용됩니다.
+`paceleague.co.kr`(정적 사이트, `web/`)은 이미 `sitemap.xml`을 두고 있는 의도적인 인덱싱 대상이라, 2026-08-20 `web/robots.txt`(`User-agent: * / Allow: / / Sitemap: https://paceleague.co.kr/sitemap.xml`)를 추가해 전체 허용과 sitemap 위치를 명시적으로 선언했습니다 — 그 전까지는 파일이 아예 없어 크롤러 기본값(허용)에 암묵적으로만 의존했습니다. 이 크롤링 차단은 `api.paceleague.co.kr`에만 적용됩니다.
 
 ## `web/` 파일 출처
 
