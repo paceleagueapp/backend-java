@@ -26,6 +26,9 @@
       padding: 40px 20px;
     }
     h1 { font-size: 24px; font-weight: 700; margin-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: #fff; margin-bottom: 20px; }
+    .brand .site-logo { height: 32px; width: auto; display: block; }
+    .brand .site-name { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
     form { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 10px; }
     input {
       background: #1a1a1a;
@@ -61,6 +64,10 @@
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-K4Q3GDB8"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
+  <a class="brand" href="/index.html">
+    <img class="site-logo" src="/img/logo.png" alt="Pace League">
+    <span class="site-name">PACELEAGUE</span>
+  </a>
   <select id="lang-select"></select>
   <h1 id="login-heading"></h1>
   <form id="login-form">

@@ -24,6 +24,9 @@
     .wrap { max-width: 640px; margin: 0 auto; }
     nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
     nav a { color: #ccc; text-decoration: none; font-size: 13px; margin-left: 12px; }
+    .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: #fff; margin-bottom: 14px; }
+    .brand .site-logo { height: 24px; width: auto; display: block; }
+    .brand .site-name { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
     #lang-select {
       background: #1a1a1a; color: #ccc; border: 1px solid #333; border-radius: 16px;
       padding: 6px 10px; font-size: 13px; cursor: pointer;
@@ -104,6 +107,10 @@
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
   <div class="wrap">
+    <a class="brand" href="/index.html">
+      <img class="site-logo" src="/img/logo.png" alt="Pace League">
+      <span class="site-name">PACELEAGUE</span>
+    </a>
     <nav>
       <a href="javascript:history.back()" id="back-link"></a>
       <span>
