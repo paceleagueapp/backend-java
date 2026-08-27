@@ -1,8 +1,10 @@
 package com.example.paceleague.territory.application.service;
 
+import com.example.paceleague.member.application.port.in.GetMemberNicknamePort;
 import com.example.paceleague.season.application.port.in.GetCurrentSeasonPort;
 import com.example.paceleague.territory.application.dto.ProcessTerritoryRunCommand;
 import com.example.paceleague.territory.application.dto.ProcessTerritoryRunResult;
+import com.example.paceleague.territory.application.dto.ProcessTerritoryRunResult.CapturedTerritory;
 import com.example.paceleague.territory.application.port.in.ProcessTerritoryRunUseCase;
 import com.example.paceleague.territory.application.port.out.TerritoryContributionRepositoryPort;
 import com.example.paceleague.territory.application.port.out.TerritoryRepositoryPort;
@@ -31,6 +33,7 @@ public class ProcessTerritoryRunServiceImpl implements ProcessTerritoryRunUseCas
     private final TerritoryRepositoryPort territoryRepositoryPort;
     private final TerritoryContributionRepositoryPort contributionRepositoryPort;
     private final GetCurrentSeasonPort getCurrentSeasonPort;
+    private final GetMemberNicknamePort getMemberNicknamePort;
     private final TerritoryProperties props;
     private final ObjectMapper objectMapper;
 
@@ -64,7 +67,7 @@ public class ProcessTerritoryRunServiceImpl implements ProcessTerritoryRunUseCas
                 bd(bbox[0]), bd(bbox[1]), bd(bbox[2]), bd(bbox[3]));
 
         List<Long> damaged = new ArrayList<>();
-        List<Long> captured = new ArrayList<>();
+        List<CapturedTerritory> captured = new ArrayList<>();
         List<Long> healed = new ArrayList<>();
         boolean interacted = false;
         LocalDateTime now = LocalDateTime.now();
@@ -99,10 +102,12 @@ public class ProcessTerritoryRunServiceImpl implements ProcessTerritoryRunUseCas
             contributionRepositoryPort.save(TerritoryContribution.of(target.getSno(), command.memberSno(), dmg));
 
             if (target.isDepleted()) {
+                Long previousOwner = target.getOwnerMemberSno();
                 Long newOwner = TerritoryDamagePolicy.resolveNewOwner(priorWindow, command.memberSno(), dmg, now);
                 target.capture(newOwner);
                 contributionRepositoryPort.deleteByTerritorySno(target.getSno());
-                captured.add(target.getSno());
+                captured.add(new CapturedTerritory(
+                        target.getSno(), previousOwner, nicknameOf(previousOwner)));
             } else {
                 damaged.add(target.getSno());
             }
@@ -110,7 +115,7 @@ public class ProcessTerritoryRunServiceImpl implements ProcessTerritoryRunUseCas
         }
 
         if (interacted) {
-            return ProcessTerritoryRunResult.interacted(damaged, captured, healed);
+            return ProcessTerritoryRunResult.interacted(captured, damaged, healed);
         }
 
         Long seasonNo = seasonNumber();
@@ -127,6 +132,14 @@ public class ProcessTerritoryRunServiceImpl implements ProcessTerritoryRunUseCas
                 .build();
         created = territoryRepositoryPort.save(created);
         return ProcessTerritoryRunResult.created(created.getSno());
+    }
+
+    private String nicknameOf(Long memberSno) {
+        try {
+            return getMemberNicknamePort.getNickname(memberSno);
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     private Long seasonNumber() {

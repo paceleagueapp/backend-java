@@ -337,7 +337,8 @@ join/login/reissue가 공통으로 반환하는 구조:
 ```json
 { "clientRunId": "1787741158726094-2887287643", "status": "ACTIVE",
   "chunkSeq": 3, "acceptedPoints": 98, "skippedPoints": 2,
-  "totalPoints": 412, "distanceMeters": 3120.54, "recordSno": null }
+  "totalPoints": 412, "distanceMeters": 3120.54, "recordSno": null,
+  "territoryResult": null }
 ```
 
 | 필드 | 설명 |
@@ -348,6 +349,25 @@ join/login/reissue가 공통으로 반환하는 구조:
 | skippedPoints | 이미 저장된 마지막 좌표 시각보다 이전이라 무시된 좌표 수(청크 재전송 대비) |
 | totalPoints / distanceMeters | 러닝 전체 누적 좌표 수 / 거리(m) |
 | recordSno | 종료 전에는 `null`, `finished: true` 처리 후 생성된 `record.sno` |
+| territoryResult | **땅따먹기 모드(`territoryMode: true`) 세션이 이번 요청으로 종료됐을 때만** 채워짐. 그 외(진행 중 / 일반 러닝 / 이미 종료된 세션 재전송)에는 `null`. 앱이 러닝 종료 화면에서 "새 땅 점령!" 같은 피드백을 표시하는 용도 (아래) |
+
+**`territoryResult`** (`finished: true` + `territoryMode` 세션에서만)
+
+```json
+{ "outcome": "INTERACTED",
+  "createdTerritorySno": null,
+  "capturedTerritories": [ { "territorySno": 7, "previousOwnerMemberSno": 42, "previousOwnerNickname": "느린거북" } ],
+  "damagedTerritorySnos": [ 12, 15 ],
+  "healedTerritorySnos": [] }
+```
+
+| 필드 | 설명 |
+|---|---|
+| outcome | `NO_LOOP`(경로가 닫힌 도형이 아님) / `INVALID_SHAPE`(너무 작거나 큰 도형) / `CREATED`(빈 구역이라 새 땅 생성) / `INTERACTED`(기존 땅과 겹쳐 데미지·회복·점령 발생) |
+| createdTerritorySno | `outcome=CREATED`일 때 새로 만든 `territory.sno` |
+| capturedTerritories | HP를 0으로 만들어 이번 러닝으로 뺏어온 남의 땅 목록. 각 원소에 `territorySno`, `previousOwnerMemberSno`, `previousOwnerNickname` |
+| damagedTerritorySnos | 데미지만 주고 점령까지는 못 한 땅 `sno` 목록 |
+| healedTerritorySnos | 내 소유 땅 중 이번 러닝으로 HP를 회복시킨 땅 `sno` 목록 |
 
 **멱등성**: 마지막으로 저장된 좌표 시각(`last_point_at`) 이후 좌표만 저장하므로, 같은 청크를 다시 보내도 `skippedPoints`로 집계될 뿐 중복 저장되지 않습니다. 이미 `FINISHED`된 러닝에 청크가 또 와도 무시하고 확정된 결과만 돌려줍니다.
 

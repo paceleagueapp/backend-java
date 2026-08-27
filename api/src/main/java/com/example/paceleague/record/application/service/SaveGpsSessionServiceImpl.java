@@ -11,6 +11,7 @@ import com.example.paceleague.record.domain.entity.RecordTrack;
 import com.example.paceleague.record.domain.policy.GeoDistanceCalculator;
 import com.example.paceleague.record.domain.policy.GpsSessionValidator;
 import com.example.paceleague.territory.application.dto.ProcessTerritoryRunCommand;
+import com.example.paceleague.territory.application.dto.ProcessTerritoryRunResult;
 import com.example.paceleague.territory.application.port.in.ProcessTerritoryRunUseCase;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -63,7 +64,7 @@ public class SaveGpsSessionServiceImpl implements SaveGpsSessionUseCase {
 
         // 이미 종료된 세션에 또 청크가 오면(재전송 등) 아무것도 하지 않고 확정된 결과만 돌려준다.
         if (session != null && session.isFinished()) {
-            return summary(session, 0, incoming.size());
+            return summary(session, 0, incoming.size(), null);
         }
 
         if (session == null) {
@@ -94,13 +95,13 @@ public class SaveGpsSessionServiceImpl implements SaveGpsSessionUseCase {
             }
         }
 
-        Long recordSno = session.getRecordSno();
+        ProcessTerritoryRunResult territoryResult = null;
         if (finished) {
-            recordSno = finalizeRun(uno, session);
+            territoryResult = finalizeRun(uno, session);
         }
         recordTrackRepositoryPort.save(session);
 
-        return summary(session, accepted, skipped);
+        return summary(session, accepted, skipped, territoryResult);
     }
 
     @Override
@@ -116,7 +117,7 @@ public class SaveGpsSessionServiceImpl implements SaveGpsSessionUseCase {
         if (session == null || !session.isActive()) {
             return; // 그 사이 청크가 finished로 마감했거나(FINISHED) 이미 폐기됨(ABANDONED)
         }
-        finalizeRun(session.getUno(), session);
+        finalizeRun(session.getUno(), session); // 스위퍼 경로는 territory 결과를 쓰지 않는다
         recordTrackRepositoryPort.save(session);
     }
 
@@ -154,7 +155,8 @@ public class SaveGpsSessionServiceImpl implements SaveGpsSessionUseCase {
         );
     }
 
-    private Long finalizeRun(Long uno, RecordTrack session) {
+    // 러닝을 종료 처리하고, 땅따먹기 모드였으면 그 결과(앱에 돌려줄 territoryResult)를 반환한다.
+    private ProcessTerritoryRunResult finalizeRun(Long uno, RecordTrack session) {
         if (session.getPointCount() == null || session.getPointCount() == 0) {
             throw new IllegalArgumentException("cannot finish a run with no GPS data");
         }
@@ -169,12 +171,12 @@ public class SaveGpsSessionServiceImpl implements SaveGpsSessionUseCase {
         // 땅따먹기 모드로 시작한 세션만 땅 판정 대상. 판정은 best-effort —
         // 실패해도 러닝 기록/점수는 그대로 유지된다(ProcessTerritoryRunUseCase는 REQUIRES_NEW 트랜잭션).
         if (session.isTerritoryMode()) {
-            claimTerritoryBestEffort(uno, session, recordSno);
+            return claimTerritoryBestEffort(uno, session, recordSno);
         }
-        return recordSno;
+        return null;
     }
 
-    private void claimTerritoryBestEffort(Long uno, RecordTrack session, Long recordSno) {
+    private ProcessTerritoryRunResult claimTerritoryBestEffort(Long uno, RecordTrack session, Long recordSno) {
         try {
             List<GpsPoint> points = objectMapper.readValue(
                     session.getPointsJson(), new TypeReference<List<GpsPoint>>() {});
@@ -182,12 +184,13 @@ public class SaveGpsSessionServiceImpl implements SaveGpsSessionUseCase {
                     .filter(p -> p.latitude() != null && p.longitude() != null)
                     .map(p -> new double[]{p.latitude(), p.longitude()})
                     .toList();
-            processTerritoryRunUseCase.process(new ProcessTerritoryRunCommand(
+            return processTerritoryRunUseCase.process(new ProcessTerritoryRunCommand(
                     uno, recordSno, session.getSno(), coords,
                     session.getStartedAt(), session.getEndedAt()));
         } catch (Exception e) {
             log.warn("territory 처리 실패 — 러닝 기록은 정상 저장됨. trackSno={}, err={}",
                     session.getSno(), e.toString());
+            return null;
         }
     }
 
@@ -236,7 +239,8 @@ public class SaveGpsSessionServiceImpl implements SaveGpsSessionUseCase {
         }
     }
 
-    private static GpsSessionResponse summary(RecordTrack s, int accepted, int skipped) {
+    private static GpsSessionResponse summary(RecordTrack s, int accepted, int skipped,
+                                              ProcessTerritoryRunResult territoryResult) {
         return new GpsSessionResponse(
                 s.getClientRunId(),
                 s.getStatus(),
@@ -245,7 +249,8 @@ public class SaveGpsSessionServiceImpl implements SaveGpsSessionUseCase {
                 skipped,
                 s.getPointCount() == null ? 0 : s.getPointCount(),
                 s.getDistanceMeters(),
-                s.getRecordSno()
+                s.getRecordSno(),
+                territoryResult
         );
     }
 }

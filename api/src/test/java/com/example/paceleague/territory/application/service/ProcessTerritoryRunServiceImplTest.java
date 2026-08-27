@@ -1,5 +1,6 @@
 package com.example.paceleague.territory.application.service;
 
+import com.example.paceleague.member.application.port.in.GetMemberNicknamePort;
 import com.example.paceleague.season.application.port.in.GetCurrentSeasonPort;
 import com.example.paceleague.season.domain.entity.Season;
 import com.example.paceleague.territory.application.dto.ProcessTerritoryRunCommand;
@@ -44,6 +45,8 @@ class ProcessTerritoryRunServiceImplTest {
     TerritoryContributionRepositoryPort contributionRepositoryPort;
     @Mock
     GetCurrentSeasonPort getCurrentSeasonPort;
+    @Mock
+    GetMemberNicknamePort getMemberNicknamePort;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private ProcessTerritoryRunServiceImpl service;
@@ -53,7 +56,9 @@ class ProcessTerritoryRunServiceImplTest {
         TerritoryProperties props = new TerritoryProperties(
                 null, null, null, null, null, null, null, null, null, null);
         service = new ProcessTerritoryRunServiceImpl(
-                territoryRepositoryPort, contributionRepositoryPort, getCurrentSeasonPort, props, objectMapper);
+                territoryRepositoryPort, contributionRepositoryPort, getCurrentSeasonPort,
+                getMemberNicknamePort, props, objectMapper);
+        when(getMemberNicknamePort.getNickname(any())).thenReturn("이전주인");
         when(territoryRepositoryPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
         Season season = new Season();
         season.setSeason(1L);
@@ -129,7 +134,7 @@ class ProcessTerritoryRunServiceImplTest {
 
         assertThat(result.outcome()).isEqualTo(Outcome.INTERACTED);
         assertThat(result.damagedTerritorySnos()).hasSize(1);
-        assertThat(result.capturedTerritorySnos()).isEmpty();
+        assertThat(result.capturedTerritories()).isEmpty();
         assertThat(target.getHp()).isLessThan(target.getMaxHp());
         verify(contributionRepositoryPort).save(any());
     }
@@ -145,7 +150,9 @@ class ProcessTerritoryRunServiceImplTest {
         ProcessTerritoryRunResult result = service.process(runOver(LAT0, LNG0));
 
         assertThat(result.outcome()).isEqualTo(Outcome.INTERACTED);
-        assertThat(result.capturedTerritorySnos()).hasSize(1);
+        assertThat(result.capturedTerritories()).hasSize(1);
+        assertThat(result.capturedTerritories().get(0).previousOwnerMemberSno()).isEqualTo(200L);
+        assertThat(result.capturedTerritories().get(0).previousOwnerNickname()).isEqualTo("이전주인");
         assertThat(target.getOwnerMemberSno()).isEqualTo(100L);
         assertThat(target.getHp()).isEqualTo(target.getMaxHp()); // 리셋
         verify(contributionRepositoryPort).deleteByTerritorySno(any());
