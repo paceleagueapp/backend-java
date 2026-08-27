@@ -21,6 +21,8 @@ public class RecordTrack {
 
     public static final String STATUS_ACTIVE = "ACTIVE";
     public static final String STATUS_FINISHED = "FINISHED";
+    // 앱이 finished=true를 못 보낸 채 끊겼고, 쌓인 좌표로도 정상 기록을 만들 수 없어 스위퍼가 폐기한 세션.
+    public static final String STATUS_ABANDONED = "ABANDONED";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -154,6 +156,16 @@ public class RecordTrack {
             this.elapsedDurationMs = java.time.Duration.between(this.startedAt, this.endedAt).toMillis();
         }
         this.updateAt = LocalDateTime.now();
+    }
+
+    // 스위퍼가 자동 마감을 시도했지만 유효한 러닝 기록으로 만들 수 없을 때(좌표 없음, 거리/페이스 비정상 등).
+    public void abandon() {
+        this.status = STATUS_ABANDONED;
+        this.updateAt = LocalDateTime.now();
+    }
+
+    public boolean isActive() {
+        return STATUS_ACTIVE.equals(this.status);
     }
 
     public boolean isFinished() {

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -91,6 +92,34 @@ public class SaveGpsSessionServiceImpl implements SaveGpsSessionUseCase {
         recordTrackRepositoryPort.save(session);
 
         return summary(session, accepted, skipped);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> findIdleActiveSessionSnos(Duration idleFor, int limit) {
+        return recordTrackRepositoryPort.findIdleActiveSessionSnos(LocalDateTime.now().minus(idleFor), limit);
+    }
+
+    @Override
+    @Transactional
+    public void finalizeSession(Long trackSno) {
+        RecordTrack session = recordTrackRepositoryPort.findBySno(trackSno).orElse(null);
+        if (session == null || !session.isActive()) {
+            return; // 그 사이 청크가 finished로 마감했거나(FINISHED) 이미 폐기됨(ABANDONED)
+        }
+        finalizeRun(session.getUno(), session);
+        recordTrackRepositoryPort.save(session);
+    }
+
+    @Override
+    @Transactional
+    public void abandonSession(Long trackSno) {
+        recordTrackRepositoryPort.findBySno(trackSno)
+                .filter(RecordTrack::isActive)
+                .ifPresent(session -> {
+                    session.abandon();
+                    recordTrackRepositoryPort.save(session);
+                });
     }
 
     private void applyChunk(RecordTrack session, List<GpsPoint> kept) {

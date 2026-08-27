@@ -52,7 +52,8 @@ MySQL, Spring Data JPA(Hibernate) 사용. 로컬은 `ddl-auto: update`, 운영�
 앱이 러닝 중 5분마다 `POST /api/record/gps`로 보내는 GPS 좌표 청크를 **러닝 1건 = 1행**으로 누적하는 세션 테이블. `record`와 `record_sno`로 느슨하게 연결(FK 미강제). 마이그레이션: [migrations/2026-08-27_record_gps_track.sql](./migrations/2026-08-27_record_gps_track.sql)(최초 생성) → [migrations/2026-08-27_record_track_streaming.sql](./migrations/2026-08-27_record_track_streaming.sql)(청크 누적용으로 확장).
 
 - `status=ACTIVE`: 진행 중. 청크가 올 때마다 `points_json`에 좌표가 append되고 `record_sno`는 `null`.
-- `status=FINISHED`: 앱이 `finished=true`를 보낸 시점에 `record` 1건이 생성되고 `record_sno`가 채워짐. 이후 청크는 무시.
+- `status=FINISHED`: 앱이 `finished=true`를 보냈거나, 스위퍼가 자동 마감한 시점에 `record` 1건이 생성되고 `record_sno`가 채워짐. 이후 청크는 무시.
+- `status=ABANDONED`: 스위퍼가 자동 마감을 시도했지만 좌표가 없거나 거리/페이스가 비정상이라 `record`를 만들 수 없어 폐기. `record_sno`는 `null`.
 
 | 컬럼 | 타입(Java) | 설명 |
 |---|---|---|
@@ -60,7 +61,7 @@ MySQL, Spring Data JPA(Hibernate) 사용. 로컬은 `ddl-auto: update`, 운영�
 | uno | Long, not null | `member.sno` FK 값 |
 | record_sno | Long, **nullable** | 종료 전에는 `null`, `finished` 처리 시 채워짐 |
 | client_run_id | String, not null, **unique** | 앱이 러닝 시작 시 만든 고유 ID. 그 러닝의 모든 청크가 같은 값. max 100 |
-| status | String | `ACTIVE` / `FINISHED` |
+| status | String | `ACTIVE` / `FINISHED` / `ABANDONED`(스위퍼가 폐기) |
 | activity_type | String | `RUNNING` |
 | started_at | LocalDateTime | 첫 좌표의 `recordedAt`(UTC) |
 | ended_at | LocalDateTime | 마지막으로 저장된 좌표의 `recordedAt`(청크마다 갱신) |

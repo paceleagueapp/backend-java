@@ -59,7 +59,7 @@ Client
 ```text
 com.example.paceleague
 ├── member       회원 가입/로그인/토큰 재발급/로그아웃 (인증 도메인)
-├── record       러닝 기록 저장/조회, 기록 기반 점수 산출
+├── record       러닝 기록 저장/조회, 기록 기반 점수 산출, GPS 청크 누적(record_track) + 유휴 세션 스위퍼(adapter/in/scheduler)
 ├── rank         "내 점수/티어" 조회 (개인 관점)
 ├── ranking      리더보드(랭킹) 조회 (전체/주변 순위 관점) — domain/ 없음, MemberScore는 rank 소유
 ├── season       시즌 정보 (시작/종료일, 현재 시즌 조회) — 컨트롤러 없음, GetCurrentSeasonPort만 다른 도메인에 노출
@@ -67,7 +67,7 @@ com.example.paceleague
 ├── board        커뮤니티(보드/게시글/댓글/추천) — record 도메인과 동일하게 query/write 유스케이스 분리
 ├── media        게시글 첨부(이미지/동영상/링크) — S3 presigned URL 업로드 + Rekognition 모더레이션. 2026-08-11 추가
 └── common       횡단 관심사: 설정, 응답 포맷, 에러 처리, JWT 필터. 위 도메인별 구조에 억지로 끼워맞추지 않고 지금 형태를 유지.
-    ├── config       SecurityConfig, JwtConfig/JwtProperties, RedisConfig, JpaConfig, OpenApiConfig, WebMvcConfig, AwsTranslateConfig/AwsS3Config/AwsRekognitionConfig
+    ├── config       SecurityConfig, JwtConfig/JwtProperties, RedisConfig, JpaConfig, OpenApiConfig, WebMvcConfig, SchedulingConfig(@EnableScheduling), AwsTranslateConfig/AwsS3Config/AwsRekognitionConfig
     ├── i18n         Language(10개 언어 enum), CountryLanguageResolver, LocaleResolver — 정적 UI 라벨 다국어(아래 참고)
     ├── security     JwtAuthenticationFilter (+ AuthPrincipal), security/jwt/JwtTokenProvider
     ├── web          MemberSno(애너테이션), MemberSnoArgumentResolver, LocaleController — 인증 컨트롤러 공통 파라미터 리졸버 + 국가→언어 조회
