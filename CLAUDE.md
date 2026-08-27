@@ -61,7 +61,7 @@ JWT-based, stateless (`SecurityConfig`, `sessionCreationPolicy(STATELESS)`).
 ### Response/error conventions
 
 - All controller responses wrap in `ResponseApi<T>` (`success`/`code`/`message`/`data`/`timestamp`) via `ResponseApi.success(...)`.
-- `GlobalExceptionHandler` (`@RestControllerAdvice`) maps `IllegalArgumentException` → 400 and everything else → 500, both as `ApiError` bodies with `ErrorCode`. Domain/service-layer validation failures should throw `IllegalArgumentException` to get a proper 400 rather than falling through to the generic 500 handler.
+- `GlobalExceptionHandler` (`@RestControllerAdvice`) maps `IllegalArgumentException` → 400, `NoResourceFoundException` (unknown path) → 404, and everything else → 500, all as `ApiError` bodies with `ErrorCode`. Domain/service-layer validation failures should throw `IllegalArgumentException` to get a proper 400 rather than falling through to the generic 500 handler. (The 404 handler was added 2026-08-27 because disabling springdoc in prod routed `/swagger-ui.html`·`/v3/api-docs` into the catch-all as 500s.)
 
 ### Record calculations
 
