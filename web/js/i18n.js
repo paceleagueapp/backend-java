@@ -247,6 +247,23 @@ var TRANSLATIONS = {
   }
 };
 
+// 땅따먹기 지도(territory.html) 전용 문자열 — 위 TRANSLATIONS에 병합.
+var TERRITORY_STRINGS = {
+  ko: { mapTitle: '땅따먹기 지도', territoryZoomIn: '지도를 더 확대하면 점령된 땅이 표시됩니다', territoryOwner: '점령자', territoryHp: '체력', territoryMine: '내 땅', territoryLoadFailed: '땅 정보를 불러오지 못했습니다', territoryLocating: '현재 위치를 찾는 중...' },
+  en: { mapTitle: 'Territory Map', territoryZoomIn: 'Zoom in to see claimed territories', territoryOwner: 'Owner', territoryHp: 'HP', territoryMine: 'My territory', territoryLoadFailed: 'Failed to load territories', territoryLocating: 'Finding your location...' },
+  ja: { mapTitle: '陣取りマップ', territoryZoomIn: '地図を拡大すると占領された土地が表示されます', territoryOwner: '占領者', territoryHp: '体力', territoryMine: '自分の土地', territoryLoadFailed: '土地情報を読み込めませんでした', territoryLocating: '現在地を取得中...' },
+  zh: { mapTitle: '占地地图', territoryZoomIn: '放大地图即可查看已占领的领地', territoryOwner: '占领者', territoryHp: '生命值', territoryMine: '我的领地', territoryLoadFailed: '加载领地信息失败', territoryLocating: '正在获取当前位置...' },
+  es: { mapTitle: 'Mapa de territorios', territoryZoomIn: 'Acerca el mapa para ver los territorios conquistados', territoryOwner: 'Dueño', territoryHp: 'PV', territoryMine: 'Mi territorio', territoryLoadFailed: 'Error al cargar los territorios', territoryLocating: 'Buscando tu ubicación...' },
+  fr: { mapTitle: 'Carte des territoires', territoryZoomIn: 'Zoomez pour voir les territoires conquis', territoryOwner: 'Propriétaire', territoryHp: 'PV', territoryMine: 'Mon territoire', territoryLoadFailed: 'Échec du chargement des territoires', territoryLocating: 'Recherche de votre position...' },
+  de: { mapTitle: 'Gebietskarte', territoryZoomIn: 'Zoome hinein, um eroberte Gebiete zu sehen', territoryOwner: 'Besitzer', territoryHp: 'TP', territoryMine: 'Mein Gebiet', territoryLoadFailed: 'Gebiete konnten nicht geladen werden', territoryLocating: 'Standort wird ermittelt...' },
+  pt: { mapTitle: 'Mapa de territórios', territoryZoomIn: 'Aproxime o mapa para ver os territórios conquistados', territoryOwner: 'Dono', territoryHp: 'PV', territoryMine: 'Meu território', territoryLoadFailed: 'Falha ao carregar os territórios', territoryLocating: 'Localizando você...' },
+  vi: { mapTitle: 'Bản đồ chiếm đất', territoryZoomIn: 'Phóng to bản đồ để xem các vùng đất đã chiếm', territoryOwner: 'Chủ sở hữu', territoryHp: 'HP', territoryMine: 'Đất của tôi', territoryLoadFailed: 'Không tải được thông tin vùng đất', territoryLocating: 'Đang tìm vị trí của bạn...' },
+  th: { mapTitle: 'แผนที่ยึดพื้นที่', territoryZoomIn: 'ซูมเข้าเพื่อดูพื้นที่ที่ถูกยึดครอง', territoryOwner: 'ผู้ยึดครอง', territoryHp: 'พลังชีวิต', territoryMine: 'พื้นที่ของฉัน', territoryLoadFailed: 'โหลดข้อมูลพื้นที่ไม่สำเร็จ', territoryLocating: 'กำลังค้นหาตำแหน่งของคุณ...' }
+};
+Object.keys(TERRITORY_STRINGS).forEach(function (code) {
+  if (TRANSLATIONS[code]) { Object.assign(TRANSLATIONS[code], TERRITORY_STRINGS[code]); }
+});
+
 function getLang() {
   var stored = localStorage.getItem('pl_lang');
   if (stored && TRANSLATIONS[stored]) return stored;

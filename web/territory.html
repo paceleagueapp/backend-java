@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>땅따먹기 지도 - Pace League</title>
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-K4Q3GDB8');</script>
+  <!-- End Google Tag Manager -->
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f0f; color: #fff;
+      display: flex; flex-direction: column;
+    }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid #1f1f1f;
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    header h1 a { color: #fff; text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .site-logo { height: 24px; width: auto; display: block; }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      background: #e53935; color: #fff; text-decoration: none; border: none;
+      padding: 7px 16px; border-radius: 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .btn:hover { background: #c62828; }
+    .btn.ghost { background: none; color: #ccc; border: 1px solid #333; }
+    #lang-select {
+      background: #1a1a1a; color: #ccc; border: 1px solid #333; border-radius: 16px;
+      padding: 6px 10px; font-size: 13px; cursor: pointer;
+    }
+    .map-wrap { position: relative; flex: 1; min-height: 0; }
+    #map { width: 100%; height: 100%; background: #1a1a1a; }
+    #status, #zoom-hint {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      background: rgba(20,20,20,0.92); color: #eee; font-size: 13px;
+      padding: 10px 16px; border-radius: 20px; border: 1px solid #333;
+      z-index: 5; max-width: 90%; text-align: center; pointer-events: none;
+    }
+    #status { top: 12px; }
+    #zoom-hint { bottom: 24px; }
+    .hidden { display: none !important; }
+    .iw { color: #111; font-size: 13px; line-height: 1.5; }
+    .iw b { font-size: 14px; }
+    .iw .iw-mine { color: #c62828; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-K4Q3GDB8"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+
+  <header>
+    <h1><a href="/index.html"><img class="site-logo" src="/img/logo.png" alt="Pace League"><span id="page-title">땅따먹기 지도</span></a></h1>
+    <div class="header-actions">
+      <select id="lang-select" aria-label="language"></select>
+      <span id="auth-actions"></span>
+    </div>
+  </header>
+
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div id="status" class="hidden"></div>
+    <div id="zoom-hint" class="hidden"></div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script>
+    // ── Google Maps API 키 ──────────────────────────────────────────────────────
+    // Google Cloud Console에서 "Maps JavaScript API"를 활성화하고, API 키에
+    // HTTP 리퍼러 제한(https://paceleague.co.kr/*, https://www.paceleague.co.kr/*, http://localhost:*)을
+    // 걸어 발급한 뒤 아래 값을 교체하세요. (배포 시점에 실제 키로 바꿔야 지도가 뜹니다.)
+    var GOOGLE_MAPS_API_KEY = '__REPLACE_ME__';
+
+    var CLIENT_MIN_ZOOM = 13;           // 이 미만 줌에서는 서버 호출 없이 안내만
+    var DEFAULT_CENTER = { lat: 37.5665, lng: 126.9780 }; // 서울시청
+    var DEFAULT_ZOOM = 15;
+
+    var map = null;
+    var infoWindow = null;
+    var drawn = [];                     // 화면에 그려진 google.maps.Polygon 목록
+    var refreshTimer = null;
+
+    var statusEl = document.getElementById('status');
+    var zoomHintEl = document.getElementById('zoom-hint');
+
+    document.getElementById('page-title').textContent = t('mapTitle');
+    document.title = t('mapTitle') + ' - Pace League';
+    renderLangSelect(document.getElementById('lang-select'));
+    renderAuthActions();
+
+    function renderAuthActions() {
+      var el = document.getElementById('auth-actions');
+      if (isLoggedIn()) {
+        var nick = localStorage.getItem('pl_nickname') || '';
+        el.innerHTML = '<span style="color:#ccc;font-size:13px;margin-right:8px;">' + escapeHtml(nick) + '</span>'
+          + '<button class="btn ghost" id="logout-btn">' + t('logout') + '</button>';
+        document.getElementById('logout-btn').addEventListener('click', logout);
+      } else {
+        el.innerHTML = '<a class="btn" href="/login.html">' + t('login') + '</a>';
+      }
+    }
+
+    function showStatus(msg) { statusEl.textContent = msg; statusEl.classList.remove('hidden'); }
+    function hideStatus() { statusEl.classList.add('hidden'); }
+
+    // Google Maps 스크립트 로드 (키가 있을 때만)
+    (function loadGoogleMaps() {
+      if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === '__REPLACE_ME__') {
+        showStatus('Google Maps API 키가 설정되지 않았습니다. web/territory.html의 GOOGLE_MAPS_API_KEY를 교체하세요.');
+        return;
+      }
+      var s = document.createElement('script');
+      s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(GOOGLE_MAPS_API_KEY)
+        + '&callback=initMap&loading=async';
+      s.async = true;
+      s.onerror = function () { showStatus(t('territoryLoadFailed')); };
+      document.head.appendChild(s);
+    })();
+
+    // Google Maps 콜백 (전역이어야 함)
+    window.initMap = function () {
+      map = new google.maps.Map(document.getElementById('map'), {
+        center: DEFAULT_CENTER,
+        zoom: DEFAULT_ZOOM,
+        disableDefaultUI: false,
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: false
+      });
+      infoWindow = new google.maps.InfoWindow();
+
+      if (navigator.geolocation) {
+        showStatus(t('territoryLocating'));
+        navigator.geolocation.getCurrentPosition(function (pos) {
+          hideStatus();
+          map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          map.setZoom(DEFAULT_ZOOM);
+        }, function () { hideStatus(); }, { timeout: 8000 });
+      }
+
+      map.addListener('idle', function () {
+        clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(refreshTerritories, 400);
+      });
+    };
+
+    function refreshTerritories() {
+      if (!map) return;
+      var zoom = map.getZoom();
+      if (zoom < CLIENT_MIN_ZOOM) {
+        clearPolygons();
+        zoomHintEl.textContent = t('territoryZoomIn');
+        zoomHintEl.classList.remove('hidden');
+        return;
+      }
+      var b = map.getBounds();
+      if (!b) return;
+      var sw = b.getSouthWest();
+      var ne = b.getNorthEast();
+      var qs = 'swLat=' + sw.lat() + '&swLng=' + sw.lng()
+        + '&neLat=' + ne.lat() + '&neLng=' + ne.lng()
+        + '&zoom=' + zoom + '&lang=' + encodeURIComponent(getLang());
+
+      apiFetch('/api/territory/map?' + qs).then(function (json) {
+        if (!json || !json.success || !json.data) { return; }
+        var data = json.data;
+        if (data.zoomTooLow) {
+          clearPolygons();
+          zoomHintEl.textContent = t('territoryZoomIn');
+          zoomHintEl.classList.remove('hidden');
+          return;
+        }
+        zoomHintEl.classList.add('hidden');
+        render(data.territories || []);
+      }).catch(function () {
+        showStatus(t('territoryLoadFailed'));
+        setTimeout(hideStatus, 3000);
+      });
+    }
+
+    function clearPolygons() {
+      drawn.forEach(function (p) { p.setMap(null); });
+      drawn = [];
+      if (infoWindow) infoWindow.close();
+    }
+
+    function render(territories) {
+      clearPolygons();
+      territories.forEach(function (terr) {
+        if (!terr.polygon || terr.polygon.length < 3) return;
+        var path = terr.polygon.map(function (pt) { return { lat: pt[0], lng: pt[1] }; });
+        var color = terr.mine ? '#e53935' : colorFor(terr.ownerNickname || String(terr.sno));
+        var poly = new google.maps.Polygon({
+          paths: path,
+          strokeColor: color, strokeOpacity: 0.9, strokeWeight: 2,
+          fillColor: color, fillOpacity: 0.28,
+          map: map
+        });
+        poly.addListener('click', function (e) {
+          var mineTag = terr.mine ? ' <span class="iw-mine">(' + escapeHtml(t('territoryMine')) + ')</span>' : '';
+          infoWindow.setContent(
+            '<div class="iw"><b>' + escapeHtml(terr.ownerNickname || '-') + '</b>' + mineTag
+            + '<br>' + escapeHtml(terr.ownerTierLabel || terr.ownerTier || '')
+            + '<br>' + escapeHtml(t('territoryHp')) + ': ' + terr.hp + ' / ' + terr.maxHp + '</div>'
+          );
+          infoWindow.setPosition(e.latLng);
+          infoWindow.open(map);
+        });
+        drawn.push(poly);
+      });
+    }
+
+    // 소유자 문자열 → 안정적인 파스텔 색상
+    function colorFor(key) {
+      var h = 0;
+      for (var i = 0; i < key.length; i++) { h = (h * 31 + key.charCodeAt(i)) % 360; }
+      return 'hsl(' + h + ', 65%, 55%)';
+    }
+  </script>
+</body>
+</html>

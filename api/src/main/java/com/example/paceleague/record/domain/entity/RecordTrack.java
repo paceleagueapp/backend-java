@@ -45,6 +45,11 @@ public class RecordTrack {
     @Column(name = "activity_type", length = 30)
     private String activityType;
 
+    // 러닝 시작 시 "땅따먹기 모드"로 시작한 세션이면 true. 세션 생성 시점에 확정되어 이후 불변이며,
+    // FINISHED 처리 시 이 값이 true인 세션만 territory(땅따먹기) 판정 대상이 된다.
+    @Column(name = "territory_mode", nullable = false)
+    private boolean territoryMode;
+
     @Column(name = "status", length = 20)
     private String status;
 
@@ -108,13 +113,14 @@ public class RecordTrack {
     private LocalDateTime updateAt;
 
     @Builder
-    private RecordTrack(Long uno, String clientRunId, String activityType, Integer schemaVersion,
+    private RecordTrack(Long uno, String clientRunId, String activityType, boolean territoryMode, Integer schemaVersion,
                         String utcOffset, LocalDateTime startedAt,
                         Integer locRequestedIntervalMs, BigDecimal locDistanceFilterMeters, String locAlgorithmVersion,
                         String devicePlatform, String deviceAppVersion, Integer deviceAppBuildNumber) {
         this.uno = uno;
         this.clientRunId = clientRunId;
         this.activityType = activityType;
+        this.territoryMode = territoryMode;
         this.schemaVersion = schemaVersion;
         this.utcOffset = utcOffset;
         this.status = STATUS_ACTIVE;

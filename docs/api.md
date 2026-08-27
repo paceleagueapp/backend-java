@@ -328,6 +328,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 | device | object | 선택(보통 첫 청크만). `{ platform, appVersion, appBuildNumber }` |
 | schemaVersion | int | 선택 |
 | utcOffset | string | 선택. 앱이 넣어주면 그대로 `record_track.utc_offset` → 종료 시 `record.utc_offset`에 저장(예: `"+09:00"`) |
+| territoryMode | boolean | 선택. 러닝 시작 시 "땅따먹기 모드"로 시작했으면 `true`. 첫 청크에만 실으면 되고 세션 생성 시점에 확정(이후 불변). `true`인 세션만 러닝 종료 시 땅따먹기 판정(땅 생성/데미지/점령)이 돈다 — [Territory API](#territory-api-apiterritory--러닝-땅따먹기) 참고. 없으면 `false`(일반 러닝) |
 
 시각(`recordedAt`)은 ISO-8601 UTC(예: `"2026-08-26T10:46:25.797Z"`)로 보내며, 서버가 UTC `LocalDateTime`으로 변환해 저장합니다.
 
@@ -362,6 +363,50 @@ join/login/reissue가 공통으로 반환하는 구조:
 - 종료 시 거리/페이스가 러닝 기록으로 불가능한 값, 최근 1개월 내 동일 `startTime` 존재 → 400 (`RecordService.create`의 기존 규칙). 이 경우 트랜잭션이 롤백되어 세션은 `ACTIVE`로 남고, 앱이 `finished: true`를 재시도할 수 있음
 
 **마이그레이션**: [migrations/2026-08-27_record_gps_track.sql](./migrations/2026-08-27_record_gps_track.sql) → [migrations/2026-08-27_record_track_streaming.sql](./migrations/2026-08-27_record_track_streaming.sql) 순서로 (운영은 배포 전 직접 실행)
+
+---
+
+## Territory API (`/api/territory`) — 러닝 땅따먹기
+
+러닝 GPS 경로가 이룬 닫힌 도형을 "땅"으로 저장하고, 겹치는 러닝으로 데미지를 주고받는 게임 기능(2026-08-27 1차 구현). 도메인 로직은 [domains.md](./domains.md#러닝-땅따먹기territory-도메인) 참고.
+
+땅 생성/데미지/점령은 **별도 엔드포인트가 아니라** `POST /api/record/gps`의 러닝 종료 시점에 일어난다 — 그 러닝이 `territoryMode: true`로 시작한 세션일 때만. 아래는 그 결과를 지도에 보여주는 조회 엔드포인트.
+
+### GET `/api/territory/map` — 지도 영역 내 땅 조회 (공개, 인증 불필요)
+
+지도가 보고 있는 영역(bounds)과 줌 레벨로 점령된 땅 목록을 반환합니다. `web/territory.html`(Google Maps JS API)이 폴리곤으로 그립니다. 로그인 상태로 호출하면 각 땅의 `mine` 플래그가 채워집니다.
+
+**Query params**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| swLat, swLng | double | 지도 남서쪽 모서리 위경도. **필수** |
+| neLat, neLng | double | 지도 북동쪽 모서리 위경도. **필수** |
+| zoom | int | 지도 줌 레벨. **필수**. `paceleague.territory.min-zoom`(기본 13) 미만이면 빈 목록 + `zoomTooLow: true` (데이터 과다 방지) |
+| lang | string | 티어 라벨 언어(`ko`/`en`/`ja`/`zh`/`es`/`fr`/`de`/`pt`/`vi`/`th`), 미지원 값이면 `ko`. 기본 `ko` |
+| country | string | ISO 3166-1 alpha-2 국가코드(예: `KR`). 주어지면 `lang` 대신 이 국가에 맞는 언어로 응답 |
+
+**Response** `200 OK` — `data`: `TerritoryMapResponse`
+
+```json
+{ "zoomTooLow": false, "minZoom": 13,
+  "territories": [
+    { "sno": 12, "polygon": [[37.5665,126.978],[37.5665,126.979],[37.5673,126.979],[37.5673,126.978],[37.5665,126.978]],
+      "centerLat": 37.5669, "centerLng": 126.9785,
+      "ownerNickname": "달리는곰", "ownerTier": "GOLD", "ownerTierLabel": "골드",
+      "hp": 70, "maxHp": 100, "mine": false }
+  ] }
+```
+
+| 필드 | 설명 |
+|---|---|
+| zoomTooLow | `true`이면 `territories`는 항상 빈 목록. 클라이언트는 "지도를 더 확대하세요" 안내를 표시 |
+| polygon | `[[lat,lng], ...]` 위/경도 링(실제 러닝 경로 기반) |
+| ownerTier / ownerTierLabel | 소유자의 현재 시즌 티어 enum / 언어별 라벨. 점수 없으면 `SILVER` |
+| hp / maxHp | 현재 체력 / 최대 체력. 겹치는 러닝에 데미지를 입고 0이 되면 소유권이 넘어감 |
+| mine | 호출자 소유 여부. 비로그인이면 항상 `false` |
+
+**마이그레이션**: [migrations/2026-08-27_territory_feature.sql](./migrations/2026-08-27_territory_feature.sql) (운영은 배포 전 직접 실행. `record_track.territory_mode` 컬럼 + `territory`/`territory_contribution` 테이블)
 
 ---
 

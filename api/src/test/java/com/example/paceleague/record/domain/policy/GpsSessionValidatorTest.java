@@ -19,7 +19,7 @@ class GpsSessionValidatorTest {
     }
 
     private static GpsSessionRequest chunk(List<GpsSessionRequest.GpsPoint> points, Boolean finished) {
-        return new GpsSessionRequest("run-1", "RUNNING", points, finished, null, null, 1, "+09:00");
+        return new GpsSessionRequest("run-1", "RUNNING", points, finished, null, null, 1, "+09:00", false);
     }
 
     @Test
@@ -51,7 +51,7 @@ class GpsSessionValidatorTest {
     @Test
     void clientRunId가_비면_거부한다() {
         GpsSessionRequest req = new GpsSessionRequest("  ", "RUNNING",
-                List.of(point(37.0, 127.0)), false, null, null, 1, null);
+                List.of(point(37.0, 127.0)), false, null, null, 1, null, false);
         assertThatThrownBy(() -> GpsSessionValidator.validate(1L, req))
                 .isInstanceOf(IllegalArgumentException.class);
     }
@@ -59,7 +59,7 @@ class GpsSessionValidatorTest {
     @Test
     void RUNNING이_아닌_활동은_거부한다() {
         GpsSessionRequest req = new GpsSessionRequest("run-1", "CYCLING",
-                List.of(point(37.0, 127.0)), false, null, null, 1, null);
+                List.of(point(37.0, 127.0)), false, null, null, 1, null, false);
         assertThatThrownBy(() -> GpsSessionValidator.validate(1L, req))
                 .isInstanceOf(IllegalArgumentException.class);
     }
@@ -67,7 +67,7 @@ class GpsSessionValidatorTest {
     @Test
     void activityType이_없으면_RUNNING으로_간주해_통과한다() {
         GpsSessionRequest req = new GpsSessionRequest("run-1", null,
-                List.of(point(37.0, 127.0)), false, null, null, 1, null);
+                List.of(point(37.0, 127.0)), false, null, null, 1, null, false);
         assertThatCode(() -> GpsSessionValidator.validate(1L, req)).doesNotThrowAnyException();
     }
 

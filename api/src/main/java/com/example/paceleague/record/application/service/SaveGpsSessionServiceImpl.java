@@ -10,9 +10,13 @@ import com.example.paceleague.record.application.port.out.RecordTrackRepositoryP
 import com.example.paceleague.record.domain.entity.RecordTrack;
 import com.example.paceleague.record.domain.policy.GeoDistanceCalculator;
 import com.example.paceleague.record.domain.policy.GpsSessionValidator;
+import com.example.paceleague.territory.application.dto.ProcessTerritoryRunCommand;
+import com.example.paceleague.territory.application.port.in.ProcessTerritoryRunUseCase;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,15 +32,20 @@ import java.util.List;
 @Service
 public class SaveGpsSessionServiceImpl implements SaveGpsSessionUseCase {
 
+    private static final Logger log = LoggerFactory.getLogger(SaveGpsSessionServiceImpl.class);
+
     private final RecordService recordService;
     private final RecordTrackRepositoryPort recordTrackRepositoryPort;
+    private final ProcessTerritoryRunUseCase processTerritoryRunUseCase;
     private final ObjectMapper objectMapper;
 
     public SaveGpsSessionServiceImpl(RecordService recordService,
                                      RecordTrackRepositoryPort recordTrackRepositoryPort,
+                                     ProcessTerritoryRunUseCase processTerritoryRunUseCase,
                                      ObjectMapper objectMapper) {
         this.recordService = recordService;
         this.recordTrackRepositoryPort = recordTrackRepositoryPort;
+        this.processTerritoryRunUseCase = processTerritoryRunUseCase;
         this.objectMapper = objectMapper;
     }
 
@@ -156,7 +165,30 @@ public class SaveGpsSessionServiceImpl implements SaveGpsSessionUseCase {
                         session.getEndedAt(), session.getUtcOffset())
         );
         session.finish(recordSno);
+
+        // 땅따먹기 모드로 시작한 세션만 땅 판정 대상. 판정은 best-effort —
+        // 실패해도 러닝 기록/점수는 그대로 유지된다(ProcessTerritoryRunUseCase는 REQUIRES_NEW 트랜잭션).
+        if (session.isTerritoryMode()) {
+            claimTerritoryBestEffort(uno, session, recordSno);
+        }
         return recordSno;
+    }
+
+    private void claimTerritoryBestEffort(Long uno, RecordTrack session, Long recordSno) {
+        try {
+            List<GpsPoint> points = objectMapper.readValue(
+                    session.getPointsJson(), new TypeReference<List<GpsPoint>>() {});
+            List<double[]> coords = points.stream()
+                    .filter(p -> p.latitude() != null && p.longitude() != null)
+                    .map(p -> new double[]{p.latitude(), p.longitude()})
+                    .toList();
+            processTerritoryRunUseCase.process(new ProcessTerritoryRunCommand(
+                    uno, recordSno, session.getSno(), coords,
+                    session.getStartedAt(), session.getEndedAt()));
+        } catch (Exception e) {
+            log.warn("territory 처리 실패 — 러닝 기록은 정상 저장됨. trackSno={}, err={}",
+                    session.getSno(), e.toString());
+        }
     }
 
     private RecordTrack newSession(Long uno, GpsSessionRequest req, GpsPoint firstPoint) {
@@ -166,6 +198,7 @@ public class SaveGpsSessionServiceImpl implements SaveGpsSessionUseCase {
                 .uno(uno)
                 .clientRunId(req.clientRunId())
                 .activityType(req.activityType() == null ? "RUNNING" : req.activityType())
+                .territoryMode(Boolean.TRUE.equals(req.territoryMode()))
                 .schemaVersion(req.schemaVersion())
                 .utcOffset(req.utcOffset())
                 .startedAt(toUtc(firstPoint.recordedAt()))

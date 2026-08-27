@@ -20,7 +20,10 @@ public record GpsSessionRequest(
         Device device,
         Integer schemaVersion,
         // 선택. 앱이 넣어주면 그대로 record.utc_offset에 저장(예: "+09:00").
-        String utcOffset
+        String utcOffset,
+        // 선택. 러닝 시작 시 "땅따먹기 모드"로 시작한 세션이면 true. 첫 청크에만 실어 보내면 되고,
+        // 세션 생성 시점에 확정되어 이후 청크의 값은 무시된다. 없으면 false(일반 러닝).
+        Boolean territoryMode
 ) {
     public record Location(
             Integer requestedIntervalMs,

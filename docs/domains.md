@@ -101,6 +101,38 @@ totalScore = baseScore + scaledScore + addScore
   - 즉 미래에 시작하는 시즌 데이터를 미리 넣어두면, `end_dt`가 아직 안 지났어도 그 시즌이 "현재 시즌"으로 잡힐 수 있으니 시즌 데이터 입력 순서/시점에 주의가 필요함.
 - 기록 저장 시 그 시점의 "현재 시즌"이 `Record.season` 및 `MemberScore.seasonSno`에 스냅샷처럼 기록됨.
 
+## 러닝 땅따먹기(Territory) 도메인
+
+`territory` 패키지 (2026-08-27 1차 구현). 러닝 GPS 경로가 이룬 닫힌 도형을 "땅"으로 저장하고, 겹치는 러닝으로 데미지를 주고받으며 HP가 0이 되면 소유권이 넘어가는 게임 기능. 전체 기획은 Notion "러닝 땅따먹기" 문서 참고 — 이번 범위는 그중 1차 슬라이스이며, H3/S2 셀 시스템·시즌 리셋·크루전·부정기록 판정 정교화는 제외.
+
+### 땅따먹기 모드
+
+일반 러닝은 땅 판정 대상이 아니다. 앱이 러닝 시작 시 `POST /api/record/gps` 첫 청크에 `territoryMode: true`를 실어야 그 세션이 `record_track.territory_mode = 1`로 생성되고(이후 불변), 러닝 종료(`finished: true` 또는 `GpsSessionSweeper` 자동 마감) 시점에만 땅 판정이 돈다. `SaveGpsSessionServiceImpl.finalizeRun` → `ProcessTerritoryRunUseCase.process` 호출. 이 호출은 **best-effort** — `ProcessTerritoryRunServiceImpl`이 `@Transactional(REQUIRES_NEW)`이고 호출부가 예외를 잡아 삼키므로, 땅 판정이 실패해도 러닝 기록/점수는 그대로 저장된다(`record→rank`의 `ApplyScoreUseCase`가 호출자 트랜잭션에 합류해 실패 시 함께 롤백되는 것과 대비되는 의도적 차이).
+
+### 땅 판정 규칙 (`ProcessTerritoryRunServiceImpl`)
+
+1. **닫힌 도형 판정** (`ClosedLoopDetector`): 경로의 시작·끝 좌표가 `paceleague.territory.close-threshold-meters`(기본 50m) 이내면 닫힘. 아니면 no-op(`NO_LOOP`).
+2. **도형 유효성** (`PolygonGeometry` + `TerritoryClaimValidator`): 둘레 ≥ `min-perimeter-meters`(300), 면적은 `min-area-sqm`(10,000) ~ `max-area-sqm`(5,000,000) 범위. 벗어나면 no-op(`INVALID_SHAPE`).
+3. **겹침 조회**: 러닝 bbox와 겹치는 `ACTIVE` territory를 비관적 락(`PESSIMISTIC_WRITE`)으로 조회. 실제 폴리곤 교집합 면적(`PolygonGeometry.intersectionAreaSqm`, JTS)이 0 초과인 것만 대상.
+   - **내 소유 땅** → `heal`: 회복량 = `겹친면적/내땅면적 × maxHp × heal-factor`(0.5), 최대치까지.
+   - **남의 땅** → `damage`: 데미지 = `겹친면적/대상땅면적 × maxHp × attack-factor`(0.5), 최소 1. `territory_contribution`에 기여도 1건 기록.
+     - HP가 0 이하가 되면 최근 1시간(`contribution-window-minutes`) 기여도 합이 가장 큰 사람이 **즉시 점령**(동점 → 가장 최근 기여자 → 이번 공격자). 소유자 변경 + HP를 maxHp로 리셋 + 해당 땅의 `territory_contribution` 전체 삭제(`TerritoryDamagePolicy.resolveNewOwner`).
+4. **겹친 땅이 하나도 없으면** → 새 `Territory` 생성(HP = `default-max-hp` 100, `season` = 생성 시점 시즌 번호 스냅샷). 겹친 게 있었으면 새 땅은 만들지 않는다("빈 땅이면 즉시 내 땅").
+
+### 지도 조회 (`GET /api/territory/map`)
+
+공개(인증 불필요). 지도 bounds(남서/북동 위경도) + 줌 레벨로 `ACTIVE` territory를 bbox 겹침으로 조회. 줌이 `paceleague.territory.min-zoom`(13) 미만이면 빈 목록 + `zoomTooLow: true`(데이터 과다 방지). 최대 `map-max-results`(300)개, 면적 큰 순. 소유자 닉네임은 `member.GetMemberNicknamePort`, 티어는 `rank.GetMemberTierPort`(+ `RankTierLabelPolicy` 라벨) — 소유자별 캐시로 N+1 회피. 로그인 상태면 각 항목의 `mine` 플래그가 채워진다. `web/territory.html`(Google Maps JS API)이 이 응답을 폴리곤으로 그린다.
+
+### 설정 (`paceleague.territory.*`, `TerritoryProperties`)
+
+`app.jwt`(`JwtProperties`)와 같은 `@ConfigurationProperties` 방식. `application*.yml`에는 없고 아래 기본값을 사용: `min-zoom`(13), `map-max-results`(300), `close-threshold-meters`(50), `min-perimeter-meters`(300), `min-area-sqm`(10000), `max-area-sqm`(5000000), `default-max-hp`(100), `attack-factor`(0.5), `heal-factor`(0.5), `contribution-window-minutes`(60).
+
+### 알려진 한계 (v1)
+
+- 폴리곤 면적/교집합은 공간 DB 타입 대신 등거리 근사 평면 투영 + JTS로 Java에서 계산(`record_track.points_json`과 동일한 "좌표는 JSON, 계산은 Java" 방침). 수 km 규모에서 오차 무시 수준.
+- `REQUIRES_NEW` 특성상, 땅 판정 성공 후 바깥 GPS 트랜잭션이 실패하면 러닝은 롤백되어도 땅은 남는다(확률 낮음 — 바깥 트랜잭션의 마지막 단계가 세션 저장뿐).
+- 모바일 앱이 `territoryMode`를 보내기 전까지는 실제로 아무 땅도 생성되지 않는다(하위호환: 필드 없으면 false).
+
 ## 커뮤니티(Board) 도메인
 
 `board` 패키지. 보드(카테고리) → 게시글 → 댓글(1단계) → 추천/비추천 구조. 레딧처럼 **조회(GET)는 비로그인도 가능**하고, 작성/삭제/추천(POST/DELETE)만 로그인이 필요합니다 — `SecurityConfig`에 `HttpMethod.GET` 한정으로 `/api/board`, `/api/board/*/posts`, `/api/board/posts/*`, `/api/board/posts/*/comments` 4개 경로만 `permitAll`, 나머지(같은 경로의 POST/DELETE 포함)는 기본 `anyRequest().authenticated()`에 걸림. `BoardController`는 이 4개 조회 엔드포인트에서 `@MemberSno(required = false) Long memberSno`(비로그인이면 `null`)를 쓰고, 나머지 쓰기 엔드포인트는 기본값인 `@MemberSno Long memberSno`(비로그인이면 예외)를 그대로 씀 — 인증된 컨트롤러 전체가 공유하는 `common.web.MemberSnoArgumentResolver`([architecture.md](./architecture.md) 참고)의 `required` 옵션 차이.
