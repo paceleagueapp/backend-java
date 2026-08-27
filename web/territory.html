@@ -79,10 +79,9 @@
   <script src="/js/i18n.js"></script>
   <script>
     // ── Google Maps API 키 ──────────────────────────────────────────────────────
-    // Google Cloud Console에서 "Maps JavaScript API"를 활성화하고, API 키에
-    // HTTP 리퍼러 제한(https://paceleague.co.kr/*, https://www.paceleague.co.kr/*, http://localhost:*)을
-    // 걸어 발급한 뒤 아래 값을 교체하세요. (배포 시점에 실제 키로 바꿔야 지도가 뜹니다.)
-    var GOOGLE_MAPS_API_KEY = '__REPLACE_ME__';
+    // "Maps JavaScript API" 전용, HTTP 리퍼러 제한(paceleague.co.kr / www / localhost) 걸린 키.
+    // JS 지도 키는 브라우저에 노출되는 게 정상이며, 보안은 이 리퍼러/API 제한 + 결제 예산 알림으로 건다.
+    var GOOGLE_MAPS_API_KEY = 'AIzaSyCO8M-PtHdhcCAxQShVwqARdNoGv11Ti_w';
 
     var CLIENT_MIN_ZOOM = 13;           // 이 미만 줌에서는 서버 호출 없이 안내만
     var DEFAULT_CENTER = { lat: 37.5665, lng: 126.9780 }; // 서울시청
