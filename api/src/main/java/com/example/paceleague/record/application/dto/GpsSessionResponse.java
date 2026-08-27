@@ -1,10 +1,19 @@
 package com.example.paceleague.record.application.dto;
 
-// recordSno: 이 세션으로 생성(또는 멱등 재요청 시 기존)된 record.sno
-// trackSno: 저장된 record_track.sno
-// duplicated: clientRunId 기준 이미 저장돼 있어 새로 만들지 않고 기존 결과를 돌려준 경우 true
+import java.math.BigDecimal;
+
+// 청크 1건을 처리한 뒤의 러닝 세션 누적 상태.
+// status: ACTIVE(진행 중) | FINISHED(종료·record 생성됨)
+// acceptedPoints: 이번 요청에서 새로 저장된 좌표 수
+// skippedPoints: 이미 저장된 구간과 겹쳐 무시된 좌표 수(청크 재전송 대비)
+// recordSno: 종료 전에는 null, finished=true 처리 후 생성된 record.sno
 public record GpsSessionResponse(
-        Long recordSno,
-        Long trackSno,
-        boolean duplicated
+        String clientRunId,
+        String status,
+        int chunkSeq,
+        int acceptedPoints,
+        int skippedPoints,
+        int totalPoints,
+        BigDecimal distanceMeters,
+        Long recordSno
 ) {}

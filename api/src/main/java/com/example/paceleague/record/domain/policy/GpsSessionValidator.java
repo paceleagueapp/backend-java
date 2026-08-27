@@ -2,15 +2,16 @@ package com.example.paceleague.record.domain.policy;
 
 import com.example.paceleague.record.application.dto.GpsSessionRequest;
 
-import java.math.BigDecimal;
 import java.util.List;
 
-// GPS 세션 페이로드 자체의 형식 검증만 담당하는 순수 로직.
-// 거리/페이스 상한 등 러닝 기록으로서의 검증은 RecordServiceImpl.validateRequest가 이어서 수행한다.
+// GPS 청크 페이로드 자체의 형식 검증. 거리/페이스 상한 등 러닝 기록으로서의 검증은
+// 종료(finished) 시 RecordServiceImpl.validateRequest가 이어서 수행한다.
 public final class GpsSessionValidator {
 
-    // 3초 간격 수집 기준 하루를 넘겨도 남을 만큼의 보수적 상한 — 이보다 많으면 조작된 페이로드로 간주.
-    public static final int MAX_POINTS = 100_000;
+    // 한 청크(5분)에 담길 수 있는 좌표 수의 보수적 상한 — 1초 간격이어도 300개면 충분.
+    public static final int MAX_CHUNK_POINTS = 2_000;
+    // 한 러닝 전체 좌표 수 상한 — 3초 간격 기준 50시간 분량. 이보다 크면 조작된 세션으로 간주.
+    public static final int MAX_SESSION_POINTS = 60_000;
 
     private GpsSessionValidator() {}
 
@@ -24,33 +25,29 @@ public final class GpsSessionValidator {
         if (isBlank(req.clientRunId())) {
             throw new IllegalArgumentException("clientRunId is required");
         }
-        if (req.schemaVersion() == null) {
-            throw new IllegalArgumentException("schemaVersion is required");
+        if (req.clientRunId().length() > 100) {
+            throw new IllegalArgumentException("clientRunId is too long (max 100)");
         }
-        if (!"RUNNING".equalsIgnoreCase(nullToEmpty(req.activityType()))) {
+        if (req.activityType() != null && !"RUNNING".equalsIgnoreCase(req.activityType())) {
             throw new IllegalArgumentException("unsupported activityType: " + req.activityType());
-        }
-        if (!"FINISHED".equalsIgnoreCase(nullToEmpty(req.status()))) {
-            throw new IllegalArgumentException("only FINISHED sessions can be saved");
-        }
-        if (req.startedAt() == null || req.endedAt() == null) {
-            throw new IllegalArgumentException("startedAt and endedAt are required");
-        }
-        if (!req.endedAt().isAfter(req.startedAt())) {
-            throw new IllegalArgumentException("endedAt must be after startedAt");
-        }
-        if (req.distanceMeters() == null || req.distanceMeters().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("distanceMeters must be positive");
         }
 
         List<GpsSessionRequest.GpsPoint> points = req.points();
+        boolean finished = Boolean.TRUE.equals(req.finished());
+
         if (points == null || points.isEmpty()) {
-            throw new IllegalArgumentException("points is empty");
+            if (!finished) {
+                throw new IllegalArgumentException("points is empty");
+            }
+            return; // finished=true 이면서 마저 보낼 좌표가 없는 마감 요청은 허용
         }
-        if (points.size() > MAX_POINTS) {
-            throw new IllegalArgumentException("too many points (max " + MAX_POINTS + ")");
+        if (points.size() > MAX_CHUNK_POINTS) {
+            throw new IllegalArgumentException("too many points in one chunk (max " + MAX_CHUNK_POINTS + ")");
         }
         for (GpsSessionRequest.GpsPoint p : points) {
+            if (p.recordedAt() == null) {
+                throw new IllegalArgumentException("point recordedAt is required");
+            }
             if (p.latitude() == null || p.longitude() == null) {
                 throw new IllegalArgumentException("point latitude/longitude is required");
             }
@@ -65,9 +62,5 @@ public final class GpsSessionValidator {
 
     private static boolean isBlank(String s) {
         return s == null || s.isBlank();
-    }
-
-    private static String nullToEmpty(String s) {
-        return s == null ? "" : s;
     }
 }

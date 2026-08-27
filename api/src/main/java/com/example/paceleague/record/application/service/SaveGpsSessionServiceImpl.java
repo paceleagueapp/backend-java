@@ -1,20 +1,28 @@
 package com.example.paceleague.record.application.service;
 
 import com.example.paceleague.record.application.dto.GpsSessionRequest;
+import com.example.paceleague.record.application.dto.GpsSessionRequest.GpsPoint;
 import com.example.paceleague.record.application.dto.GpsSessionResponse;
 import com.example.paceleague.record.application.dto.RecordCreateRequest;
 import com.example.paceleague.record.application.port.in.RecordService;
 import com.example.paceleague.record.application.port.in.SaveGpsSessionUseCase;
 import com.example.paceleague.record.application.port.out.RecordTrackRepositoryPort;
 import com.example.paceleague.record.domain.entity.RecordTrack;
+import com.example.paceleague.record.domain.policy.GeoDistanceCalculator;
 import com.example.paceleague.record.domain.policy.GpsSessionValidator;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 public class SaveGpsSessionServiceImpl implements SaveGpsSessionUseCase {
@@ -33,67 +41,149 @@ public class SaveGpsSessionServiceImpl implements SaveGpsSessionUseCase {
 
     @Override
     @Transactional
-    public GpsSessionResponse save(Long uno, GpsSessionRequest req) {
+    public GpsSessionResponse ingest(Long uno, GpsSessionRequest req) {
         GpsSessionValidator.validate(uno, req);
 
-        // 멱등 처리: 같은 clientRunId가 이미 저장돼 있으면 record를 새로 만들지 않고 기존 결과를 반환.
-        // (동시에 같은 요청이 두 번 들어오는 드문 레이스에서는 client_run_id UNIQUE 제약에 걸려 뒤 요청이
-        //  실패하지만, 앱이 재시도하면 이 분기에서 걸러진다.)
-        return recordTrackRepositoryPort.findByUnoAndClientRunId(uno, req.clientRunId())
-                .map(existing -> new GpsSessionResponse(existing.getRecordSno(), existing.getSno(), true))
-                .orElseGet(() -> createRecordAndTrack(uno, req));
+        boolean finished = Boolean.TRUE.equals(req.finished());
+        List<GpsPoint> incoming = sortByTime(req.points());
+
+        RecordTrack session = recordTrackRepositoryPort
+                .findByUnoAndClientRunId(uno, req.clientRunId())
+                .orElse(null);
+
+        // 이미 종료된 세션에 또 청크가 오면(재전송 등) 아무것도 하지 않고 확정된 결과만 돌려준다.
+        if (session != null && session.isFinished()) {
+            return summary(session, 0, incoming.size());
+        }
+
+        if (session == null) {
+            if (incoming.isEmpty()) {
+                throw new IllegalArgumentException("no GPS points to start a session");
+            }
+            session = recordTrackRepositoryPort.save(newSession(uno, req, incoming.get(0)));
+        }
+
+        int accepted = 0;
+        int skipped = 0;
+        if (!incoming.isEmpty()) {
+            LocalDateTime watermark = session.getLastPointAt();
+            List<GpsPoint> kept = new ArrayList<>();
+            for (GpsPoint p : incoming) {
+                if (watermark == null || toUtc(p.recordedAt()).isAfter(watermark)) {
+                    kept.add(p);
+                } else {
+                    skipped++;
+                }
+            }
+            if (session.getPointCount() + kept.size() > GpsSessionValidator.MAX_SESSION_POINTS) {
+                throw new IllegalArgumentException("session exceeds max points (" + GpsSessionValidator.MAX_SESSION_POINTS + ")");
+            }
+            if (!kept.isEmpty()) {
+                applyChunk(session, kept);
+                accepted = kept.size();
+            }
+        }
+
+        Long recordSno = session.getRecordSno();
+        if (finished) {
+            recordSno = finalizeRun(uno, session);
+        }
+        recordTrackRepositoryPort.save(session);
+
+        return summary(session, accepted, skipped);
     }
 
-    private GpsSessionResponse createRecordAndTrack(Long uno, GpsSessionRequest req) {
-        LocalDateTime startTime = toUtcLocalDateTime(req.startedAt());
-        LocalDateTime endTime = toUtcLocalDateTime(req.endedAt());
+    private void applyChunk(RecordTrack session, List<GpsPoint> kept) {
+        double added = 0;
+        Double prevLat = session.getLastLat() == null ? null : session.getLastLat().doubleValue();
+        Double prevLng = session.getLastLng() == null ? null : session.getLastLng().doubleValue();
+        for (GpsPoint p : kept) {
+            if (prevLat != null) {
+                added += GeoDistanceCalculator.haversineMeters(prevLat, prevLng, p.latitude(), p.longitude());
+            }
+            prevLat = p.latitude();
+            prevLng = p.longitude();
+        }
 
+        GpsPoint last = kept.get(kept.size() - 1);
+        session.appendChunk(
+                kept.size(),
+                toUtc(last.recordedAt()),
+                BigDecimal.valueOf(last.latitude()),
+                BigDecimal.valueOf(last.longitude()),
+                BigDecimal.valueOf(added),
+                mergePointsJson(session.getPointsJson(), kept)
+        );
+    }
+
+    private Long finalizeRun(Long uno, RecordTrack session) {
+        if (session.getPointCount() == null || session.getPointCount() == 0) {
+            throw new IllegalArgumentException("cannot finish a run with no GPS data");
+        }
         // record 생성 + 시즌/점수 산정은 기존 단건 저장 로직을 그대로 재사용(거리·페이스 상한 검증 포함).
         Long recordSno = recordService.create(
                 uno,
-                new RecordCreateRequest(req.distanceMeters(), startTime, endTime, req.utcOffset())
+                new RecordCreateRequest(session.getDistanceMeters(), session.getStartedAt(),
+                        session.getEndedAt(), session.getUtcOffset())
         );
-
-        RecordTrack saved = recordTrackRepositoryPort.save(toTrack(uno, recordSno, req, startTime, endTime));
-
-        return new GpsSessionResponse(recordSno, saved.getSno(), false);
+        session.finish(recordSno);
+        return recordSno;
     }
 
-    private RecordTrack toTrack(Long uno, Long recordSno, GpsSessionRequest req,
-                               LocalDateTime startedAt, LocalDateTime endedAt) {
+    private RecordTrack newSession(Long uno, GpsSessionRequest req, GpsPoint firstPoint) {
         GpsSessionRequest.Location loc = req.location();
         GpsSessionRequest.Device dev = req.device();
         return RecordTrack.builder()
                 .uno(uno)
-                .recordSno(recordSno)
                 .clientRunId(req.clientRunId())
+                .activityType(req.activityType() == null ? "RUNNING" : req.activityType())
                 .schemaVersion(req.schemaVersion())
-                .activityType(req.activityType())
-                .status(req.status())
-                .startedAt(startedAt)
-                .endedAt(endedAt)
-                .elapsedDurationMs(req.elapsedDurationMs())
-                .distanceMeters(req.distanceMeters())
-                .pointCount(req.pointCount())
+                .utcOffset(req.utcOffset())
+                .startedAt(toUtc(firstPoint.recordedAt()))
                 .locRequestedIntervalMs(loc == null ? null : loc.requestedIntervalMs())
                 .locDistanceFilterMeters(loc == null ? null : loc.distanceFilterMeters())
                 .locAlgorithmVersion(loc == null ? null : loc.algorithmVersion())
                 .devicePlatform(dev == null ? null : dev.platform())
                 .deviceAppVersion(dev == null ? null : dev.appVersion())
                 .deviceAppBuildNumber(dev == null ? null : dev.appBuildNumber())
-                .pointsJson(serializePoints(req))
                 .build();
     }
 
-    private static LocalDateTime toUtcLocalDateTime(java.time.OffsetDateTime odt) {
+    private static List<GpsPoint> sortByTime(List<GpsPoint> points) {
+        if (points == null || points.isEmpty()) {
+            return List.of();
+        }
+        return points.stream()
+                .sorted(Comparator.comparing(GpsPoint::recordedAt))
+                .toList();
+    }
+
+    private static LocalDateTime toUtc(OffsetDateTime odt) {
         return odt.withOffsetSameInstant(ZoneOffset.UTC).toLocalDateTime();
     }
 
-    private String serializePoints(GpsSessionRequest req) {
+    private String mergePointsJson(String existingJson, List<GpsPoint> kept) {
         try {
-            return objectMapper.writeValueAsString(req.points());
+            List<GpsPoint> all = (existingJson == null || existingJson.isBlank())
+                    ? new ArrayList<>()
+                    : objectMapper.readValue(existingJson, new TypeReference<List<GpsPoint>>() {});
+            all.addAll(kept);
+            return objectMapper.writeValueAsString(all);
         } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("failed to serialize GPS points", e);
+            throw new IllegalArgumentException("failed to merge GPS points", e);
         }
+    }
+
+    private static GpsSessionResponse summary(RecordTrack s, int accepted, int skipped) {
+        return new GpsSessionResponse(
+                s.getClientRunId(),
+                s.getStatus(),
+                s.getChunkCount() == null ? 0 : s.getChunkCount(),
+                accepted,
+                skipped,
+                s.getPointCount() == null ? 0 : s.getPointCount(),
+                s.getDistanceMeters(),
+                s.getRecordSno()
+        );
     }
 }

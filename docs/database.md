@@ -49,24 +49,32 @@ MySQL, Spring Data JPA(Hibernate) 사용. 로컬은 `ddl-auto: update`, 운영�
 
 ## `record_track`
 
-앱이 `POST /api/record/gps`로 보낸 러닝 세션의 GPS 경로. `record`와 `record_sno`로 느슨하게 연결(FK 미강제). 마이그레이션: [migrations/2026-08-27_record_gps_track.sql](./migrations/2026-08-27_record_gps_track.sql).
+앱이 러닝 중 5분마다 `POST /api/record/gps`로 보내는 GPS 좌표 청크를 **러닝 1건 = 1행**으로 누적하는 세션 테이블. `record`와 `record_sno`로 느슨하게 연결(FK 미강제). 마이그레이션: [migrations/2026-08-27_record_gps_track.sql](./migrations/2026-08-27_record_gps_track.sql)(최초 생성) → [migrations/2026-08-27_record_track_streaming.sql](./migrations/2026-08-27_record_track_streaming.sql)(청크 누적용으로 확장).
+
+- `status=ACTIVE`: 진행 중. 청크가 올 때마다 `points_json`에 좌표가 append되고 `record_sno`는 `null`.
+- `status=FINISHED`: 앱이 `finished=true`를 보낸 시점에 `record` 1건이 생성되고 `record_sno`가 채워짐. 이후 청크는 무시.
 
 | 컬럼 | 타입(Java) | 설명 |
 |---|---|---|
 | sno | Long (PK, IDENTITY) | |
 | uno | Long, not null | `member.sno` FK 값 |
-| record_sno | Long, not null | 이 세션으로 생성된 `record.sno` |
-| client_run_id | String, not null, **unique** | 앱이 생성한 세션 고유 ID = 멱등 키. 같은 값 재요청 시 `record`를 새로 만들지 않음. max 100 |
+| record_sno | Long, **nullable** | 종료 전에는 `null`, `finished` 처리 시 채워짐 |
+| client_run_id | String, not null, **unique** | 앱이 러닝 시작 시 만든 고유 ID. 그 러닝의 모든 청크가 같은 값. max 100 |
+| status | String | `ACTIVE` / `FINISHED` |
+| activity_type | String | `RUNNING` |
+| started_at | LocalDateTime | 첫 좌표의 `recordedAt`(UTC) |
+| ended_at | LocalDateTime | 마지막으로 저장된 좌표의 `recordedAt`(청크마다 갱신) |
+| last_point_at | LocalDateTime | 마지막 저장 좌표 시각 = 다음 청크에서 이보다 이후 좌표만 받는 **중복 방지 워터마크** |
+| last_lat / last_lng | BigDecimal | 마지막 저장 좌표 위경도 — 다음 청크 첫 좌표와의 거리를 이어 붙이기 위해 보관 |
+| distance_meters | BigDecimal | 좌표에서 haversine으로 누적 계산한 총 이동 거리(미터) |
+| point_count / chunk_count | Integer | 누적 좌표 수 / 누적 청크 수 |
+| elapsed_duration_ms | Long | 종료 시 `ended_at - started_at`(ms) |
 | schema_version | Integer | 페이로드 스키마 버전 |
-| activity_type / status | String | `"RUNNING"` / `"FINISHED"`만 저장됨(검증 통과분) |
-| started_at / ended_at | LocalDateTime | 앱이 보낸 ISO-8601(UTC)을 UTC LocalDateTime으로 변환 |
-| elapsed_duration_ms | Long | 경과 시간(ms) |
-| distance_meters | BigDecimal | 총 이동 거리(미터) |
-| point_count | Integer | 앱이 보고한 좌표 개수(참고용, `points_json` 길이와 별개) |
-| loc_requested_interval_ms / loc_distance_filter_meters / loc_algorithm_version | Integer / BigDecimal / String | 앱의 위치 수집 설정(`location` 블록) |
-| device_platform / device_app_version / device_app_build_number | String / String / Integer | `device` 블록 |
-| points_json | String (LONGTEXT) | 좌표 배열 JSON 원본 (`[{sequence,recordedAt,latitude,longitude,altitudeMeters,accuracyMeters,rawLatitude,rawLongitude}, ...]`) |
-| create_at | LocalDateTime | 애플리케이션 코드에서 직접 설정 |
+| loc_requested_interval_ms / loc_distance_filter_meters / loc_algorithm_version | Integer / BigDecimal / String | 앱의 위치 수집 설정(`location` 블록, 보통 첫 청크만) |
+| device_platform / device_app_version / device_app_build_number | String / String / Integer | `device` 블록(보통 첫 청크만) |
+| points_json | String (LONGTEXT) | 지금까지 누적된 좌표 배열 JSON. 청크마다 파싱→append→재직렬화. `[{sequence,recordedAt,latitude,longitude,altitudeMeters,accuracyMeters,rawLatitude,rawLongitude}, ...]` |
+| utc_offset | String | 앱이 보내면 종료 시 `record.utc_offset`으로 전달 |
+| create_at / update_at | LocalDateTime | 애플리케이션 코드에서 직접 설정 |
 
 ## `score_rank` (엔티티명 `Rank`)
 

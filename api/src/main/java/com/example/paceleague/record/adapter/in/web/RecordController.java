@@ -61,15 +61,15 @@ public class RecordController {
         return ResponseEntity.ok(ResponseApi.success("기록이 일괄 저장되었습니다.", response));
     }
 
-    // GPS 세션(경로) 저장
-    @Operation(summary = "GPS 세션 저장", description = "앱이 러닝 종료 시 보내는 GPS 세션(세션 메타 + 좌표 배열)을 받아 러닝 기록 1건을 생성·점수 산정하고, GPS 트랙을 record_track에 저장합니다. access token으로 회원을 식별하며, clientRunId가 이미 저장돼 있으면 새로 만들지 않고 기존 결과를 duplicated=true로 반환합니다.")
-    @ApiResponse(responseCode = "200", description = "저장 성공(또는 멱등 재요청)")
+    // GPS 청크 수신 (러닝 중 5분마다)
+    @Operation(summary = "GPS 청크 수신", description = "앱이 러닝 중 5분마다 보내는 GPS 좌표 청크를 받아 clientRunId로 묶어 누적합니다. access token으로 회원을 식별합니다. 마지막 청크에 finished=true를 실으면 그때 러닝 기록 1건이 생성되고 점수가 산정됩니다. 이미 저장된 구간과 겹치는 좌표는 무시되므로 청크 재전송에 안전합니다.")
+    @ApiResponse(responseCode = "200", description = "청크 처리 성공")
     @PostMapping("/gps")
-    public ResponseEntity<ResponseApi<GpsSessionResponse>> saveGpsSession(@MemberSno Long memberSno,
+    public ResponseEntity<ResponseApi<GpsSessionResponse>> ingestGpsChunk(@MemberSno Long memberSno,
                                                                          @RequestBody GpsSessionRequest req) {
-        GpsSessionResponse response = saveGpsSessionUseCase.save(memberSno, req);
+        GpsSessionResponse response = saveGpsSessionUseCase.ingest(memberSno, req);
 
-        return ResponseEntity.ok(ResponseApi.success("GPS 세션이 저장되었습니다.", response));
+        return ResponseEntity.ok(ResponseApi.success("GPS 청크가 저장되었습니다.", response));
     }
 
     // 1) 한 개 조회

@@ -312,46 +312,55 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 > **CORS**: 게시글 작성 화면에서 "내 러닝기록 첨부" 선택 목록으로 쓰기 위해, `/api/record`의 다른 엔드포인트와 달리 이 경로만 예외적으로 `paceleague.co.kr`/`www.paceleague.co.kr` 오리진에서 브라우저 호출을 허용합니다(`CorsConfig`, GET + `Authorization` 헤더만).
 
-### POST `/api/record/gps` — GPS 세션(경로) 저장
+### POST `/api/record/gps` — GPS 청크 수신 (러닝 중 5분마다)
 
-앱이 러닝 종료 시 보내는 GPS 세션 페이로드(세션 메타 + 좌표 배열)를 받아 **러닝 기록 1건을 생성(+점수 산정)** 하고, GPS 트랙을 `record_track` 테이블에 저장합니다. 회원 식별은 access token(`Authorization: Bearer ...`)으로만 하며, 별도 회원 식별값을 본문에 넣지 않습니다. 모바일 앱 전용이라 CORS는 열지 않습니다.
+앱이 러닝 중 **5분마다** 그 사이 수집한 GPS 좌표 청크를 보냅니다. 서버는 `clientRunId`로 같은 러닝을 묶어 `record_track` 한 행에 누적하고, 거리는 좌표에서 직접 계산(haversine)합니다. **마지막 청크에 `finished: true`** 가 실리면 그때 **딱 한 번** 러닝 기록(`record`) 1건을 생성하고 점수를 산정합니다. 회원 식별은 access token(`Authorization: Bearer ...`)으로만 합니다. 모바일 앱 전용이라 CORS는 열지 않습니다.
 
 **Request Body** (`GpsSessionRequest`)
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| schemaVersion | int | 페이로드 스키마 버전 (필수, 현재 `1`) |
-| clientRunId | string | 앱이 생성한 세션 고유 ID — **멱등 키**. 최대 100자 |
-| activityType | string | `"RUNNING"`만 허용 |
-| status | string | `"FINISHED"`만 허용 (진행 중 세션은 거부) |
-| startedAt / endedAt | string (ISO-8601, 예: `"2026-08-26T10:46:25.797Z"`) | 세션 시작/종료 시각. 서버가 UTC `LocalDateTime`으로 변환해 `record`에 저장 |
-| elapsedDurationMs | long | 경과 시간(ms), 저장만 함 |
-| distanceMeters | number (BigDecimal) | 총 이동 거리, **미터** |
-| pointCount | int | 앱이 보고한 좌표 개수(저장만 함, `points` 길이와 불일치해도 거부하지 않음) |
-| location | object | `{ requestedIntervalMs, distanceFilterMeters, algorithmVersion }` — 수집 설정, 전부 선택 |
-| device | object | `{ platform, appVersion, appBuildNumber }` — 전부 선택 |
-| points | array | 좌표 배열(필수, 1개 이상, 최대 100,000). 각 원소: `{ sequence, recordedAt, latitude, longitude, altitudeMeters, accuracyMeters, rawLatitude, rawLongitude }` — `latitude`/`longitude`만 필수. 컬럼으로 쪼개지 않고 JSON 통째로 `record_track.points_json`(LONGTEXT)에 저장 |
-| utcOffset | string | 선택. 앱이 넣어주면 그대로 `record.utc_offset`에 저장(페이로드에는 없음) |
+| clientRunId | string | 앱이 러닝 시작 시 만든 고유 ID. 그 러닝의 모든 청크가 같은 값을 보냄. 최대 100자. **필수** |
+| points | array | 이번 5분 청크의 좌표 배열. 각 원소: `{ sequence, recordedAt, latitude, longitude, altitudeMeters, accuracyMeters, rawLatitude, rawLongitude }` — `recordedAt`/`latitude`/`longitude`만 필수. 한 청크 최대 2,000개. `finished: true` 이면서 더 보낼 좌표가 없으면 `[]` 또는 생략 가능 |
+| finished | boolean | 마지막 청크에서 `true`. 기본 `false` |
+| activityType | string | 선택. 생략 시 `"RUNNING"` 간주. `"RUNNING"` 외 값은 거부 |
+| location | object | 선택(보통 첫 청크만). `{ requestedIntervalMs, distanceFilterMeters, algorithmVersion }` |
+| device | object | 선택(보통 첫 청크만). `{ platform, appVersion, appBuildNumber }` |
+| schemaVersion | int | 선택 |
+| utcOffset | string | 선택. 앱이 넣어주면 그대로 `record_track.utc_offset` → 종료 시 `record.utc_offset`에 저장(예: `"+09:00"`) |
+
+시각(`recordedAt`)은 ISO-8601 UTC(예: `"2026-08-26T10:46:25.797Z"`)로 보내며, 서버가 UTC `LocalDateTime`으로 변환해 저장합니다.
 
 **Response** `200 OK` — `data`: `GpsSessionResponse`
 
 ```json
-{ "recordSno": 123, "trackSno": 45, "duplicated": false }
+{ "clientRunId": "1787741158726094-2887287643", "status": "ACTIVE",
+  "chunkSeq": 3, "acceptedPoints": 98, "skippedPoints": 2,
+  "totalPoints": 412, "distanceMeters": 3120.54, "recordSno": null }
 ```
 
-- `recordSno`: 이 세션으로 생성된 `record.sno` (멱등 재요청이면 기존 값)
-- `trackSno`: 저장된 `record_track.sno`
-- `duplicated`: 같은 `clientRunId`가 이미 저장돼 있어 새로 만들지 않고 기존 결과를 돌려준 경우 `true`
+| 필드 | 설명 |
+|---|---|
+| status | `ACTIVE`(진행 중) 또는 `FINISHED`(종료·`record` 생성됨) |
+| chunkSeq | 지금까지 누적된 청크 수 |
+| acceptedPoints | 이번 요청에서 새로 저장된 좌표 수 |
+| skippedPoints | 이미 저장된 마지막 좌표 시각보다 이전이라 무시된 좌표 수(청크 재전송 대비) |
+| totalPoints / distanceMeters | 러닝 전체 누적 좌표 수 / 거리(m) |
+| recordSno | 종료 전에는 `null`, `finished: true` 처리 후 생성된 `record.sno` |
 
-**멱등성**: 같은 `clientRunId`로 다시 호출하면 `record`를 중복 생성하지 않고 기존 결과를 `duplicated: true`로 반환합니다(`client_run_id` UNIQUE). 앱의 재전송/오프라인 동기화에 안전합니다.
+**멱등성**: 마지막으로 저장된 좌표 시각(`last_point_at`) 이후 좌표만 저장하므로, 같은 청크를 다시 보내도 `skippedPoints`로 집계될 뿐 중복 저장되지 않습니다. 이미 `FINISHED`된 러닝에 청크가 또 와도 무시하고 확정된 결과만 돌려줍니다.
 
-**동작**: 좌표 형식 검증(`GpsSessionValidator`) 후, 시작/종료 시각·거리로 `RecordCreateRequest`를 만들어 **기존 `POST /api/record/save`와 동일한 저장·점수 산정 로직**(`RecordService.create` — 거리/페이스 상한 검증, 최근 1개월 내 동일 `startTime` 중복 거부, `Rank`/`MemberScore` 반영)을 재사용합니다. 그 뒤 GPS 트랙을 저장합니다. 검증 실패든 저장 실패든 같은 트랜잭션이라 `record`·`record_track` 둘 다 롤백됩니다.
+**동작**
+- 첫 청크: `record_track` 행 생성(`status=ACTIVE`, `record_sno=null`), 좌표를 `points_json`에 저장
+- 이후 청크: 워터마크 이후 좌표만 `points_json`에 append, 거리·좌표수·마지막 좌표 갱신
+- `finished: true`: 누적 거리·시작/종료 시각으로 `RecordCreateRequest`를 만들어 **기존 `POST /api/record/save`와 동일한 저장·점수 산정 로직**(`RecordService.create` — 거리/페이스 상한 검증, 최근 1개월 내 동일 `startTime` 중복 거부, `Rank`/`MemberScore` 반영)을 재사용하고, `record_track.status=FINISHED` + `record_sno` 채움
 
 **실패**
-- `clientRunId`/`schemaVersion` 누락, `activityType != RUNNING`, `status != FINISHED`, 시각 역전, `points` 비어있음/범위 초과, 좌표 범위(위도 ±90 / 경도 ±180) 이탈 → 400
-- 거리/페이스가 러닝 기록으로 불가능한 값, 최근 1개월 내 동일 `startTime` 존재 → 400 (`RecordService.create`의 기존 규칙)
+- `clientRunId` 누락/100자 초과, `activityType != RUNNING`, 좌표 없는데 `finished`도 아님, 한 청크 2,000개 초과, `recordedAt` 누락, 좌표 범위(위도 ±90 / 경도 ±180) 이탈, 러닝 전체 60,000개 초과 → 400
+- `finished: true` 인데 세션에 저장된 좌표가 하나도 없음 → 400
+- 종료 시 거리/페이스가 러닝 기록으로 불가능한 값, 최근 1개월 내 동일 `startTime` 존재 → 400 (`RecordService.create`의 기존 규칙). 이 경우 트랜잭션이 롤백되어 세션은 `ACTIVE`로 남고, 앱이 `finished: true`를 재시도할 수 있음
 
-**마이그레이션**: [migrations/2026-08-27_record_gps_track.sql](./migrations/2026-08-27_record_gps_track.sql) (운영은 배포 전 직접 실행)
+**마이그레이션**: [migrations/2026-08-27_record_gps_track.sql](./migrations/2026-08-27_record_gps_track.sql) → [migrations/2026-08-27_record_track_streaming.sql](./migrations/2026-08-27_record_track_streaming.sql) 순서로 (운영은 배포 전 직접 실행)
 
 ---
 
