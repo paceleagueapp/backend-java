@@ -5,6 +5,7 @@ import com.example.paceleague.common.web.MemberSno;
 import com.example.paceleague.record.application.dto.*;
 import com.example.paceleague.record.application.port.in.RecordQueryService;
 import com.example.paceleague.record.application.port.in.RecordService;
+import com.example.paceleague.record.application.port.in.SaveGpsSessionUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -25,10 +26,14 @@ import java.util.List;
 public class RecordController {
     private final RecordService recordService;
     private final RecordQueryService recordQueryService;
+    private final SaveGpsSessionUseCase saveGpsSessionUseCase;
 
-    public RecordController(RecordService recordService, RecordQueryService recordQueryService) {
+    public RecordController(RecordService recordService,
+                           RecordQueryService recordQueryService,
+                           SaveGpsSessionUseCase saveGpsSessionUseCase) {
         this.recordService = recordService;
         this.recordQueryService = recordQueryService;
+        this.saveGpsSessionUseCase = saveGpsSessionUseCase;
     }
 
     // 단건 저장
@@ -54,6 +59,17 @@ public class RecordController {
         BulkCreateResponse response = new BulkCreateResponse(ids);
 
         return ResponseEntity.ok(ResponseApi.success("기록이 일괄 저장되었습니다.", response));
+    }
+
+    // GPS 세션(경로) 저장
+    @Operation(summary = "GPS 세션 저장", description = "앱이 러닝 종료 시 보내는 GPS 세션(세션 메타 + 좌표 배열)을 받아 러닝 기록 1건을 생성·점수 산정하고, GPS 트랙을 record_track에 저장합니다. access token으로 회원을 식별하며, clientRunId가 이미 저장돼 있으면 새로 만들지 않고 기존 결과를 duplicated=true로 반환합니다.")
+    @ApiResponse(responseCode = "200", description = "저장 성공(또는 멱등 재요청)")
+    @PostMapping("/gps")
+    public ResponseEntity<ResponseApi<GpsSessionResponse>> saveGpsSession(@MemberSno Long memberSno,
+                                                                         @RequestBody GpsSessionRequest req) {
+        GpsSessionResponse response = saveGpsSessionUseCase.save(memberSno, req);
+
+        return ResponseEntity.ok(ResponseApi.success("GPS 세션이 저장되었습니다.", response));
     }
 
     // 1) 한 개 조회

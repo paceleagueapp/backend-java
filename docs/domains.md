@@ -2,7 +2,7 @@
 
 ## 기록 저장 시 점수 산정 로직
 
-기록 저장(`POST /api/record/save`, `/bulk`)이 성공할 때마다 `RecordServiceImpl.saveRank(...)`가 그 기록 1건에 대한 점수를 계산합니다. 계산 로직은 `RecordController`가 아닌 서비스 계층에 있습니다(`AGENTS.md` 규칙 준수).
+기록 저장(`POST /api/record/save`, `/bulk`, 그리고 GPS 세션 저장 `POST /api/record/gps` — 이것도 내부적으로 `RecordService.create`를 재사용)이 성공할 때마다 `RecordServiceImpl.saveRank(...)`가 그 기록 1건에 대한 점수를 계산합니다. 계산 로직은 `RecordController`가 아닌 서비스 계층에 있습니다(`AGENTS.md` 규칙 준수).
 
 ### 1. 기본 점수 (base score)
 

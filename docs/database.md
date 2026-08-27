@@ -10,6 +10,7 @@ MySQL, Spring Data JPA(Hibernate) 사용. 로컬은 `ddl-auto: update`, 운영�
 |---|---|---|
 | `member` | `Member` | 회원 계정 |
 | `record` | `Record` | 러닝 기록 원본 (기록 1건 = 1 row) |
+| `record_track` | `RecordTrack` | 러닝 세션의 GPS 트랙(경로) 원본 — `record` 1건당 최대 1행, 좌표 배열은 `points_json`에 JSON 통째로 저장 |
 | `score_rank` | `Rank` | 기록 1건당 산정된 점수 로그 (히스토리성 테이블) |
 | `member_score` | `MemberScore` | 회원×시즌별 누적 점수/티어 |
 | `season` | `Season` | 시즌 메타데이터 |
@@ -45,6 +46,27 @@ MySQL, Spring Data JPA(Hibernate) 사용. 로컬은 `ddl-auto: update`, 운영�
 | end_time | LocalDateTime | 기록 종료 시각 |
 | create_at / update_at | LocalDateTime | 애플리케이션 코드에서 직접 설정(`LocalDateTime.now()`), `@PreUpdate`는 update_at만 갱신 |
 | utc_offset | String | 클라이언트 타임존 오프셋, 서버는 저장만 하고 계산에 사용하지 않음 |
+
+## `record_track`
+
+앱이 `POST /api/record/gps`로 보낸 러닝 세션의 GPS 경로. `record`와 `record_sno`로 느슨하게 연결(FK 미강제). 마이그레이션: [migrations/2026-08-27_record_gps_track.sql](./migrations/2026-08-27_record_gps_track.sql).
+
+| 컬럼 | 타입(Java) | 설명 |
+|---|---|---|
+| sno | Long (PK, IDENTITY) | |
+| uno | Long, not null | `member.sno` FK 값 |
+| record_sno | Long, not null | 이 세션으로 생성된 `record.sno` |
+| client_run_id | String, not null, **unique** | 앱이 생성한 세션 고유 ID = 멱등 키. 같은 값 재요청 시 `record`를 새로 만들지 않음. max 100 |
+| schema_version | Integer | 페이로드 스키마 버전 |
+| activity_type / status | String | `"RUNNING"` / `"FINISHED"`만 저장됨(검증 통과분) |
+| started_at / ended_at | LocalDateTime | 앱이 보낸 ISO-8601(UTC)을 UTC LocalDateTime으로 변환 |
+| elapsed_duration_ms | Long | 경과 시간(ms) |
+| distance_meters | BigDecimal | 총 이동 거리(미터) |
+| point_count | Integer | 앱이 보고한 좌표 개수(참고용, `points_json` 길이와 별개) |
+| loc_requested_interval_ms / loc_distance_filter_meters / loc_algorithm_version | Integer / BigDecimal / String | 앱의 위치 수집 설정(`location` 블록) |
+| device_platform / device_app_version / device_app_build_number | String / String / Integer | `device` 블록 |
+| points_json | String (LONGTEXT) | 좌표 배열 JSON 원본 (`[{sequence,recordedAt,latitude,longitude,altitudeMeters,accuracyMeters,rawLatitude,rawLongitude}, ...]`) |
+| create_at | LocalDateTime | 애플리케이션 코드에서 직접 설정 |
 
 ## `score_rank` (엔티티명 `Rank`)
 
