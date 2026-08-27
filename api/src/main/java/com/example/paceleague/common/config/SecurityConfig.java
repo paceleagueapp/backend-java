@@ -34,6 +34,7 @@ public class SecurityConfig {
                                 "/api/member/login",
                                 "/api/member/reissue",
                                 "/api/member/logout",
+                                // Swagger/OpenAPI 경로 — 운영(prod)에서는 springdoc 자체를 꺼서 404이므로 실질적으로 로컬 전용.
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",

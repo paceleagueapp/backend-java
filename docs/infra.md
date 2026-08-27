@@ -53,9 +53,9 @@
 
 두 도메인 모두 Let's Encrypt(Certbot)로 SSL이 적용되어 있고(`/etc/letsencrypt/live/...`), HTTP(80)는 HTTPS로 301 리다이렉트됩니다. Nginx 설정 자체(인증서 갱신 등)는 이 저장소가 관리하지 않고 서버에 그대로 둡니다 — 이 저장소가 책임지는 건 **각 경로가 서빙하는 콘텐츠(`api/`, `web/`)** 뿐입니다.
 
-Swagger는 별도 설정 없이 `https://api.paceleague.co.kr/swagger-ui.html`에서 바로 열립니다 (Nginx가 8080 전체를 프록시하기 때문에 앱의 모든 경로가 그대로 노출됨).
+Swagger UI / OpenAPI 스펙은 **운영에서 비활성화**되어 있습니다 — `application-prod.yml`의 `springdoc.api-docs.enabled=false` / `springdoc.swagger-ui.enabled=false`로 인해 `https://api.paceleague.co.kr/swagger-ui.html`, `/v3/api-docs`는 모두 404입니다. Nginx가 8080 전체를 프록시하므로 경로 차단이 아니라 앱 레벨에서 끄는 방식입니다. 로컬 개발 환경(`application-local.yml`)에서는 그대로 켜져 있습니다.
 
-Nginx가 TLS를 종료하고 `http://127.0.0.1:8080`으로 평문 프록시하므로, 앱이 `X-Forwarded-Proto` 등 forwarded 헤더를 신뢰하도록 `server.forward-headers-strategy: framework`를 `application.yml`에 설정해뒀습니다. 이게 없으면 Springdoc이 OpenAPI `servers` URL의 scheme을 요청 그대로(`http`)로 오인해 생성하고, Swagger UI의 "Try it out"이 `http://api.paceleague.co.kr`로 요청을 보내면서 scheme 불일치로 브라우저가 이를 cross-origin(preflight)으로 취급 — `/api/ranking/top10` 외에는 CORS 설정이 없어 403 "Invalid CORS request"로 막히는 문제가 있었습니다(2026-07-12에 확인 및 수정).
+Nginx가 TLS를 종료하고 `http://127.0.0.1:8080`으로 평문 프록시하므로, 앱이 `X-Forwarded-Proto` 등 forwarded 헤더를 신뢰하도록 `server.forward-headers-strategy: framework`를 `application.yml`에 설정해뒀습니다. 이게 없으면 Springdoc이 OpenAPI `servers` URL의 scheme을 요청 그대로(`http`)로 오인해 생성하고, Swagger UI의 "Try it out"이 `http://api.paceleague.co.kr`로 요청을 보내면서 scheme 불일치로 브라우저가 이를 cross-origin(preflight)으로 취급 — `/api/ranking/top10` 외에는 CORS 설정이 없어 403 "Invalid CORS request"로 막히는 문제가 있었습니다(2026-07-12에 확인 및 수정). 운영에서 Swagger를 끈 지금은 이 경로에서 재현되지 않지만, forwarded 헤더 설정 자체는 다른 곳에도 필요하므로 유지합니다.
 
 ### 알려진 보안 이슈: `paceleague.co.kr`에 보안 헤더 부재 (클릭재킹)
 

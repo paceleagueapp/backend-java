@@ -24,6 +24,14 @@ spring:
       port: 6379
       password: ${REDIS_PASSWORD}
 
+# 운영에서는 API 문서를 외부에 노출하지 않는다 — Swagger UI/OpenAPI 스펙 엔드포인트를 모두 비활성화(404).
+# 로컬(application-local.yml)에서는 그대로 켜져 있어 개발 중에는 계속 사용 가능.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 app:
   jwt:
     access-token-ttl-seconds: 300

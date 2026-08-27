@@ -90,6 +90,6 @@ GitHub push (main)
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI 스펙(JSON): `http://localhost:8080/v3/api-docs`
 
-운영에서는 `https://api.paceleague.co.kr/swagger-ui.html`로 별도 설정 없이 바로 열립니다 (Nginx가 `api.paceleague.co.kr`의 모든 경로를 8080으로 프록시하기 때문).
+**운영에서는 비활성화되어 있습니다** — `application-prod.yml`에서 `springdoc.api-docs.enabled` / `springdoc.swagger-ui.enabled`를 `false`로 설정해 `https://api.paceleague.co.kr/swagger-ui.html`, `/v3/api-docs`가 모두 404입니다. API 문서는 이 저장소의 [api.md](./api.md)를 기준으로 삼습니다.
 
 `OpenApiConfig`는 `bearerAuth`(HTTP Bearer, JWT) 스킴을 정의만 하고, 실제 인증이 필요한 컨트롤러(Record/Rank/Ranking)에만 `@SecurityRequirement`로 적용합니다. Member/AppVersion처럼 인증이 필요 없는 API는 Swagger UI에서도 자물쇠 아이콘 없이 표시됩니다. 인증이 필요한 API를 테스트하려면 Swagger UI 우측 상단 **Authorize** 버튼에 `POST /api/member/login`(또는 `/join`)으로 발급받은 `accessToken`을 넣으면 됩니다.
