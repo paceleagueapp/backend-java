@@ -2,6 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⛔ NEVER deploy without an explicit command
+
+**`git push` to `main` = an immediate production deploy** (GitHub Actions → ECR → SSM → live on `api.paceleague.co.kr` + `paceleague.co.kr`). Because of that:
+
+- **NEVER run `git push`** until the user says "커밋 푸시" / "푸시해" / "배포해" (or clear equivalent) **in that same message.** Not implied by "구현해 / 재구현 / 고쳐 / 만들어줘 / 직접 적용해" — those mean *write code + tests + local commit, then stop.*
+- **NEVER deploy by any other route either** — no SSM redeploy, no manual image swap, no triggering the workflow — unless explicitly told.
+- Found a bug mid-task? Fix it locally, commit locally, report it. The user decides when it ships.
+- Applying a DB migration when asked ("직접 적용해") is fine *for the DB*, but still does not authorize a code push.
+- Once the user *does* say push: push, then stop — don't poll CI or curl prod unless asked.
+
+(This has been violated repeatedly; the user has asked more than once. Treat it as a hard rule.)
+
 ## Project
 
 PaceLeague — a Spring Boot backend for a running-record and ranking service. Users log runs, the server computes pace/calories/score, and members are ranked by season/tier.
@@ -30,7 +42,7 @@ Local run requires a `local` Spring profile with env vars: `DB_URL`, `DB_USERNAM
 
 `docker build -t paceleague .` is run from the **repo root** (build context spans both `api/` and `web/`) — the Dockerfile builds the `api/` jar in a builder stage, then in the final image also `COPY web /web-dist` so the static site travels inside the same image as a distribution artifact (the Spring Boot app does not serve it).
 
-GitHub Actions deploys on push to `main` (`.github/workflows/deploy.yml`): builds the jar from `api/`, builds/pushes the Docker image to AWS ECR, then triggers `.github/ssm-commands.json` on EC2 via SSM, which — in this order, deliberately, so a web-asset-extraction failure can never delay or block the app coming back up:
+GitHub Actions deploys on push to `main` (`.github/workflows/deploy.yml`) — **so an agent must not `git push` without an explicit command from the user; see the ⛔ rule at the top of this file.** It builds the jar from `api/`, builds/pushes the Docker image to AWS ECR, then triggers `.github/ssm-commands.json` on EC2 via SSM, which — in this order, deliberately, so a web-asset-extraction failure can never delay or block the app coming back up:
 1. pulls the new image and **restarts the `paceleague` app container first** (serves `api.paceleague.co.kr` via Nginx reverse proxy on port 8080) — this is the priority; the app must not stay down
 2. only then extracts `/web-dist` from the same image into a temp dir and swaps it into `/var/www/paceleague` (what Nginx serves for `paceleague.co.kr`), guarded so a failed extraction leaves the previous static site in place rather than deleting it
 
