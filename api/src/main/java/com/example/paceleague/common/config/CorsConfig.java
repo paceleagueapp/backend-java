@@ -56,6 +56,8 @@ public class CorsConfig {
         // 파일 바이트를 다루지 않고 메타데이터/URL만 오간다. 실제 파일 PUT은 브라우저가 S3에 직접 하며,
         // 그건 이 Spring CORS와 무관한 S3 버킷 자체의 CORS 설정(docs/infra.md)이 담당한다.
         source.registerCorsConfiguration("/api/media/**", authAndBoard);
+        // 땅따먹기 지도 페이지(web/territory.html)가 브라우저에서 호출하는 공개 조회 — GET만.
+        source.registerCorsConfiguration("/api/territory/map", readOnlyPublic);
         return source;
     }
 }

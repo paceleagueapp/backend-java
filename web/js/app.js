@@ -1,6 +1,9 @@
-// PaceLeague 공유 스크립트 — index.html(게시판 피드)/login.html/post.html에서 공통으로 사용.
+// PaceLeague 공유 스크립트 — index.html(게시판 피드)/login.html/post.html/territory.html에서 공통으로 사용.
 
-var API_BASE = 'https://api.paceleague.co.kr';
+// 로컬 개발 시(localhost로 열었을 때)만 로컬 백엔드를 바라본다. 프로덕션 동작은 그대로.
+var API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:8080'
+  : 'https://api.paceleague.co.kr';
 
 var STORAGE_KEYS = {
   accessToken: 'pl_access_token',

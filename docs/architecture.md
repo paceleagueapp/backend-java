@@ -85,8 +85,10 @@ com.example.paceleague
 - `board` → `member.application.port.in.GetMemberNicknamePort`(작성자 닉네임), `rank.application.port.in.GetMemberTierPort`(작성자 티어뱃지), `record.application.port.in.RecordQueryService`(게시글 작성 시 첨부한 기록이 본인 소유인지 검증 — `getOne`은 원래 `record` 자신의 use-case지만 board가 그대로 재사용), `record.application.port.in.GetRecordSummaryPort`(게시글 조회 시 첨부 기록 요약 표시, 작성자가 아닌 제3자가 봐도 되도록 memberSno 소유권 검사 없이 recordSno만으로 조회)에 의존. 2026-08-11 "게시글에 러닝기록 첨부 + 작성자 프로필(티어)" 기능 추가 시 도입.
 - `board` → `media.application.port.in.MediaService`(게시글 작성 시 첨부 확정 — `attachToPost`), `media.application.port.in.GetPostAttachmentsPort`(게시글 조회 시 첨부 목록/개수 조회, `record.GetRecordSummaryPort`와 동일하게 소유권 검사 없이 postSno로만 조회)에 의존. `media`는 반대로 `board`를 전혀 모른다(단방향 의존) — `attachToPost`가 `postSno`를 그냥 값으로 받아 저장할 뿐, board 도메인 타입을 참조하지 않음. 2026-08-11 "게시글에 이미지/동영상/링크 첨부" 기능 추가 시 도입.
 - `rank`/`ranking` → `season.application.port.in.GetCurrentSeasonPort`에만 의존.
+- `record` → `territory.application.port.in.ProcessTerritoryRunUseCase`(땅따먹기 모드로 끝난 러닝의 땅 생성/데미지/점령 처리 — `record→rank`의 `ApplyScoreUseCase`와 같은 방향). 2026-08-27 "러닝 땅따먹기" 1차 구현 시 도입. `territory`는 반대로 `record`를 전혀 모른다(단방향 — 커맨드에 좌표를 값으로 담아 넘긴다).
+- `territory` → `member.GetMemberNicknamePort`·`rank.GetMemberTierPort`(지도 조회 시 소유자 표시), `season.GetCurrentSeasonPort`(땅 생성 시 시즌 스냅샷).
 
-**예외 — 순수 정적 정책 클래스는 포트 없이 직접 import**: `board.application.service.BoardQueryServiceImpl`이 `rank.domain.policy.RankTierLabelPolicy`(티어 → 언어별 라벨 고정 테이블)를 포트 없이 바로 호출합니다. 위 "도메인 간 의존은 포트로만" 원칙의 예외인데, 이 클래스가 Spring 빈도 아니고 DB/Redis 접근도 없는 순수 정적 조회 함수(`RankTier`, `Language` 두 enum만 받아 `String`을 반환)라 포트/어댑터를 만드는 비용이 실익보다 크다고 판단했기 때문입니다 — `common` 패키지의 `StringRedisTemplate` 같은 범용 인프라 클라이언트를 포트화하지 않는 것과 같은 이유. 상태를 갖거나 DB에 접근하는 진짜 크로스 도메인 접근(리포지토리 등)이라면 반드시 포트를 통해야 합니다.
+**예외 — 순수 정적 정책 클래스는 포트 없이 직접 import**: `board.application.service.BoardQueryServiceImpl`이 `rank.domain.policy.RankTierLabelPolicy`(티어 → 언어별 라벨 고정 테이블)를 포트 없이 바로 호출합니다. 위 "도메인 간 의존은 포트로만" 원칙의 예외인데, 이 클래스가 Spring 빈도 아니고 DB/Redis 접근도 없는 순수 정적 조회 함수(`RankTier`, `Language` 두 enum만 받아 `String`을 반환)라 포트/어댑터를 만드는 비용이 실익보다 크다고 판단했기 때문입니다 — `common` 패키지의 `StringRedisTemplate` 같은 범용 인프라 클라이언트를 포트화하지 않는 것과 같은 이유. 상태를 갖거나 DB에 접근하는 진짜 크로스 도메인 접근(리포지토리 등)이라면 반드시 포트를 통해야 합니다. 같은 이유로 `territory.domain.policy.ClosedLoopDetector`는 `record.domain.policy.GeoDistanceCalculator`(haversine, 순수 static)를 포트 없이 직접 재사용합니다.
 
 ### 게시글 미디어 첨부(이미지/동영상/링크) — 2026-08-11 추가
 
@@ -122,6 +124,15 @@ com.example.paceleague
 - `common.i18n.LocaleResolver` — 위 `/api/common/language`만으로는 "언어 코드를 알아내는 것"과 "그 언어로 번역된 실제 데이터를 받는 것" 사이에 호출이 한 번 더 필요해서(클라이언트가 언어를 알아낸 뒤 그 코드로 다시 요청해야 함), `lang`을 받는 모든 엔드포인트(`/api/board`, `/api/board/{boardSno}/posts`, `/api/board/posts/{postSno}`, `/api/rank/me`, `/api/ranking/getRanking`, `/api/ranking/top10`)가 `country` 파라미터도 함께 받도록 했다. `LocaleResolver.resolve(lang, country)`가 `country`가 있으면 그걸 우선시하고(`CountryLanguageResolver`로 변환), 없으면 `lang`을 그대로 쓴다 — 컨트롤러 레벨에서만 해석하고 `Language.toCode()`로 문자열로 바꿔 기존 서비스 시그니처(`String lang`)에 그대로 흘려보내므로 서비스/포트 계층은 변경되지 않았다.
 
 `record`가 `ApplyScoreUseCase.applyScore(...)`를 자신의 `@Transactional` 메서드 안에서 호출하는데, 둘 다 스프링이 관리하는 별개 빈이라 기본 `REQUIRED` 전파로 호출자의 트랜잭션에 합류합니다 — 기록 저장 + 점수 로그 저장 + 시즌 누적 점수 갱신이 예전과 동일하게 하나의 트랜잭션으로 묶입니다.
+
+### 러닝 땅따먹기(Territory) — 2026-08-27 추가
+
+`territory` 도메인은 `record`/`rank` 패턴을 그대로 따릅니다(query/write 유스케이스 분리: `ProcessTerritoryRunServiceImpl`이 쓰기, `TerritoryQueryServiceImpl`이 지도 조회). 전체 기획은 Notion "러닝 땅따먹기" 문서이며 이번은 1차 슬라이스 — 도메인 규칙은 [domains.md](./domains.md#러닝-땅따먹기territory-도메인) 참고.
+
+- **폴리곤 계산에 JTS 도입**: `org.locationtech.jts:jts-core`(순수 Java, 전이 의존성 없음). 러닝 GPS 루프는 임의의 오목 다각형이라 면적/교집합을 직접 구현하면 버그 소지가 커서 도입. 공간 DB 타입(`GEOMETRY`)은 여전히 안 쓰고, 좌표는 `polygon_json`(LONGTEXT)에 저장하고 계산만 Java에서 한다(`record_track.points_json`과 동일 방침). `PolygonGeometry`가 위/경도를 bbox 중심 기준 등거리 평면(미터)으로 투영해 JTS로 계산.
+- **`ProcessTerritoryRunUseCase.process`는 `@Transactional(REQUIRES_NEW)`** — `record→rank`의 `ApplyScoreUseCase`(호출자 트랜잭션 합류, 실패 시 함께 롤백)와 의도적으로 다르다. 땅 판정 실패가 러닝 기록 저장을 롤백시키면 안 되므로 별도 트랜잭션으로 분리하고, 호출부(`SaveGpsSessionServiceImpl.finalizeRun`)가 예외를 잡아 삼킨다("닫힌 도형 아님"은 애초에 예외가 아니라 결과값으로 반환).
+- **설정은 `@ConfigurationProperties`**: `paceleague.territory.*`가 10개쯤 뭉쳐 있어 `app.jwt`(`JwtProperties`)처럼 `TerritoryProperties` 레코드로 묶고 `@EnableConfigurationProperties`에 등록. `paceleague.gps.sweeper.*`가 `@Value` + `:기본값`으로 흩어져 있는 것과 대비.
+- **동시성**: 같은 땅을 여러 명이 동시에 공격할 수 있어 `findActiveIntersectingBboxForUpdate`가 `PESSIMISTIC_WRITE` 락으로 후보 territory들을 조회한다(`MemberScore`의 `findBy...ForUpdate`와 동일 패턴). `GpsSessionSweeper`처럼 단일 인스턴스 전제 — 스케일아웃 시 재검토 필요.
 
 ### 왜 엔티티를 순수 도메인 객체로 분리하지 않았는가
 

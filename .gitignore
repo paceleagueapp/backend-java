@@ -39,3 +39,5 @@ out/
 application-local.yml
 
 .env
+# Claude Code local settings
+.claude/settings.local.json

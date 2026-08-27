@@ -21,6 +21,8 @@ MySQL, Spring Data JPA(Hibernate) 사용. 로컬은 `ddl-auto: update`, 운영�
 | `post_vote` | `PostVote` | 게시글 추천/비추천 기록 |
 | `comment_vote` | `CommentVote` | 댓글 추천/비추천 기록 |
 | `media` | `Media` | 게시글 첨부(이미지/동영상/링크) — S3 업로드 상태 + Rekognition 모더레이션 결과 |
+| `territory` | `Territory` | 러닝 땅따먹기의 "땅" 1구획 — 닫힌 GPS 도형 1개, 소유자·HP·폴리곤 |
+| `territory_contribution` | `TerritoryContribution` | 한 땅에 대한 공격 기여도 로그(러닝 1회 = 최대 1건), HP 0 시 점령자 판정용 |
 
 ## `member`
 
@@ -75,7 +77,39 @@ MySQL, Spring Data JPA(Hibernate) 사용. 로컬은 `ddl-auto: update`, 운영�
 | device_platform / device_app_version / device_app_build_number | String / String / Integer | `device` 블록(보통 첫 청크만) |
 | points_json | String (LONGTEXT) | 지금까지 누적된 좌표 배열 JSON. 청크마다 파싱→append→재직렬화. `[{sequence,recordedAt,latitude,longitude,altitudeMeters,accuracyMeters,rawLatitude,rawLongitude}, ...]` |
 | utc_offset | String | 앱이 보내면 종료 시 `record.utc_offset`으로 전달 |
+| territory_mode | boolean, not null (기본 0) | 러닝 시작 시 "땅따먹기 모드"로 시작했으면 1. 세션 생성 시 확정, 이후 불변. 1인 세션만 종료 시 `territory` 판정이 돈다 ([2026-08-27_territory_feature.sql](./migrations/2026-08-27_territory_feature.sql)) |
 | create_at / update_at | LocalDateTime | 애플리케이션 코드에서 직접 설정 |
+
+## `territory`
+
+러닝 땅따먹기의 "땅" 1구획 = 닫힌 GPS 도형 1개. `record_track.territory_mode = 1`인 러닝이 종료될 때 `ProcessTerritoryRunServiceImpl`이 생성/갱신. 마이그레이션: [migrations/2026-08-27_territory_feature.sql](./migrations/2026-08-27_territory_feature.sql). 도메인 규칙은 [domains.md](./domains.md#러닝-땅따먹기territory-도메인) 참고.
+
+| 컬럼 | 타입(Java) | 설명 |
+|---|---|---|
+| sno | Long (PK, IDENTITY) | |
+| owner_member_sno | Long, not null | 현재 소유자 `member.sno`. HP 0 시 최다 기여자로 교체됨 |
+| season | Long, nullable | 생성 시점 시즌 번호 스냅샷(`record.season`과 동일 규칙). 시즌 리셋은 이후 단계 |
+| polygon_json | String (LONGTEXT) | `[[lat,lng], ...]` 위/경도 링(실제 러닝 경로 기반). 지도에 그대로 그림 |
+| bbox_min_lat / bbox_min_lng / bbox_max_lat / bbox_max_lng | BigDecimal DECIMAL(10,7) | 경계 상자 — 지도 bounds 조회를 위한 범위 비교 인덱스(`idx_territory_bbox`) |
+| center_lat / center_lng | BigDecimal DECIMAL(10,7) | 폴리곤 중심(마커/라벨 위치용) |
+| area_sqm | BigDecimal DECIMAL(18,4) | 폴리곤 면적(㎡). 데미지/회복 비율 계산에 사용 |
+| perimeter_m | BigDecimal DECIMAL(14,4) | 폴리곤 둘레(m). 땅 인정 하한 검증에 사용 |
+| hp / max_hp | int, not null | 현재/최대 체력. 겹치는 러닝에 `데미지 = 겹친면적/area × max_hp × attack-factor` 만큼 감소, 0이면 점령되고 max_hp로 리셋 |
+| source_record_sno / source_track_sno | Long, nullable | 이 땅을 만든 러닝의 `record.sno` / `record_track.sno`(FK 미강제) |
+| status | String | `ACTIVE` (v1은 이 상태만) |
+| create_at / update_at | LocalDateTime | 애플리케이션 코드에서 직접 설정 |
+
+## `territory_contribution`
+
+한 땅에 대한 공격 기여도 로그. 러닝 1회가 남의 땅에 데미지를 줄 때 1건 기록. HP가 0이 되는 시점에 최근 1시간(`paceleague.territory.contribution-window-minutes`) 합산으로 점령자를 정하고, 점령이 확정되면 그 땅의 행은 **모두 삭제**되어 새로 시작한다.
+
+| 컬럼 | 타입(Java) | 설명 |
+|---|---|---|
+| sno | Long (PK, IDENTITY) | |
+| territory_sno | Long, not null | 대상 `territory.sno` |
+| member_sno | Long, not null | 공격한 회원 `member.sno` |
+| damage | int, not null | 이번 러닝이 넣은 데미지 |
+| create_at | LocalDateTime | 1시간 윈도우 집계 기준. 인덱스 `idx_tc_territory_time (territory_sno, create_at)` |
 
 ## `score_rank` (엔티티명 `Rank`)
 
