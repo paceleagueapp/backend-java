@@ -7,9 +7,11 @@
 | 인스턴스 이름 | 역할 |
 |---|---|
 | `paceleague` | Java 앱(Docker 컨테이너) + Nginx. 이 저장소가 배포되는 대상. |
-| `paceleague-db` | MariaDB + Redis. 로컬 `.env`(`api/.env`, gitignored)의 `DB_URL`/`REDIS_URL`이 이 인스턴스를 가리킴. |
+| `paceleague-db` | MariaDB + Redis(둘 다 이 EC2에 직접 설치·구동). 로컬 `.env`(`api/.env`, gitignored)의 `DB_URL`/`REDIS_URL`이 이 인스턴스를 가리킴. RDS 아님(과거 RDS를 쓰다 이 EC2로 옮겼고 RDS는 삭제됨). |
 
-`paceleague` 인스턴스만 SSM 관리 대상(Managed Instance)이며, 배포 파이프라인(`.github/workflows/deploy.yml`)이 이 인스턴스에만 명령을 보냅니다.
+`paceleague` / `paceleague-db` **둘 다** SSM 관리 대상(Managed Instance)이지만, 배포 파이프라인(`.github/workflows/deploy.yml`)은 `paceleague`(앱 서버)에만 명령을 보냅니다.
+
+> ⚠️ **운영 앱 서버(`paceleague`)의 `/opt/paceleague/.env`에는 삭제된 옛 RDS 엔드포인트(`...rds.amazonaws.com`)가 `DB_URL`에 그대로 남아 있습니다.** 컨테이너는 이 파일만 `--env-file`로 읽으므로(`.github/ssm-commands.json`), 그 호스트명이 실제로는 `paceleague-db` EC2로 해석되는 상태(VPC DNS/Route53)로 보입니다 — 앱 서버 셸에서 직접 `mysql`로 그 호스트명을 치면 해석 실패(`Unknown MySQL server host ... -2`)하지만 컨테이너에서는 붙습니다. **DB 마이그레이션은 `paceleague-db` EC2에서 로컬 `mysql`로 직접 실행하세요**(DB명 `paceleague`). `/opt/paceleague/.env`의 `DB_URL`을 `paceleague-db`의 사설 IP로 정리하는 것도 별도 정리 대상.
 
 ### 알려진 보안 이슈: EC2 보안그룹이 필요 이상으로 공인 IP에 노출됨 — 2026-08-10 조치 완료
 
