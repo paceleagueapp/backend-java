@@ -16,11 +16,13 @@ public record TerritoryProperties(
         Integer defaultMaxHp,
         Double attackFactor,
         Double healFactor,
-        Integer contributionWindowMinutes
+        Integer contributionWindowMinutes,
+        Integer rankingMaxResults
 ) {
     public TerritoryProperties {
         if (minZoom == null) minZoom = 13;
         if (mapMaxResults == null) mapMaxResults = 300;
+        if (rankingMaxResults == null) rankingMaxResults = 100;
         if (closeThresholdMeters == null) closeThresholdMeters = 50.0;
         if (minPerimeterMeters == null) minPerimeterMeters = 300.0;
         if (minAreaSqm == null) minAreaSqm = 10_000.0;

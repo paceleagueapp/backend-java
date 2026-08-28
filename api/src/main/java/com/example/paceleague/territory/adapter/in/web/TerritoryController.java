@@ -5,7 +5,10 @@ import com.example.paceleague.common.response.ResponseApi;
 import com.example.paceleague.common.web.MemberSno;
 import com.example.paceleague.territory.application.dto.TerritoryMapQuery;
 import com.example.paceleague.territory.application.dto.TerritoryMapResponse;
+import com.example.paceleague.territory.application.dto.TerritoryRankingQuery;
+import com.example.paceleague.territory.application.dto.TerritoryRankingResponse;
 import com.example.paceleague.territory.application.port.in.GetTerritoryMapUseCase;
+import com.example.paceleague.territory.application.port.in.GetTerritoryRankingUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -24,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TerritoryController {
 
     private final GetTerritoryMapUseCase getTerritoryMapUseCase;
+    private final GetTerritoryRankingUseCase getTerritoryRankingUseCase;
 
     @Operation(summary = "지도 영역 내 땅 조회",
             description = "인증 불필요. 지도가 보고 있는 bounds(남서/북동 위경도)와 줌 레벨로 점령된 땅 목록을 반환합니다. "
@@ -49,5 +53,23 @@ public class TerritoryController {
                 LocaleResolver.resolve(lang, country).toCode(),
                 memberSno);
         return ResponseApi.success(getTerritoryMapUseCase.getMap(query));
+    }
+
+    @Operation(summary = "땅따먹기 면적 랭킹",
+            description = "인증 불필요. 소유자별 총 점령 면적(m²) 내림차순 랭킹을 반환합니다. "
+                    + "로그인 상태면 본인 항목에 mine=true 가 채워집니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @SecurityRequirements
+    @GetMapping("/ranking")
+    public ResponseApi<TerritoryRankingResponse> getRanking(
+            @MemberSno(required = false) Long memberSno,
+            @Parameter(description = "티어 라벨 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko")
+            @RequestParam(defaultValue = "ko") String lang,
+            @Parameter(description = "ISO 3166-1 alpha-2 국가코드(예: KR). 주어지면 lang 대신 이 국가에 맞는 언어로 응답")
+            @RequestParam(required = false) String country
+    ) {
+        TerritoryRankingQuery query = new TerritoryRankingQuery(
+                LocaleResolver.resolve(lang, country).toCode(), memberSno);
+        return ResponseApi.success(getTerritoryRankingUseCase.getRanking(query));
     }
 }

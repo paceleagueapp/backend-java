@@ -440,7 +440,37 @@ join/login/reissue가 공통으로 반환하는 구조:
 | hp / maxHp | 현재 체력 / 최대 체력. 겹치는 러닝에 데미지를 입고 0이 되면 소유권이 넘어감 |
 | mine | 호출자 소유 여부. 비로그인이면 항상 `false` |
 
-**마이그레이션**: [migrations/2026-08-27_territory_feature.sql](./migrations/2026-08-27_territory_feature.sql) (운영은 배포 전 직접 실행. `record_track.territory_mode` 컬럼 + `territory`/`territory_contribution` 테이블)
+### GET `/api/territory/ranking` — 면적 기준 땅따먹기 랭킹 (공개, 인증 불필요)
+
+소유자별 **총 점령 면적(m²) 내림차순** 랭킹. `web/territory.html` 지도 우상단 "랭킹" 패널이 사용. 로그인 상태로 호출하면 본인 항목에 `mine: true`.
+
+**Query params**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| lang | string | 티어 라벨 언어(`ko`/`en`/`ja`/`zh`/`es`/`fr`/`de`/`pt`/`vi`/`th`), 미지원 값이면 `ko`. 기본 `ko` |
+| country | string | ISO 3166-1 alpha-2 국가코드(예: `KR`). 주어지면 `lang` 대신 이 국가에 맞는 언어로 응답 |
+
+최대 항목 수는 `paceleague.territory.ranking-max-results`(기본 100).
+
+**Response** `200 OK` — `data`: `TerritoryRankingResponse`
+
+```json
+{ "entries": [
+    { "rank": 1, "memberSno": 42, "nickname": "달리는곰",
+      "ownerTier": "GOLD", "ownerTierLabel": "골드",
+      "totalAreaSqm": 152340.5, "territoryCount": 4, "mine": false }
+  ] }
+```
+
+| 필드 | 설명 |
+|---|---|
+| rank | 1부터. `totalAreaSqm` 내림차순 |
+| totalAreaSqm | 해당 소유자가 가진 ACTIVE 땅들의 면적 합(m²) |
+| territoryCount | 보유 중인 ACTIVE 땅 개수 |
+| mine | 호출자 본인 항목 여부. 비로그인이면 항상 `false` |
+
+**마이그레이션**: [migrations/2026-08-27_territory_feature.sql](./migrations/2026-08-27_territory_feature.sql) (운영은 배포 전 직접 실행. `record_track.territory_mode` 컬럼 + `territory`/`territory_contribution` 테이블). 랭킹은 기존 `territory` 테이블만 조회하므로 추가 마이그레이션 없음.
 
 ---
 

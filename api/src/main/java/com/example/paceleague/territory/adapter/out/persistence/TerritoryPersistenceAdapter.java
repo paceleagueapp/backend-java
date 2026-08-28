@@ -1,5 +1,6 @@
 package com.example.paceleague.territory.adapter.out.persistence;
 
+import com.example.paceleague.territory.application.dto.TerritoryOwnerArea;
 import com.example.paceleague.territory.application.port.out.TerritoryRepositoryPort;
 import com.example.paceleague.territory.domain.entity.Territory;
 import lombok.RequiredArgsConstructor;
@@ -33,5 +34,14 @@ public class TerritoryPersistenceAdapter implements TerritoryRepositoryPort {
     public List<Territory> findActiveIntersectingBboxForUpdate(BigDecimal minLat, BigDecimal minLng,
                                                               BigDecimal maxLat, BigDecimal maxLng) {
         return territoryJpaRepository.findActiveIntersectingBboxForUpdate(minLat, minLng, maxLat, maxLng);
+    }
+
+    public List<TerritoryOwnerArea> findTopOwnersByArea(int limit) {
+        return territoryJpaRepository.findTopOwnersByArea(limit).stream()
+                .map(p -> new TerritoryOwnerArea(
+                        p.getOwnerMemberSno(),
+                        p.getTotalAreaSqm() == null ? 0.0 : p.getTotalAreaSqm(),
+                        p.getTerritoryCount() == null ? 0L : p.getTerritoryCount()))
+                .toList();
     }
 }

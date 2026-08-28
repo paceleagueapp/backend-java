@@ -123,9 +123,13 @@ totalScore = baseScore + scaledScore + addScore
 
 공개(인증 불필요). 지도 bounds(남서/북동 위경도) + 줌 레벨로 `ACTIVE` territory를 bbox 겹침으로 조회. 줌이 `paceleague.territory.min-zoom`(13) 미만이면 빈 목록 + `zoomTooLow: true`(데이터 과다 방지). 최대 `map-max-results`(300)개, 면적 큰 순. 소유자 닉네임은 `member.GetMemberNicknamePort`, 티어는 `rank.GetMemberTierPort`(+ `RankTierLabelPolicy` 라벨) — 소유자별 캐시로 N+1 회피. 로그인 상태면 각 항목의 `mine` 플래그가 채워진다. `web/territory.html`(Google Maps JS API)이 이 응답을 폴리곤으로 그린다.
 
+### 면적 랭킹 (`GET /api/territory/ranking`)
+
+공개(인증 불필요). `owner_member_sno`별 `SUM(area_sqm)`(ACTIVE만) 내림차순 랭킹. 네이티브 집계 쿼리(`TerritoryJpaRepository.findTopOwnersByArea`) → `TerritoryOwnerArea` → `TerritoryQueryServiceImpl.getRanking`이 소유자별 닉네임/티어를 붙여 `TerritoryRankingResponse`로 반환. 최대 `ranking-max-results`(100)명. 로그인 상태면 본인 항목에 `mine: true`. `web/territory.html` 지도 우상단 "랭킹" 패널이 사용. 지도 조회와 같은 서비스(`TerritoryQueryServiceImpl`)가 `GetTerritoryRankingUseCase`도 구현한다.
+
 ### 설정 (`paceleague.territory.*`, `TerritoryProperties`)
 
-`app.jwt`(`JwtProperties`)와 같은 `@ConfigurationProperties` 방식. `application*.yml`에는 없고 아래 기본값을 사용: `min-zoom`(13), `map-max-results`(300), `close-threshold-meters`(50), `min-perimeter-meters`(300), `min-area-sqm`(10000), `max-area-sqm`(5000000), `default-max-hp`(100), `attack-factor`(0.5), `heal-factor`(0.5), `contribution-window-minutes`(60).
+`app.jwt`(`JwtProperties`)와 같은 `@ConfigurationProperties` 방식. `application*.yml`에는 없고 아래 기본값을 사용: `min-zoom`(13), `map-max-results`(300), `ranking-max-results`(100), `close-threshold-meters`(50), `min-perimeter-meters`(300), `min-area-sqm`(10000), `max-area-sqm`(5000000), `default-max-hp`(100), `attack-factor`(0.5), `heal-factor`(0.5), `contribution-window-minutes`(60).
 
 ### 알려진 한계 (v1)
 

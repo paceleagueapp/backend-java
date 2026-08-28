@@ -7,8 +7,13 @@ import com.example.paceleague.rank.domain.enums.RankTier;
 import com.example.paceleague.rank.domain.policy.RankTierLabelPolicy;
 import com.example.paceleague.territory.application.dto.TerritoryMapQuery;
 import com.example.paceleague.territory.application.dto.TerritoryMapResponse;
+import com.example.paceleague.territory.application.dto.TerritoryOwnerArea;
+import com.example.paceleague.territory.application.dto.TerritoryRankingEntryResponse;
+import com.example.paceleague.territory.application.dto.TerritoryRankingQuery;
+import com.example.paceleague.territory.application.dto.TerritoryRankingResponse;
 import com.example.paceleague.territory.application.dto.TerritoryView;
 import com.example.paceleague.territory.application.port.in.GetTerritoryMapUseCase;
+import com.example.paceleague.territory.application.port.in.GetTerritoryRankingUseCase;
 import com.example.paceleague.territory.application.port.out.TerritoryRepositoryPort;
 import com.example.paceleague.territory.config.TerritoryProperties;
 import com.example.paceleague.territory.domain.entity.Territory;
@@ -26,7 +31,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class TerritoryQueryServiceImpl implements GetTerritoryMapUseCase {
+public class TerritoryQueryServiceImpl implements GetTerritoryMapUseCase, GetTerritoryRankingUseCase {
 
     private final TerritoryRepositoryPort territoryRepositoryPort;
     private final GetMemberNicknamePort getMemberNicknamePort;
@@ -67,6 +72,30 @@ public class TerritoryQueryServiceImpl implements GetTerritoryMapUseCase {
             ));
         }
         return new TerritoryMapResponse(false, minZoom, views);
+    }
+
+    @Override
+    public TerritoryRankingResponse getRanking(TerritoryRankingQuery query) {
+        List<TerritoryOwnerArea> owners = territoryRepositoryPort.findTopOwnersByArea(props.rankingMaxResults());
+        Language lang = Language.fromCode(query.lang());
+
+        List<TerritoryRankingEntryResponse> entries = new ArrayList<>(owners.size());
+        int rank = 1;
+        for (TerritoryOwnerArea owner : owners) {
+            Long memberSno = owner.ownerMemberSno();
+            RankTier tier = getMemberTierPort.getTier(memberSno);
+            entries.add(new TerritoryRankingEntryResponse(
+                    rank++,
+                    memberSno,
+                    getMemberNicknamePort.getNickname(memberSno),
+                    tier,
+                    RankTierLabelPolicy.label(tier, lang),
+                    owner.totalAreaSqm(),
+                    owner.territoryCount(),
+                    query.memberSno() != null && query.memberSno().equals(memberSno)
+            ));
+        }
+        return new TerritoryRankingResponse(entries);
     }
 
     private double[][] parseRing(String polygonJson) {
