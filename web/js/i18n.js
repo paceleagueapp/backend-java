@@ -264,9 +264,10 @@ Object.keys(TERRITORY_STRINGS).forEach(function (code) {
   if (TRANSLATIONS[code]) { Object.assign(TRANSLATIONS[code], TERRITORY_STRINGS[code]); }
 });
 
-// 크루 페이지(crew.html) 문자열. ko/en 만 채우고 나머지 언어는 t()의 ko 폴백을 쓴다(v1).
+// 크루 페이지(crew.html) 문자열 + 글쓰기 게시판 선택 라벨. ko/en 만 채우고 나머지 언어는 t()의 ko 폴백을 쓴다.
 var CREW_STRINGS = {
   ko: {
+    boardSelectLabel: '게시판',
     crewInvitesTitle: '받은 초대', crewNoInvites: '받은 초대가 없습니다', crewAccept: '수락', crewDecline: '거절',
     crewSearchTitle: '크루 검색', crewSearchPlaceholder: '크루명으로 검색', crewNoResults: '결과가 없습니다', crewApply: '가입신청',
     crewCreateTitle: '크루 만들기', crewNamePlaceholder: '크루명 (2~20자)', crewDescPlaceholder: '크루 소개 (선택)',
@@ -280,6 +281,7 @@ var CREW_STRINGS = {
     crewSaving: '저장 중...', crewSaveFailed: '저장에 실패했습니다', crewDisband: '크루 해체', crewDisbandConfirm: '정말 크루를 해체할까요? 되돌릴 수 없습니다.'
   },
   en: {
+    boardSelectLabel: 'Board',
     crewInvitesTitle: 'Invitations', crewNoInvites: 'No invitations', crewAccept: 'Accept', crewDecline: 'Decline',
     crewSearchTitle: 'Find a crew', crewSearchPlaceholder: 'Search by crew name', crewNoResults: 'No results', crewApply: 'Request to join',
     crewCreateTitle: 'Create a crew', crewNamePlaceholder: 'Crew name (2-20 chars)', crewDescPlaceholder: 'Crew description (optional)',

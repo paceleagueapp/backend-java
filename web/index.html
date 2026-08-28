@@ -166,6 +166,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 
   <dialog id="write-dialog">
+    <label id="write-board-label" for="write-board"></label>
+    <select id="write-board"></select>
     <input type="text" id="write-title" maxlength="200">
     <div class="editor-toolbar" id="editor-toolbar">
       <button type="button" id="fmt-bold"><b>B</b></button>
@@ -185,8 +187,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </dialog>
 
-  <script src="/js/app.js?v=20260828c"></script>
-  <script src="/js/i18n.js?v=20260828c"></script>
+  <script src="/js/app.js?v=20260828d"></script>
+  <script src="/js/i18n.js?v=20260828d"></script>
   <script>
     var postEditor = createPostEditor({
       editorEl: document.getElementById('write-content'),
@@ -257,6 +259,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       }
       renderLangSelect(document.getElementById('lang-select'));
 
+      document.getElementById('write-board-label').textContent = t('boardSelectLabel');
       document.getElementById('write-title').placeholder = t('titlePlaceholder');
       document.getElementById('write-content').setAttribute('data-placeholder', t('contentPlaceholder'));
       document.getElementById('write-record-label').textContent = t('attachRecordLabel');
@@ -449,8 +452,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         }
 
         var recordSnoValue = document.getElementById('write-record').value;
+        var targetBoardSno = document.getElementById('write-board').value || currentBoardSno;
 
-        apiFetch('/api/board/' + currentBoardSno + '/posts', {
+        apiFetch('/api/board/' + targetBoardSno + '/posts', {
           method: 'POST',
           body: {
             title: title, content: content,
@@ -478,6 +482,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           return;
         }
         currentBoardSno = selected.sno;
+
+        var writeBoardSelect = document.getElementById('write-board');
+        writeBoardSelect.innerHTML = boards.map(function (b) {
+          return '<option value="' + b.sno + '">' + escapeHtml(b.name) + '</option>';
+        }).join('');
+        writeBoardSelect.value = currentBoardSno;
+
         renderTabs();
         loadPosts();
       });

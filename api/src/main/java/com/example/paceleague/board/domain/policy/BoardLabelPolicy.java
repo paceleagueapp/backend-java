@@ -70,6 +70,18 @@ public class BoardLabelPolicy {
                 new Labels("ยืนยัน", "ยืนยันการวิ่งของวันนี้")
         ));
 
+        table.put("crew_promo", row(
+                new Labels("Crew Recruit", "Introduce your crew and recruit members."),
+                new Labels("クルー募集", "自分のクルーを紹介してメンバーを募集しましょう。"),
+                new Labels("战队招募", "介绍你的战队并招募成员。"),
+                new Labels("Reclutar crew", "Presenta tu crew y recluta miembros."),
+                new Labels("Recrutement de crew", "Présentez votre crew et recrutez des membres."),
+                new Labels("Crew-Werbung", "Stelle deine Crew vor und wirb Mitglieder."),
+                new Labels("Recrutar crew", "Apresente sua crew e recrute membros."),
+                new Labels("Tuyển crew", "Giới thiệu crew của bạn và tuyển thành viên."),
+                new Labels("รับสมัครครู", "แนะนำครูของคุณและรับสมาชิก")
+        ));
+
         return table;
     }
 

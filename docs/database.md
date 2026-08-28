@@ -178,7 +178,7 @@ DDL로 시딩만 하고(자유게시판/질문/인증 3개), 생성/수정 API�
 | 컬럼 | 타입(Java) | 설명 |
 |---|---|---|
 | sno | Long (PK, IDENTITY) | |
-| slug | String(50), UNIQUE | URL에 쓰이는 식별자 (`free`, `qna`, `verify`) |
+| slug | String(50), UNIQUE | URL에 쓰이는 식별자 (`free`, `qna`, `verify`, `crew_promo`) |
 | name | String(50) | 표시명 |
 | description | String(255) | |
 | display_order | int | 목록 정렬 순서 |
