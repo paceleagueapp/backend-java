@@ -440,9 +440,9 @@ join/login/reissue가 공통으로 반환하는 구조:
 | hp / maxHp | 현재 체력 / 최대 체력. 겹치는 러닝에 데미지를 입고 0이 되면 소유권이 넘어감 |
 | mine | 호출자 소유 여부. 비로그인이면 항상 `false` |
 
-### GET `/api/territory/ranking` — 면적 기준 땅따먹기 랭킹 (공개, 인증 불필요)
+### GET `/api/territory/ranking` — 면적 기준 랜드잇 랭킹 (공개, 인증 불필요)
 
-소유자별 **총 점령 면적(m²) 내림차순** 랭킹. `web/territory.html` 지도 우상단 "랭킹" 패널이 사용. 로그인 상태로 호출하면 본인 항목에 `mine: true`.
+소유자별 **총 점령 면적(m²) 내림차순** 랭킹. `web/territory.html` 지도 우상단 "랜드잇 랭킹" 패널 + `web/index.html` 커뮤니티 우측 사이드바("이번 시즌 랭킹" 아래)가 사용. 로그인 상태로 호출하면 본인 항목에 `mine: true`.
 
 **Query params**
 
