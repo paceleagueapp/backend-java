@@ -135,7 +135,7 @@ totalScore = baseScore + scaledScore + addScore
 
 ## 크루(Crew) 도메인
 
-`crew` 패키지 (2026-08-28 1단계 구현). 게임의 길드. 전체 기획은 Notion "크루" 문서, 단계별 작업은 [crew-implementation-plan.md](./crew-implementation-plan.md) 참고. 이번 범위(1단계): 생성·검색·초대·가입신청·크루원 관리. 크루원 랭킹·게시판/랭킹 배지·땅따먹기 크루전은 2·3단계.
+`crew` 패키지 (2026-08-28 1·2단계 구현). 게임의 길드. 전체 기획은 Notion "크루" 문서, 단계별 작업은 [crew-implementation-plan.md](./crew-implementation-plan.md) 참고. 1단계: 생성·검색·초대·가입신청·크루원 관리. 2단계: 크루원 랭킹 + 게시판/랭킹 크루 배지. 땅따먹기 크루전은 3단계.
 
 ### 핵심 규칙
 
@@ -161,6 +161,14 @@ totalScore = baseScore + scaledScore + addScore
 ### 회원 검색 (`GET /api/member/search?q=`)
 
 크루 초대 대상을 고르기 위한 엔드포인트(로그인 필요). `member` 도메인에 추가된 `SearchMembersPort` — `member_id` 접두 일치 또는 `nickname` 부분 일치, 아이디 정확 일치 우선.
+
+### 크루원 랭킹 (`GET /api/crew/{sno}/ranking`) — 2단계
+
+크루원만 조회. 크루 내 회원들을 **현재 시즌 누적 점수**(기존 `MemberScore`) 기준 내림차순. `rank`에 추가된 `GetMemberSeasonScoresPort`로 크루원 전체 점수를 한 번에 배치 조회하고, 점수 없는 회원은 기본값(1500/SILVER)으로 채운다. `rank`가 `season.getSeason()`(번호)로 조회하는 기존 방식을 그대로 씀([rank vs ranking](#rank-vs-ranking-조회-로직-차이) 참고).
+
+### 게시판·랭킹 크루 배지 (§9) — 2단계
+
+크루 소속 회원은 게시판 글 목록/상세, 랭킹 위젯에서 닉네임·티어 옆에 **크루명 + 크루 아이콘**이 함께 표시된다. `crew`가 노출하는 `GetMemberCrewBadgePort`(`getBadge(memberSno)` 단건 / `getBadges(memberSnos)` 배치)를 `board`·`ranking`이 소비. `PostSummaryResponse`/`PostDetailResponse`에 `authorCrewName`/`authorCrewIconUrl`, `RankingUserResponse`에 `crewName`/`crewIconUrl` 추가(크루 없으면 null). 조회 시점 계산이라 탈퇴/해체 시 자연히 사라짐(캐시만 주의). `web/index.html`(글 목록·TOP10 위젯)·`web/post.html`(글 상세)에 렌더링.
 
 ## 커뮤니티(Board) 도메인
 

@@ -469,6 +469,9 @@ join/login/reissue가 공통으로 반환하는 구조:
 | `GET /api/crew/{crewSno}/join-requests` | 크루장: 대기 중 신청 목록 |
 | `POST /api/crew/join-requests/{id}/approve` \| `/reject` | 크루장: 승인(→ 가입) / 거절 |
 | `DELETE /api/crew/join-requests/{id}` | 신청자: 신청 취소 |
+| `GET /api/crew/{crewSno}/ranking` | 크루원만. 크루 내 회원을 현재 시즌 점수 기준 내림차순 (2단계) |
+
+**크루 배지 (2단계)**: 크루 소속 회원은 다른 응답에도 크루명·아이콘이 붙는다 — `board`의 `PostSummaryResponse`/`PostDetailResponse`에 `authorCrewName`/`authorCrewIconUrl`, `ranking`의 `RankingUserResponse`(`getRanking`/`top10`)에 `crewName`/`crewIconUrl` (크루 없으면 `null`).
 
 초대 대상은 [GET /api/member/search](#get-apimembersearch--회원-검색-인증-필요) 로 찾는다.
 

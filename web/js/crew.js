@@ -207,6 +207,8 @@
           '</li>';
       }).join('') + '</ul></div>';
 
+    html += '<div class="card"><h2>' + t('crewRankingTitle') + '</h2><div id="crew-ranking"><p class="muted">-</p></div></div>';
+
     if (crew.viewerIsLeader) {
       html += leaderPanelHtml(crew);
     } else {
@@ -214,6 +216,7 @@
     }
 
     viewEl.innerHTML = html;
+    loadCrewRanking(crew.sno);
 
     viewEl.querySelectorAll('[data-kick]').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -234,6 +237,22 @@
     });
 
     if (crew.viewerIsLeader) wireLeaderPanel(crew);
+  }
+
+  function loadCrewRanking(crewSno) {
+    apiFetch('/api/crew/' + crewSno + '/ranking?lang=' + encodeURIComponent(getLang())).then(function (json) {
+      var el = document.getElementById('crew-ranking');
+      if (!el) return;
+      var items = (json && json.data) || [];
+      if (!items.length) { el.innerHTML = '<p class="muted">-</p>'; return; }
+      el.innerHTML = '<ul class="list">' + items.map(function (r) {
+        return '<li><span class="top10-rank" style="width:20px;color:#e53935;font-weight:700;flex-shrink:0;">' + r.rank + '</span>' +
+          '<div class="grow"><span class="nick">' + escapeHtml(r.nickname) + '</span> ' +
+          '<span class="tier-badge">' + escapeHtml(r.tierLabel || r.tier || '') + '</span>' +
+          (r.isLeader ? ' <span class="leader-badge">' + t('crewLeaderBadge') + '</span>' : '') + '</div>' +
+          '<span style="font-weight:600;flex-shrink:0;">' + r.totalScore + '</span></li>';
+      }).join('') + '</ul>';
+    });
   }
 
   function leaderPanelHtml(crew) {

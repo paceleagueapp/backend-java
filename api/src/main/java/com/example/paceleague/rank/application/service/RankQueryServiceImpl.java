@@ -2,6 +2,7 @@ package com.example.paceleague.rank.application.service;
 
 import com.example.paceleague.common.i18n.Language;
 import com.example.paceleague.rank.application.dto.RankMeResponse;
+import com.example.paceleague.rank.application.port.in.GetMemberSeasonScoresPort;
 import com.example.paceleague.rank.application.port.in.GetMemberTierPort;
 import com.example.paceleague.rank.application.port.in.GetMyRankUseCase;
 import com.example.paceleague.rank.application.port.out.MemberScoreRepositoryPort;
@@ -14,12 +15,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class RankQueryServiceImpl implements GetMyRankUseCase, GetMemberTierPort {
+public class RankQueryServiceImpl implements GetMyRankUseCase, GetMemberTierPort, GetMemberSeasonScoresPort {
 
     private static final int DEFAULT_SCORE = 1500;
     private static final RankTier DEFAULT_TIER = RankTier.SILVER;
@@ -51,6 +55,19 @@ public class RankQueryServiceImpl implements GetMyRankUseCase, GetMemberTierPort
 
     public RankTier getTier(Long memberSno) {
         return findMemberScore(memberSno).map(MemberScore::getTier).orElse(DEFAULT_TIER);
+    }
+
+    public Map<Long, MemberSeasonScore> getCurrentSeasonScores(Collection<Long> memberSnos) {
+        if (memberSnos == null || memberSnos.isEmpty()) {
+            return Map.of();
+        }
+        Season season = getCurrentSeasonPort.getCurrentSeason();
+        return memberScoreRepositoryPort.findByMemberSnosAndSeasonSno(memberSnos, season.getSeason())
+                .stream()
+                .collect(Collectors.toMap(
+                        MemberScore::getMemberSno,
+                        ms -> new MemberSeasonScore(ms.getTotalScore(), ms.getTier()),
+                        (a, b) -> a));
     }
 
     private Optional<MemberScore> findMemberScore(Long memberSno) {

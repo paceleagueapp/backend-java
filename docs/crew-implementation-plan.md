@@ -3,7 +3,10 @@
 Notion "크루" 문서(기획) + 현재 코드베이스 컨벤션 기준 구현 리스트.
 전체 기획: Notion `크루` 문서. 단계 구분은 그 문서 §14를 따름.
 
-> **진행 상황**: 1단계 구현 완료 (2026-08-28) — `crew` 도메인, `GET /api/member/search`, `media.GetApprovedMediaUrlPort`, `web/crew.html`+`web/js/crew.js`, 마이그레이션 `2026-08-28_crew_feature.sql`. 2·3단계는 아래 그대로.
+> **진행 상황** (2026-08-28):
+> - **1단계 완료** — `crew` 도메인, `GET /api/member/search`, `media.GetApprovedMediaUrlPort`, `web/crew.html`+`web/js/crew.js`, 마이그레이션 `2026-08-28_crew_feature.sql`.
+> - **2단계 완료** — `GET /api/crew/{sno}/ranking`(+`rank.GetMemberSeasonScoresPort`), 게시판/랭킹 크루 배지(`crew.GetMemberCrewBadgePort` → `board`/`ranking` 응답에 크루명·아이콘, 스키마 변경 없음), 웹 렌더링. 공지 이력/서식은 보류.
+> - **3단계**(땅따먹기 크루전)는 아래 그대로.
 
 ---
 

@@ -2,6 +2,8 @@ package com.example.paceleague.rank.application.port.out;
 
 import com.example.paceleague.rank.domain.entity.MemberScore;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface MemberScoreRepositoryPort {
@@ -9,6 +11,8 @@ public interface MemberScoreRepositoryPort {
     Optional<MemberScore> findByMemberSnoAndSeasonSnoForUpdate(Long memberSno, Long seasonSno);
 
     Optional<MemberScore> findByMemberSnoAndSeasonSno(Long memberSno, Long seasonSno);
+
+    List<MemberScore> findByMemberSnosAndSeasonSno(Collection<Long> memberSnos, Long seasonSno);
 
     MemberScore save(MemberScore memberScore);
 }

@@ -1,11 +1,15 @@
 package com.example.paceleague.crew.adapter.out.persistence;
 
+import com.example.paceleague.crew.application.port.in.GetMemberCrewBadgePort.CrewBadge;
 import com.example.paceleague.crew.application.port.out.CrewMemberRepositoryPort;
 import com.example.paceleague.crew.domain.entity.CrewMember;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -32,6 +36,17 @@ public class CrewMemberPersistenceAdapter implements CrewMemberRepositoryPort {
 
     public boolean existsByMemberSno(Long memberSno) {
         return crewMemberJpaRepository.existsByMemberSno(memberSno);
+    }
+
+    public Map<Long, CrewBadge> findBadgesByMemberSnos(Collection<Long> memberSnos) {
+        if (memberSnos == null || memberSnos.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, CrewBadge> result = new LinkedHashMap<>();
+        for (CrewMemberBadgeProjection p : crewMemberJpaRepository.findBadgesByMemberSnoIn(memberSnos)) {
+            result.put(p.getMemberSno(), new CrewBadge(p.getCrewName(), p.getCrewIconUrl()));
+        }
+        return result;
     }
 
     public void delete(CrewMember crewMember) {

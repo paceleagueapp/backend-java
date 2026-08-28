@@ -87,7 +87,8 @@ com.example.paceleague
 - `rank`/`ranking` → `season.application.port.in.GetCurrentSeasonPort`에만 의존.
 - `record` → `territory.application.port.in.ProcessTerritoryRunUseCase`(땅따먹기 모드로 끝난 러닝의 땅 생성/데미지/점령 처리 — `record→rank`의 `ApplyScoreUseCase`와 같은 방향). 2026-08-27 "러닝 땅따먹기" 1차 구현 시 도입. `territory`는 반대로 `record`를 전혀 모른다(단방향 — 커맨드에 좌표를 값으로 담아 넘긴다).
 - `territory` → `member.GetMemberNicknamePort`·`rank.GetMemberTierPort`(지도 조회 시 소유자 표시), `season.GetCurrentSeasonPort`(땅 생성 시 시즌 스냅샷).
-- `crew` → `member.GetMemberNicknamePort`(크루원/초대/신청 목록 닉네임)·`member.SearchMembersPort`(초대 대상 검색, 2026-08-28 `member`에 추가)·`rank.GetMemberTierPort`(크루원 티어 배지)·`media.GetApprovedMediaUrlPort`(크루 아이콘 — media id로 APPROVED url 조회, 2026-08-28 `media`에 추가). `crew`는 이 도메인들을 단방향으로만 의존.
+- `crew` → `member.GetMemberNicknamePort`(크루원/초대/신청 목록 닉네임)·`member.SearchMembersPort`(초대 대상 검색, 2026-08-28 `member`에 추가)·`rank.GetMemberTierPort`(크루원 티어 배지)·`rank.GetMemberSeasonScoresPort`(크루원 랭킹 — 여러 회원 현재 시즌 점수 배치 조회, 2026-08-28 phase2에 `rank`에 추가)·`media.GetApprovedMediaUrlPort`(크루 아이콘 — media id로 APPROVED url 조회, 2026-08-28 `media`에 추가).
+- `board`·`ranking` → `crew.GetMemberCrewBadgePort`(작성자/랭커 옆 크루명·아이콘 배지 — 2026-08-28 phase2에 `crew`가 노출). `board`는 목록에서 배치(`getBadges`), 상세에서 단건(`getBadge`). `ranking`은 리더보드 각 행을 배치로. `crew` ↔ `board`/`ranking` 간 순환 의존 없음(`crew`는 board/ranking을 모름).
 
 **예외 — 순수 정적 정책 클래스는 포트 없이 직접 import**: `board.application.service.BoardQueryServiceImpl`이 `rank.domain.policy.RankTierLabelPolicy`(티어 → 언어별 라벨 고정 테이블)를 포트 없이 바로 호출합니다. 위 "도메인 간 의존은 포트로만" 원칙의 예외인데, 이 클래스가 Spring 빈도 아니고 DB/Redis 접근도 없는 순수 정적 조회 함수(`RankTier`, `Language` 두 enum만 받아 `String`을 반환)라 포트/어댑터를 만드는 비용이 실익보다 크다고 판단했기 때문입니다 — `common` 패키지의 `StringRedisTemplate` 같은 범용 인프라 클라이언트를 포트화하지 않는 것과 같은 이유. 상태를 갖거나 DB에 접근하는 진짜 크로스 도메인 접근(리포지토리 등)이라면 반드시 포트를 통해야 합니다. 같은 이유로 `territory.domain.policy.ClosedLoopDetector`는 `record.domain.policy.GeoDistanceCalculator`(haversine, 순수 static)를 포트 없이 직접 재사용합니다.
 

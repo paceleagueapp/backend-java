@@ -3,6 +3,7 @@ package com.example.paceleague.board.application.dto;
 import com.example.paceleague.board.domain.entity.Post;
 import com.example.paceleague.board.domain.policy.PostContentSanitizer;
 import com.example.paceleague.common.i18n.Language;
+import com.example.paceleague.crew.application.port.in.GetMemberCrewBadgePort.CrewBadge;
 import com.example.paceleague.rank.domain.enums.RankTier;
 import com.example.paceleague.rank.domain.policy.RankTierLabelPolicy;
 
@@ -14,6 +15,8 @@ public record PostSummaryResponse(
         String nickname,
         RankTier authorTier,
         String authorTierLabel,
+        String authorCrewName,
+        String authorCrewIconUrl,
         Long recordSno,
         String contentSnippet,
         String thumbnailUrl,
@@ -24,7 +27,7 @@ public record PostSummaryResponse(
         LocalDateTime createAt
 ) {
     public static PostSummaryResponse from(
-            Post post, String nickname, RankTier authorTier, Language lang, long commentCount
+            Post post, String nickname, RankTier authorTier, CrewBadge authorCrew, Language lang, long commentCount
     ) {
         // 이미지/동영상은 이제 본문 HTML 안에 인라인으로 들어있으므로(media 테이블의 postSno 연결에 의존하지 않고)
         // 본문에서 첫 미디어를 직접 찾아 목록용 썸네일로 내려준다.
@@ -36,6 +39,8 @@ public record PostSummaryResponse(
                 nickname,
                 authorTier,
                 RankTierLabelPolicy.label(authorTier, lang),
+                authorCrew == null ? null : authorCrew.crewName(),
+                authorCrew == null ? null : authorCrew.crewIconUrl(),
                 post.getRecordSno(),
                 PostContentSanitizer.snippet(post.getContent()),
                 preview == null ? null : preview.url(),

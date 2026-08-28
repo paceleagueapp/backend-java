@@ -1,6 +1,7 @@
 package com.example.paceleague.crew.application.port.in;
 
 import com.example.paceleague.crew.application.dto.CrewDetailResponse;
+import com.example.paceleague.crew.application.dto.CrewRankingEntryResponse;
 import com.example.paceleague.crew.application.dto.CrewSummaryResponse;
 
 import java.util.List;
@@ -15,4 +16,7 @@ public interface CrewQueryUseCase {
 
     // 내 크루. 없으면 null.
     CrewDetailResponse getMyCrew(Long memberSno, String lang);
+
+    // 크루원 기록저장 랭킹(현재 시즌 점수 기준). 크루원만 조회 가능.
+    List<CrewRankingEntryResponse> getRanking(Long viewerMemberSno, Long crewSno, String lang);
 }

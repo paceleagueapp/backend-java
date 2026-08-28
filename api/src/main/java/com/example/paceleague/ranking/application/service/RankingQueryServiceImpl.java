@@ -1,6 +1,8 @@
 package com.example.paceleague.ranking.application.service;
 
 import com.example.paceleague.common.i18n.Language;
+import com.example.paceleague.crew.application.port.in.GetMemberCrewBadgePort;
+import com.example.paceleague.crew.application.port.in.GetMemberCrewBadgePort.CrewBadge;
 import com.example.paceleague.rank.domain.entity.MemberScore;
 import com.example.paceleague.rank.domain.enums.RankTier;
 import com.example.paceleague.rank.domain.policy.RankTierLabelPolicy;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +32,7 @@ public class RankingQueryServiceImpl implements GetRankingUseCase {
 
     private final RankingRepositoryPort rankingRepositoryPort;
     private final GetCurrentSeasonPort getCurrentSeasonPort;
+    private final GetMemberCrewBadgePort getMemberCrewBadgePort;
 
     public List<RankingUserResponse> getTop10(String lang) {
         // rank.RankQueryServiceImpl은 season.getSeason()을 쓰는 것과 달리 여기는 season.getSno()를 그대로 사용 —
@@ -87,11 +91,14 @@ public class RankingQueryServiceImpl implements GetRankingUseCase {
             int startRank,
             Language language
     ) {
-        List<RankingUserResponse> result = new ArrayList<>();
+        Map<Long, CrewBadge> crewBadges = getMemberCrewBadgePort.getBadges(
+                list.stream().map(RankingProjection::getMemberSno).distinct().toList());
 
+        List<RankingUserResponse> result = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) {
             RankingProjection ranking = list.get(i);
             RankTier tier = RankTier.valueOf(ranking.getTier());
+            CrewBadge crew = crewBadges.get(ranking.getMemberSno());
 
             result.add(new RankingUserResponse(
                     startRank + i,
@@ -100,6 +107,8 @@ public class RankingQueryServiceImpl implements GetRankingUseCase {
                     ranking.getTotalScore(),
                     tier,
                     RankTierLabelPolicy.label(tier, language),
+                    crew == null ? null : crew.crewName(),
+                    crew == null ? null : crew.crewIconUrl(),
                     ranking.getMemberSno().equals(myMemberSno)
             ));
         }

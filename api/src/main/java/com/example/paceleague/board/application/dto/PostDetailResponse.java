@@ -17,6 +17,8 @@ public record PostDetailResponse(
         String nickname,
         RankTier authorTier,
         String authorTierLabel,
+        String authorCrewName,
+        String authorCrewIconUrl,
         RunningRecordResponse attachedRecord,
         List<MediaAttachmentResponse> attachments,
         int viewCount,

@@ -36,6 +36,8 @@
     .post-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
     .post-meta { font-size: 12px; color: #888; margin-bottom: 14px; display: flex; gap: 10px; align-items: center; }
     .author-tier { background: #262626; color: #ccc; border-radius: 10px; padding: 1px 8px; font-size: 11px; }
+    .crew-badge { display: inline-flex; align-items: center; gap: 3px; background: #26264a; color: #b7b7e8; border-radius: 10px; padding: 1px 7px; font-size: 11px; }
+    .crew-badge img { width: 12px; height: 12px; border-radius: 3px; object-fit: cover; }
     .post-content { font-size: 14px; line-height: 1.6; margin-bottom: 14px; word-break: break-word; }
     .post-content p { margin-bottom: 8px; }
     .post-content img, .post-content video { max-width: 100%; border-radius: 8px; display: block; margin: 8px 0; }
@@ -149,8 +151,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div id="comment-list"></div>
   </div>
 
-  <script src="/js/app.js?v=20260828b"></script>
-  <script src="/js/i18n.js?v=20260828b"></script>
+  <script src="/js/app.js?v=20260828c"></script>
+  <script src="/js/i18n.js?v=20260828c"></script>
   <script>
     renderLangSelect(document.getElementById('lang-select'));
     document.getElementById('back-link').textContent = t('backToList');
@@ -218,6 +220,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         '<div class="post-meta">' +
           '<span>' + escapeHtml(post.nickname) + '</span>' +
           '<span class="author-tier">' + escapeHtml(post.authorTierLabel || post.authorTier) + '</span>' +
+          (post.authorCrewName ? '<span class="crew-badge">' + (post.authorCrewIconUrl ? '<img src="' + escapeHtml(post.authorCrewIconUrl) + '" alt="">' : '') + escapeHtml(post.authorCrewName) + '</span>' : '') +
           '<span>' + t('viewCountLabel') + ' ' + post.viewCount + '</span>' +
           '<span>' + escapeHtml(formatLocalTime(post.createAt)) + '</span>' +
         '</div>' +

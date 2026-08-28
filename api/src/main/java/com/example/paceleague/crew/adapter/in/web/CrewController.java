@@ -74,6 +74,18 @@ public class CrewController {
         return ResponseApi.success(crewQueryUseCase.getDetail(crewSno, memberSno, resolveLang(lang, country)));
     }
 
+    @Operation(summary = "크루원 랭킹", description = "크루원만. 크루 내 회원들을 현재 시즌 점수 기준으로 정렬한 랭킹.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/{crewSno}/ranking")
+    public ResponseApi<List<CrewRankingEntryResponse>> getRanking(
+            @MemberSno Long memberSno,
+            @PathVariable Long crewSno,
+            @RequestParam(defaultValue = "ko") String lang,
+            @RequestParam(required = false) String country) {
+        return ResponseApi.success(crewQueryUseCase.getRanking(memberSno, crewSno, resolveLang(lang, country)));
+    }
+
     @Operation(summary = "크루 정보 수정", description = "크루장만. 이름·아이콘·소개·공지를 통째로 갱신합니다.")
     @ApiResponse(responseCode = "200", description = "수정 성공")
     @SecurityRequirement(name = "bearerAuth")

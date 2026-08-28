@@ -105,7 +105,7 @@ Rules (`ProcessTerritoryRunServiceImpl`, all thresholds in `TerritoryProperties`
 
 ### 크루 / Crew (guild) — `crew` domain, phase 1
 
-2026-08-28, first slice of the Notion "크루" doc. Phase breakdown & remaining work: `docs/crew-implementation-plan.md`. This slice: create / search / invite / apply / member management. Crew ranking, board+ranking crew badges, and land-grab crew battles are phases 2–3.
+2026-08-28, Notion "크루" doc phases 1–2. Phase breakdown & remaining work: `docs/crew-implementation-plan.md`. Phase 1: create / search / invite / apply / member management. Phase 2: crew member ranking + crew badges on board/ranking. Land-grab crew battles are phase 3.
 
 - **One member = one crew**, enforced by a global `UNIQUE` on `crew_member.member_sno`. Create/join both require not already being in a crew.
 - Join method is **approval-only** (`join_policy` column kept for future, always `APPROVAL`). Invites are **leader-only**.
@@ -115,6 +115,7 @@ Rules (`ProcessTerritoryRunServiceImpl`, all thresholds in `TerritoryProperties`
 - `GET /api/crew/{sno}` (auth required): members see `notice` + member list w/ tier badges; non-members see public info only (`viewerIsMember`/`viewerIsLeader`). `GET /api/crew/search` is the only public crew endpoint.
 - **Crew icon**: request carries `iconMediaId` (a pre-approved `media` sno) → resolved via new `media.GetApprovedMediaUrlPort` (owner + APPROVED check) and the URL is copied into `crew.icon_url`. No-icon crews get a client-side first-letter placeholder. On edit, an unchanged icon is kept by the client echoing back `iconUrl`.
 - New cross-domain: `member.SearchMembersPort` (`GET /api/member/search?q=` — member_id prefix / nickname substring, for the invite picker). `web/crew.html` + `web/js/crew.js` are the frontend (branches on `GET /api/crew/me`). Migration: `docs/migrations/2026-08-28_crew_feature.sql`.
+- **Phase 2**: `GET /api/crew/{sno}/ranking` (crew members sorted by current-season score — new `rank.GetMemberSeasonScoresPort` for a batch score lookup). **Crew badges** on board & ranking: `crew.GetMemberCrewBadgePort` (`getBadge`/`getBadges`) → `board` adds `authorCrewName`/`authorCrewIconUrl` to `PostSummaryResponse`/`PostDetailResponse`, `ranking` adds `crewName`/`crewIconUrl` to `RankingUserResponse`. `board`/`ranking` now depend on `crew` (one-way, no cycle). Web: badge pills in `web/index.html` (post list + TOP10 widget) and `web/post.html`; crew ranking card in `web/js/crew.js`. No schema change (badges are derived at query time).
 
 ### Board post ↔ record attachment / author tier badge
 
