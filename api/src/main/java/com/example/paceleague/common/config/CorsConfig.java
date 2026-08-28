@@ -58,6 +58,8 @@ public class CorsConfig {
         source.registerCorsConfiguration("/api/media/**", authAndBoard);
         // 땅따먹기 지도 페이지(web/territory.html)가 브라우저에서 호출하는 공개 조회 — GET만.
         source.registerCorsConfiguration("/api/territory/map", readOnlyPublic);
+        // 크루 페이지(web/crew.html)가 호출하는 크루 API — board와 같은 shape(GET/POST/PUT/DELETE + 헤더).
+        source.registerCorsConfiguration("/api/crew/**", authAndBoard);
         return source;
     }
 }

@@ -23,6 +23,10 @@ MySQL, Spring Data JPA(Hibernate) 사용. 로컬은 `ddl-auto: update`, 운영�
 | `media` | `Media` | 게시글 첨부(이미지/동영상/링크) — S3 업로드 상태 + Rekognition 모더레이션 결과 |
 | `territory` | `Territory` | 러닝 땅따먹기의 "땅" 1구획 — 닫힌 GPS 도형 1개, 소유자·HP·폴리곤 |
 | `territory_contribution` | `TerritoryContribution` | 한 땅에 대한 공격 기여도 로그(러닝 1회 = 최대 1건), HP 0 시 점령자 판정용 |
+| `crew` | `Crew` | 크루(길드) — 크루명·아이콘·소개·공지, 크루장, 인원 |
+| `crew_member` | `CrewMember` | 크루-회원 소속 (한 회원 = 한 크루, `member_sno` 전역 UNIQUE) |
+| `crew_invitation` | `CrewInvitation` | 크루장 → 회원 초대 |
+| `crew_join_request` | `CrewJoinRequest` | 회원 → 크루 가입신청 |
 
 ## `member`
 
@@ -239,6 +243,54 @@ DDL로 시딩만 하고(자유게시판/질문/인증 3개), 생성/수정 API�
 | create_at / update_at | LocalDateTime | |
 
 **주의**: `REJECTED`(모더레이션 거부 또는 용량 초과)로 판정되면 S3 객체 자체를 즉시 삭제합니다(`s3:DeleteObject`) — 버킷의 `media/` prefix가 공개 읽기이므로, API가 URL을 응답에 노출하지 않더라도 객체가 남아있으면 키를 아는 사람이 직접 접근할 수 있기 때문입니다. `post_sno`에 DB 레벨 FK 제약은 없습니다(이 저장소의 다른 테이블과 동일하게 애플리케이션 레벨 조인).
+
+## `crew` / `crew_member` / `crew_invitation` / `crew_join_request`
+
+크루(길드) 1단계. 마이그레이션: [migrations/2026-08-28_crew_feature.sql](./migrations/2026-08-28_crew_feature.sql). 도메인 규칙은 [domains.md](./domains.md#크루crew-도메인) 참고. `member` 참조 컬럼은 `BIGINT`(`record_track.uno` 등과 동일). 크루 해체는 **하드 삭제**(네 테이블 모두).
+
+### `crew`
+
+| 컬럼 | 타입(Java) | 설명 |
+|---|---|---|
+| sno | Long (PK, IDENTITY) | |
+| name | String, not null, **UNIQUE** | 2~20자(앱 검증). `uk_crew_name` |
+| icon_url | String, nullable | 모더레이션 통과한 `media`의 url을 복사 저장 |
+| description | String, nullable | 크루 소개(≤500) |
+| notice | String, nullable | 공지사항(≤2000). 크루원에게만 응답에 노출 |
+| join_policy | String | `APPROVAL`(v1은 이 값만) |
+| member_limit | int, not null | 기본 30 (`paceleague.crew.member-limit-default`) |
+| leader_member_sno | Long, not null | 현재 크루장 `member.sno` |
+| member_count | int, not null | 현재 인원. 가입/탈퇴 시 `Crew` row 비관적 락으로 갱신 |
+| status | String | `ACTIVE` (해체는 하드 삭제라 `DISBANDED`는 실사용 안 함) |
+| create_at / update_at | LocalDateTime | |
+
+### `crew_member`
+
+| 컬럼 | 타입(Java) | 설명 |
+|---|---|---|
+| sno | Long (PK, IDENTITY) | |
+| crew_sno / member_sno | Long, not null | `(crew_sno, member_sno)` UNIQUE, **`member_sno` 전역 UNIQUE**(한 회원 = 한 크루) |
+| role | String | `LEADER` / `MEMBER` |
+| joined_at | LocalDateTime | |
+
+### `crew_invitation`
+
+| 컬럼 | 타입(Java) | 설명 |
+|---|---|---|
+| sno | Long (PK, IDENTITY) | |
+| crew_sno / inviter_member_sno / invitee_member_sno | Long, not null | |
+| status | String | `PENDING`/`ACCEPTED`/`DECLINED`/`CANCELED`/`EXPIRED` |
+| create_at / expires_at | LocalDateTime | `expires_at` = 생성 + `paceleague.crew.invitation-expire-days`(7). 조회/수락 시점에 만료 판정 |
+
+### `crew_join_request`
+
+| 컬럼 | 타입(Java) | 설명 |
+|---|---|---|
+| sno | Long (PK, IDENTITY) | |
+| crew_sno / member_sno | Long, not null | |
+| status | String | `PENDING`/`APPROVED`/`REJECTED`/`CANCELED` |
+| message | String, nullable | 신청 시 한 줄 메시지(≤300) |
+| create_at / decided_at | LocalDateTime | |
 
 ## Redis
 

@@ -1,12 +1,13 @@
 package com.example.paceleague;
 
 import com.example.paceleague.common.config.JwtProperties;
+import com.example.paceleague.crew.config.CrewProperties;
 import com.example.paceleague.territory.config.TerritoryProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
-@EnableConfigurationProperties({JwtProperties.class, TerritoryProperties.class})
+@EnableConfigurationProperties({JwtProperties.class, TerritoryProperties.class, CrewProperties.class})
 @SpringBootApplication
 public class PaceleagueApplication {
 

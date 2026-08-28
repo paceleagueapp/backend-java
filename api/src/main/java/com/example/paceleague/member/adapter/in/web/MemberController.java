@@ -1,26 +1,47 @@
 package com.example.paceleague.member.adapter.in.web;
 
 import com.example.paceleague.common.response.ResponseApi;
+import com.example.paceleague.common.web.MemberSno;
 import com.example.paceleague.member.application.dto.*;
 import com.example.paceleague.member.application.port.in.MemberAuthService;
+import com.example.paceleague.member.application.port.in.SearchMembersPort;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/member")
 @Tag(name = "Member", description = "회원 인증 API")
 public class MemberController {
     private final MemberAuthService authService;
+    private final SearchMembersPort searchMembersPort;
 
-    public MemberController(MemberAuthService authService) {
+    public MemberController(MemberAuthService authService, SearchMembersPort searchMembersPort) {
         this.authService = authService;
+        this.searchMembersPort = searchMembersPort;
+    }
+
+    @Operation(summary = "회원 검색", description = "아이디(접두 일치) 또는 닉네임(부분 일치)으로 회원을 찾습니다. 크루 초대 대상 선택 등에 사용. 로그인 필요.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/search")
+    public ResponseApi<List<MemberSearchResult>> search(
+            @MemberSno Long memberSno,
+            @Parameter(description = "검색어(아이디/닉네임)") @RequestParam String q
+    ) {
+        return ResponseApi.success(searchMembersPort.search(q, 20));
     }
 
     @Operation(summary = "회원가입", description = "회원가입 후 access/refresh token 발급")

@@ -170,6 +170,20 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 기본값(운영/로컬 공통 설정): access token 300초(5분), refresh token 1,209,600초(14일). 자세한 토큰 구조는 [auth.md](./auth.md) 참고.
 
+### GET `/api/member/search` — 회원 검색 (인증 필요)
+
+크루 초대 대상 등을 아이디/닉네임으로 찾습니다. `member_id` 접두 일치 또는 `nickname` 부분 일치(아이디 정확 일치 우선), 최대 20건.
+
+| Query | 설명 |
+|---|---|
+| q | 검색어(아이디/닉네임). **필수** |
+
+**Response** `200 OK` — `data`: `MemberSearchResult[]`
+
+```json
+[ { "memberSno": 42, "memberId": "runner01", "nickname": "달리는곰" } ]
+```
+
 ---
 
 ## Record API (`/api/record`) — 인증 필요
@@ -427,6 +441,40 @@ join/login/reissue가 공통으로 반환하는 구조:
 | mine | 호출자 소유 여부. 비로그인이면 항상 `false` |
 
 **마이그레이션**: [migrations/2026-08-27_territory_feature.sql](./migrations/2026-08-27_territory_feature.sql) (운영은 배포 전 직접 실행. `record_track.territory_mode` 컬럼 + `territory`/`territory_contribution` 테이블)
+
+---
+
+## Crew API (`/api/crew`) — 크루(길드)
+
+크루 생성/검색/초대/가입신청/크루원 관리(2026-08-28 1단계). 도메인 규칙은 [domains.md](./domains.md#크루crew-도메인) 참고. **크루 검색만 공개**, 나머지는 전부 로그인 필요. `web/crew.html` 이 이 API를 사용.
+
+전제: **한 회원 = 한 크루**. 가입 방식은 승인제만. 알림 시스템이 없어 초대받은 회원은 `GET /api/crew/invitations/me` 로 확인.
+
+| 메서드 · 경로 | 설명 |
+|---|---|
+| `POST /api/crew` | 크루 생성 `{ name, iconMediaId?, description? }`. 크루 없는 회원만. 생성자가 크루장+첫 크루원 |
+| `GET /api/crew/search?q=` | **공개**. 크루명 부분 일치(q 없으면 이름순 목록). 공개 정보만 |
+| `GET /api/crew/me` | 내 크루 상세. 없으면 `data: null` |
+| `GET /api/crew/{crewSno}` | 크루 상세. 요청자가 크루원이면 `notice`+`members`(닉네임·티어) 포함, 아니면 공개 정보만 (`viewerIsMember`/`viewerIsLeader`) |
+| `PUT /api/crew/{crewSno}` | 크루장: `{ name, iconMediaId?, iconUrl?, description?, notice? }` 통째 갱신. 아이콘 미변경 시 현재 `iconUrl` 을 그대로 echo |
+| `DELETE /api/crew/{crewSno}` | 크루장: 해체(혼자 남았을 때만). 관련 데이터 전부 하드 삭제 |
+| `DELETE /api/crew/{crewSno}/members/me` | 크루원 탈퇴. 크루장은 위임/해체 먼저 |
+| `DELETE /api/crew/{crewSno}/members/{targetMemberSno}` | 크루장: 추방 |
+| `POST /api/crew/{crewSno}/leader` `{ inviteeMemberSno }` | 크루장 위임(기존 크루장은 일반 크루원) |
+| `POST /api/crew/{crewSno}/invitations` `{ inviteeMemberSno }` | 크루장: 회원 초대 |
+| `GET /api/crew/invitations/me` | 내가 받은 PENDING 초대 목록(만료분 제외) |
+| `POST /api/crew/invitations/{id}/accept` \| `/decline` | 초대 수락(→ 가입) / 거절 |
+| `DELETE /api/crew/invitations/{id}` | 크루장: 보낸 초대 취소 |
+| `POST /api/crew/{crewSno}/join-requests` `{ message? }` | 회원: 가입신청 |
+| `GET /api/crew/{crewSno}/join-requests` | 크루장: 대기 중 신청 목록 |
+| `POST /api/crew/join-requests/{id}/approve` \| `/reject` | 크루장: 승인(→ 가입) / 거절 |
+| `DELETE /api/crew/join-requests/{id}` | 신청자: 신청 취소 |
+
+초대 대상은 [GET /api/member/search](#get-apimembersearch--회원-검색-인증-필요) 로 찾는다.
+
+**실패**: 이름 길이/중복, 이미 크루 소속, 정원 초과, 크루장 아님, 만료된 초대, 크루원 남은 상태에서 해체 등 → 400.
+
+**마이그레이션**: [migrations/2026-08-28_crew_feature.sql](./migrations/2026-08-28_crew_feature.sql) (운영은 배포 전 직접 실행. `crew`/`crew_member`/`crew_invitation`/`crew_join_request` 4개 테이블)
 
 ---
 

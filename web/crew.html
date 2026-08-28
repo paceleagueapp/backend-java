@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>크루 - Pace League</title>
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-K4Q3GDB8');</script>
+  <!-- End Google Tag Manager -->
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #fff; min-height: 100vh; }
+    .page { max-width: 720px; margin: 0 auto; padding: 20px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+    header h1 a { display: flex; align-items: center; gap: 8px; text-decoration: none; color: #fff; }
+    .site-logo { height: 28px; width: auto; display: block; }
+    .site-name { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .btn { background: #e53935; color: #fff; text-decoration: none; border: none; padding: 8px 16px; border-radius: 18px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn:hover { background: #c62828; }
+    .btn.ghost { background: none; color: #ccc; border: 1px solid #333; }
+    .btn.sm { padding: 5px 12px; font-size: 12px; }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+    #lang-select { background: #1a1a1a; color: #ccc; border: 1px solid #333; border-radius: 16px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
+
+    .main-nav { display: flex; gap: 8px; margin-bottom: 18px; }
+    .main-nav a { background: #1a1a1a; color: #ccc; padding: 9px 18px; border-radius: 16px; font-size: 14px; font-weight: 700; text-decoration: none; }
+    .main-nav a:hover { background: #262626; }
+    .main-nav a.active { background: #e53935; color: #fff; }
+
+    .card { background: #1a1a1a; border: 1px solid #262626; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .card h2 { font-size: 15px; margin-bottom: 12px; color: #eee; }
+    .muted { color: #888; font-size: 13px; }
+    .row { display: flex; align-items: center; gap: 10px; }
+    input[type=text], input[type=search], textarea {
+      width: 100%; background: #0f0f0f; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px; font-size: 14px; margin-bottom: 8px;
+    }
+    textarea { min-height: 70px; resize: vertical; }
+    .crew-icon { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; background: #262626; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; color: #fff; }
+
+    .list { list-style: none; }
+    .list li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #262626; }
+    .list li:last-child { border-bottom: none; }
+    .grow { flex: 1; min-width: 0; }
+    .nick { font-weight: 600; }
+    .tier-badge { background: #262626; color: #ccc; border-radius: 10px; padding: 1px 8px; font-size: 11px; }
+    .leader-badge { background: #e5393533; color: #ff8a80; border-radius: 10px; padding: 1px 8px; font-size: 11px; }
+    .notice-box { white-space: pre-wrap; background: #0f0f0f; border: 1px solid #262626; border-radius: 8px; padding: 12px; font-size: 14px; color: #ddd; }
+    .msg { font-size: 13px; margin: 8px 0; min-height: 18px; }
+    .msg.err { color: #ff6b6b; }
+    .msg.ok { color: #7bd88f; }
+    .hidden { display: none !important; }
+    footer { text-align: center; color: #444; font-size: 13px; padding: 30px 0; }
+  </style>
+</head>
+<body>
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-K4Q3GDB8" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+  <div class="page">
+    <header>
+      <h1><a href="/index.html"><img class="site-logo" src="/img/logo.png" alt="Pace League"><span class="site-name">PACELEAGUE</span></a></h1>
+      <div class="header-actions">
+        <select id="lang-select" aria-label="language"></select>
+        <span id="auth-actions"></span>
+      </div>
+    </header>
+
+    <nav class="main-nav">
+      <a href="/index.html" id="nav-community">커뮤니티</a>
+      <a href="/territory.html" id="nav-landit">랜드잇</a>
+      <a href="/crew.html" class="active" id="nav-crew">크루</a>
+    </nav>
+
+    <div id="view"><p class="muted">불러오는 중...</p></div>
+  </div>
+  <footer>PaceLeague</footer>
+
+  <script src="/js/app.js?v=20260828b"></script>
+  <script src="/js/i18n.js?v=20260828b"></script>
+  <script src="/js/crew.js?v=20260828b"></script>
+</body>
+</html>

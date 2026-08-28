@@ -52,6 +52,8 @@ public class SecurityConfig {
                         ).permitAll()
                         // 땅따먹기 지도는 비로그인도 볼 수 있다(로그인 시 mine 플래그만 추가로 채워짐).
                         .requestMatchers(HttpMethod.GET, "/api/territory/map").permitAll()
+                        // 크루 검색은 비로그인도 가능(크루 상세/내 크루 등 나머지는 로그인 필요).
+                        .requestMatchers(HttpMethod.GET, "/api/crew/search").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception

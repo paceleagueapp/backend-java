@@ -133,6 +133,35 @@ totalScore = baseScore + scaledScore + addScore
 - `REQUIRES_NEW` 특성상, 땅 판정 성공 후 바깥 GPS 트랜잭션이 실패하면 러닝은 롤백되어도 땅은 남는다(확률 낮음 — 바깥 트랜잭션의 마지막 단계가 세션 저장뿐).
 - 모바일 앱이 `territoryMode`를 보내기 전까지는 실제로 아무 땅도 생성되지 않는다(하위호환: 필드 없으면 false).
 
+## 크루(Crew) 도메인
+
+`crew` 패키지 (2026-08-28 1단계 구현). 게임의 길드. 전체 기획은 Notion "크루" 문서, 단계별 작업은 [crew-implementation-plan.md](./crew-implementation-plan.md) 참고. 이번 범위(1단계): 생성·검색·초대·가입신청·크루원 관리. 크루원 랭킹·게시판/랭킹 배지·땅따먹기 크루전은 2·3단계.
+
+### 핵심 규칙
+
+- **한 회원 = 한 크루**: `crew_member.member_sno` 전역 UNIQUE로 강제. 새 크루를 만들거나 다른 크루에 들어가려면 먼저 탈퇴해야 한다.
+- **가입 방식은 승인제 하나만**(v1). `join_policy` 컬럼은 두되 항상 `APPROVAL`.
+- **초대 권한은 크루장만**. 부크루장/운영진 역할 없음.
+- **알림 시스템 없음** — 초대받은 회원은 `GET /api/crew/invitations/me` 를 봐야 안다.
+- **크루장 탈퇴 불가** — 크루장 위임(`POST /api/crew/{sno}/leader`) 또는 크루 해체 후에만.
+- **크루 해체는 크루장 혼자 남았을 때만**. 해체 시 `crew`/`crew_member`/`crew_invitation`/`crew_join_request` 전부 **하드 삭제**(JPA cascade 안 씀 — 서비스에서 순서 명시). 크루명은 즉시 재사용 가능.
+
+### 가입 확정 동시성 (`CrewMembershipManager`)
+
+초대 수락 / 가입신청 승인 양쪽이 같은 "가입 확정" 로직을 쓴다: `Crew` row를 `PESSIMISTIC_WRITE`로 잠근 뒤 정원(`isFull`)·중복 소속을 재확인하고 `CrewMember` insert + `member_count++`. `MemberScore.addScore`와 동일한 락 패턴. 마지막 한 자리에 두 명이 동시에 들어오는 경쟁을 직렬화한다. 단일 인스턴스 전제.
+
+### 크루 상세 응답 (`GET /api/crew/{sno}`)
+
+로그인 필요. 요청자가 그 크루의 크루원이면 `notice` + `members`(닉네임·티어 배지·크루장 표시)가 함께 오고, 아니면 공개 정보(이름·아이콘·소개·인원)만 온다(`viewerIsMember`/`viewerIsLeader` 플래그). 크루 검색(`GET /api/crew/search`)은 비로그인 공개, 공개 정보만.
+
+### 크루 아이콘
+
+`iconMediaId`(미리 `media` 업로드로 APPROVED된 이미지의 sno)를 받아 `media.GetApprovedMediaUrlPort.requireApprovedUrl(mediaSno, ownerMemberSno)`로 본인 소유 + APPROVED 검증 후 그 URL을 `crew.icon_url`에 복사 저장. 아이콘 미설정 크루는 클라이언트에서 크루명 첫 글자 + 해시 색상 플레이스홀더로 표시.
+
+### 회원 검색 (`GET /api/member/search?q=`)
+
+크루 초대 대상을 고르기 위한 엔드포인트(로그인 필요). `member` 도메인에 추가된 `SearchMembersPort` — `member_id` 접두 일치 또는 `nickname` 부분 일치, 아이디 정확 일치 우선.
+
 ## 커뮤니티(Board) 도메인
 
 `board` 패키지. 보드(카테고리) → 게시글 → 댓글(1단계) → 추천/비추천 구조. 레딧처럼 **조회(GET)는 비로그인도 가능**하고, 작성/삭제/추천(POST/DELETE)만 로그인이 필요합니다 — `SecurityConfig`에 `HttpMethod.GET` 한정으로 `/api/board`, `/api/board/*/posts`, `/api/board/posts/*`, `/api/board/posts/*/comments` 4개 경로만 `permitAll`, 나머지(같은 경로의 POST/DELETE 포함)는 기본 `anyRequest().authenticated()`에 걸림. `BoardController`는 이 4개 조회 엔드포인트에서 `@MemberSno(required = false) Long memberSno`(비로그인이면 `null`)를 쓰고, 나머지 쓰기 엔드포인트는 기본값인 `@MemberSno Long memberSno`(비로그인이면 예외)를 그대로 씀 — 인증된 컨트롤러 전체가 공유하는 `common.web.MemberSnoArgumentResolver`([architecture.md](./architecture.md) 참고)의 `required` 옵션 차이.

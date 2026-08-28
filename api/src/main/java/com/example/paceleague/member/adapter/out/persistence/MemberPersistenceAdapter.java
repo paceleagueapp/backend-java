@@ -3,8 +3,10 @@ package com.example.paceleague.member.adapter.out.persistence;
 import com.example.paceleague.member.application.port.out.MemberRepositoryPort;
 import com.example.paceleague.member.domain.entity.Member;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -27,5 +29,9 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
 
     public Member save(Member member) {
         return memberJpaRepository.save(member);
+    }
+
+    public List<Member> searchByMemberIdOrNickname(String query, int limit) {
+        return memberJpaRepository.searchByMemberIdOrNickname(query, PageRequest.of(0, limit));
     }
 }

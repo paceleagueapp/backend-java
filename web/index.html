@@ -148,6 +148,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <nav class="main-nav">
         <a href="/index.html" class="active" id="nav-community">커뮤니티</a>
         <a href="/territory.html" id="nav-landit">랜드잇</a>
+        <a href="/crew.html" id="nav-crew">크루</a>
       </nav>
 
       <div id="content"></div>
@@ -181,8 +182,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </dialog>
 
-  <script src="/js/app.js?v=20260828"></script>
-  <script src="/js/i18n.js?v=20260828"></script>
+  <script src="/js/app.js?v=20260828b"></script>
+  <script src="/js/i18n.js?v=20260828b"></script>
   <script>
     var postEditor = createPostEditor({
       editorEl: document.getElementById('write-content'),
@@ -196,7 +197,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     renderHeader();
     // nav 라벨: i18n 키가 해석되면 번역으로 교체, 아니면 HTML의 한국어 기본값 유지(옛 i18n.js 캐시 대비)
-    ['nav-community:navCommunity', 'nav-landit:navLandit'].forEach(function (pair) {
+    ['nav-community:navCommunity', 'nav-landit:navLandit', 'nav-crew:navCrew'].forEach(function (pair) {
       var id = pair.split(':')[0], key = pair.split(':')[1];
       var el = document.getElementById(id), v = t(key);
       if (el && v && v !== key) el.textContent = v;

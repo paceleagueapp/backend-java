@@ -249,19 +249,52 @@ var TRANSLATIONS = {
 
 // 땅따먹기 지도(territory.html) 전용 문자열 + 상단 네비게이션 라벨 — 위 TRANSLATIONS에 병합.
 var TERRITORY_STRINGS = {
-  ko: { navCommunity: '커뮤니티', navLandit: '랜드잇', mapTitle: '랜드잇', territoryZoomIn: '지도를 더 확대하면 점령된 땅이 표시됩니다', territoryOwner: '점령자', territoryHp: '체력', territoryMine: '내 땅', territoryLoadFailed: '땅 정보를 불러오지 못했습니다', territoryLocating: '현재 위치를 찾는 중...' },
-  en: { navCommunity: 'Community', navLandit: 'Landeat', mapTitle: 'Landeat', territoryZoomIn: 'Zoom in to see claimed territories', territoryOwner: 'Owner', territoryHp: 'HP', territoryMine: 'My territory', territoryLoadFailed: 'Failed to load territories', territoryLocating: 'Finding your location...' },
-  ja: { navCommunity: 'コミュニティ', navLandit: 'Landeat', mapTitle: 'Landeat', territoryZoomIn: '地図を拡大すると占領された土地が表示されます', territoryOwner: '占領者', territoryHp: '体力', territoryMine: '自分の土地', territoryLoadFailed: '土地情報を読み込めませんでした', territoryLocating: '現在地を取得中...' },
-  zh: { navCommunity: '社区', navLandit: 'Landeat', mapTitle: 'Landeat', territoryZoomIn: '放大地图即可查看已占领的领地', territoryOwner: '占领者', territoryHp: '生命值', territoryMine: '我的领地', territoryLoadFailed: '加载领地信息失败', territoryLocating: '正在获取当前位置...' },
-  es: { navCommunity: 'Comunidad', navLandit: 'Landeat', mapTitle: 'Landeat', territoryZoomIn: 'Acerca el mapa para ver los territorios conquistados', territoryOwner: 'Dueño', territoryHp: 'PV', territoryMine: 'Mi territorio', territoryLoadFailed: 'Error al cargar los territorios', territoryLocating: 'Buscando tu ubicación...' },
-  fr: { navCommunity: 'Communauté', navLandit: 'Landeat', mapTitle: 'Landeat', territoryZoomIn: 'Zoomez pour voir les territoires conquis', territoryOwner: 'Propriétaire', territoryHp: 'PV', territoryMine: 'Mon territoire', territoryLoadFailed: 'Échec du chargement des territoires', territoryLocating: 'Recherche de votre position...' },
-  de: { navCommunity: 'Community', navLandit: 'Landeat', mapTitle: 'Landeat', territoryZoomIn: 'Zoome hinein, um eroberte Gebiete zu sehen', territoryOwner: 'Besitzer', territoryHp: 'TP', territoryMine: 'Mein Gebiet', territoryLoadFailed: 'Gebiete konnten nicht geladen werden', territoryLocating: 'Standort wird ermittelt...' },
-  pt: { navCommunity: 'Comunidade', navLandit: 'Landeat', mapTitle: 'Landeat', territoryZoomIn: 'Aproxime o mapa para ver os territórios conquistados', territoryOwner: 'Dono', territoryHp: 'PV', territoryMine: 'Meu território', territoryLoadFailed: 'Falha ao carregar os territórios', territoryLocating: 'Localizando você...' },
-  vi: { navCommunity: 'Cộng đồng', navLandit: 'Landeat', mapTitle: 'Landeat', territoryZoomIn: 'Phóng to bản đồ để xem các vùng đất đã chiếm', territoryOwner: 'Chủ sở hữu', territoryHp: 'HP', territoryMine: 'Đất của tôi', territoryLoadFailed: 'Không tải được thông tin vùng đất', territoryLocating: 'Đang tìm vị trí của bạn...' },
-  th: { navCommunity: 'ชุมชน', navLandit: 'Landeat', mapTitle: 'Landeat', territoryZoomIn: 'ซูมเข้าเพื่อดูพื้นที่ที่ถูกยึดครอง', territoryOwner: 'ผู้ยึดครอง', territoryHp: 'พลังชีวิต', territoryMine: 'พื้นที่ของฉัน', territoryLoadFailed: 'โหลดข้อมูลพื้นที่ไม่สำเร็จ', territoryLocating: 'กำลังค้นหาตำแหน่งของคุณ...' }
+  ko: { navCommunity: '커뮤니티', navLandit: '랜드잇', navCrew: '크루', mapTitle: '랜드잇', territoryZoomIn: '지도를 더 확대하면 점령된 땅이 표시됩니다', territoryOwner: '점령자', territoryHp: '체력', territoryMine: '내 땅', territoryLoadFailed: '땅 정보를 불러오지 못했습니다', territoryLocating: '현재 위치를 찾는 중...' },
+  en: { navCommunity: 'Community', navLandit: 'Landeat', navCrew: 'Crew', mapTitle: 'Landeat', territoryZoomIn: 'Zoom in to see claimed territories', territoryOwner: 'Owner', territoryHp: 'HP', territoryMine: 'My territory', territoryLoadFailed: 'Failed to load territories', territoryLocating: 'Finding your location...' },
+  ja: { navCommunity: 'コミュニティ', navLandit: 'Landeat', navCrew: 'Crew', mapTitle: 'Landeat', territoryZoomIn: '地図を拡大すると占領された土地が表示されます', territoryOwner: '占領者', territoryHp: '体力', territoryMine: '自分の土地', territoryLoadFailed: '土地情報を読み込めませんでした', territoryLocating: '現在地を取得中...' },
+  zh: { navCommunity: '社区', navLandit: 'Landeat', navCrew: 'Crew', mapTitle: 'Landeat', territoryZoomIn: '放大地图即可查看已占领的领地', territoryOwner: '占领者', territoryHp: '生命值', territoryMine: '我的领地', territoryLoadFailed: '加载领地信息失败', territoryLocating: '正在获取当前位置...' },
+  es: { navCommunity: 'Comunidad', navLandit: 'Landeat', navCrew: 'Crew', mapTitle: 'Landeat', territoryZoomIn: 'Acerca el mapa para ver los territorios conquistados', territoryOwner: 'Dueño', territoryHp: 'PV', territoryMine: 'Mi territorio', territoryLoadFailed: 'Error al cargar los territorios', territoryLocating: 'Buscando tu ubicación...' },
+  fr: { navCommunity: 'Communauté', navLandit: 'Landeat', navCrew: 'Crew', mapTitle: 'Landeat', territoryZoomIn: 'Zoomez pour voir les territoires conquis', territoryOwner: 'Propriétaire', territoryHp: 'PV', territoryMine: 'Mon territoire', territoryLoadFailed: 'Échec du chargement des territoires', territoryLocating: 'Recherche de votre position...' },
+  de: { navCommunity: 'Community', navLandit: 'Landeat', navCrew: 'Crew', mapTitle: 'Landeat', territoryZoomIn: 'Zoome hinein, um eroberte Gebiete zu sehen', territoryOwner: 'Besitzer', territoryHp: 'TP', territoryMine: 'Mein Gebiet', territoryLoadFailed: 'Gebiete konnten nicht geladen werden', territoryLocating: 'Standort wird ermittelt...' },
+  pt: { navCommunity: 'Comunidade', navLandit: 'Landeat', navCrew: 'Crew', mapTitle: 'Landeat', territoryZoomIn: 'Aproxime o mapa para ver os territórios conquistados', territoryOwner: 'Dono', territoryHp: 'PV', territoryMine: 'Meu território', territoryLoadFailed: 'Falha ao carregar os territórios', territoryLocating: 'Localizando você...' },
+  vi: { navCommunity: 'Cộng đồng', navLandit: 'Landeat', navCrew: 'Crew', mapTitle: 'Landeat', territoryZoomIn: 'Phóng to bản đồ để xem các vùng đất đã chiếm', territoryOwner: 'Chủ sở hữu', territoryHp: 'HP', territoryMine: 'Đất của tôi', territoryLoadFailed: 'Không tải được thông tin vùng đất', territoryLocating: 'Đang tìm vị trí của bạn...' },
+  th: { navCommunity: 'ชุมชน', navLandit: 'Landeat', navCrew: 'Crew', mapTitle: 'Landeat', territoryZoomIn: 'ซูมเข้าเพื่อดูพื้นที่ที่ถูกยึดครอง', territoryOwner: 'ผู้ยึดครอง', territoryHp: 'พลังชีวิต', territoryMine: 'พื้นที่ของฉัน', territoryLoadFailed: 'โหลดข้อมูลพื้นที่ไม่สำเร็จ', territoryLocating: 'กำลังค้นหาตำแหน่งของคุณ...' }
 };
 Object.keys(TERRITORY_STRINGS).forEach(function (code) {
   if (TRANSLATIONS[code]) { Object.assign(TRANSLATIONS[code], TERRITORY_STRINGS[code]); }
+});
+
+// 크루 페이지(crew.html) 문자열. ko/en 만 채우고 나머지 언어는 t()의 ko 폴백을 쓴다(v1).
+var CREW_STRINGS = {
+  ko: {
+    crewInvitesTitle: '받은 초대', crewNoInvites: '받은 초대가 없습니다', crewAccept: '수락', crewDecline: '거절',
+    crewSearchTitle: '크루 검색', crewSearchPlaceholder: '크루명으로 검색', crewNoResults: '결과가 없습니다', crewApply: '가입신청',
+    crewCreateTitle: '크루 만들기', crewNamePlaceholder: '크루명 (2~20자)', crewDescPlaceholder: '크루 소개 (선택)',
+    crewCreateBtn: '크루 만들기', crewNameRequired: '크루명을 입력해주세요', crewCreating: '만드는 중...', crewCreateFailed: '크루 생성에 실패했습니다',
+    crewNoticeTitle: '공지사항', crewNoNotice: '아직 공지가 없습니다', crewMembersTitle: '크루원', crewLeaderBadge: '크루장',
+    crewKick: '추방', crewTransfer: '위임', crewLeave: '크루 탈퇴', crewLeaveConfirm: '크루에서 탈퇴할까요?',
+    crewKickConfirm: '이 크루원을 내보낼까요?', crewTransferConfirm: '이 크루원에게 크루장을 위임할까요?',
+    crewManageTitle: '크루 관리', crewInviteTitle: '회원 초대', crewInvitePlaceholder: '아이디 또는 닉네임 검색',
+    crewInviteBtn: '초대', crewInvited: '초대함', crewJoinReqTitle: '가입신청', crewNoJoinReq: '대기 중인 신청이 없습니다',
+    crewApprove: '승인', crewReject: '거절', crewEditTitle: '크루 정보 수정', crewNoticePlaceholder: '공지사항 (선택)',
+    crewSaving: '저장 중...', crewSaveFailed: '저장에 실패했습니다', crewDisband: '크루 해체', crewDisbandConfirm: '정말 크루를 해체할까요? 되돌릴 수 없습니다.'
+  },
+  en: {
+    crewInvitesTitle: 'Invitations', crewNoInvites: 'No invitations', crewAccept: 'Accept', crewDecline: 'Decline',
+    crewSearchTitle: 'Find a crew', crewSearchPlaceholder: 'Search by crew name', crewNoResults: 'No results', crewApply: 'Request to join',
+    crewCreateTitle: 'Create a crew', crewNamePlaceholder: 'Crew name (2-20 chars)', crewDescPlaceholder: 'Crew description (optional)',
+    crewCreateBtn: 'Create crew', crewNameRequired: 'Please enter a crew name', crewCreating: 'Creating...', crewCreateFailed: 'Failed to create crew',
+    crewNoticeTitle: 'Notice', crewNoNotice: 'No notice yet', crewMembersTitle: 'Members', crewLeaderBadge: 'Leader',
+    crewKick: 'Kick', crewTransfer: 'Transfer', crewLeave: 'Leave crew', crewLeaveConfirm: 'Leave this crew?',
+    crewKickConfirm: 'Remove this member?', crewTransferConfirm: 'Transfer leadership to this member?',
+    crewManageTitle: 'Manage crew', crewInviteTitle: 'Invite a member', crewInvitePlaceholder: 'Search by username or nickname',
+    crewInviteBtn: 'Invite', crewInvited: 'Invited', crewJoinReqTitle: 'Join requests', crewNoJoinReq: 'No pending requests',
+    crewApprove: 'Approve', crewReject: 'Reject', crewEditTitle: 'Edit crew info', crewNoticePlaceholder: 'Notice (optional)',
+    crewSaving: 'Saving...', crewSaveFailed: 'Failed to save', crewDisband: 'Disband crew', crewDisbandConfirm: 'Disband this crew? This cannot be undone.'
+  }
+};
+Object.keys(CREW_STRINGS).forEach(function (code) {
+  if (TRANSLATIONS[code]) { Object.assign(TRANSLATIONS[code], CREW_STRINGS[code]); }
 });
 
 function getLang() {
