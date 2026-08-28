@@ -39,4 +39,17 @@ public interface TerritoryJpaRepository extends JpaRepository<Territory, Long> {
                                                         @Param("minLng") BigDecimal minLng,
                                                         @Param("maxLat") BigDecimal maxLat,
                                                         @Param("maxLng") BigDecimal maxLng);
+
+    // 소유자별 총 점령 면적 랭킹(면적 큰 순).
+    @Query(value = """
+            select owner_member_sno as ownerMemberSno,
+                   sum(area_sqm)     as totalAreaSqm,
+                   count(*)          as territoryCount
+            from territory
+            where status = 'ACTIVE'
+            group by owner_member_sno
+            order by totalAreaSqm desc
+            limit :limit
+            """, nativeQuery = true)
+    List<TerritoryOwnerAreaProjection> findTopOwnersByArea(@Param("limit") int limit);
 }

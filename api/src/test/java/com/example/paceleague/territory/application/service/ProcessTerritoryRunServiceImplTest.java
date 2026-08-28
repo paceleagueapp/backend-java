@@ -54,7 +54,7 @@ class ProcessTerritoryRunServiceImplTest {
     @BeforeEach
     void setUp() {
         TerritoryProperties props = new TerritoryProperties(
-                null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null);
         service = new ProcessTerritoryRunServiceImpl(
                 territoryRepositoryPort, contributionRepositoryPort, getCurrentSeasonPort,
                 getMemberNicknamePort, props, objectMapper);
