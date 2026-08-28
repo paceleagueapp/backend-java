@@ -99,15 +99,15 @@
     <div id="map"></div>
     <div id="status" class="hidden"></div>
     <div id="zoom-hint" class="hidden"></div>
-    <button class="btn rank-toggle" id="rank-toggle">랭킹</button>
+    <button class="btn rank-toggle" id="rank-toggle">랜드잇 랭킹</button>
     <div class="rank-panel hidden" id="rank-panel">
-      <h2 id="rank-title">땅따먹기 랭킹</h2>
+      <h2 id="rank-title">랜드잇 랭킹</h2>
       <div id="rank-list"></div>
     </div>
   </div>
 
-  <script src="/js/app.js?v=20260828e"></script>
-  <script src="/js/i18n.js?v=20260828e"></script>
+  <script src="/js/app.js?v=20260828f"></script>
+  <script src="/js/i18n.js?v=20260828f"></script>
   <script>
     // ── Google Maps API 키 ──────────────────────────────────────────────────────
     // "Maps JavaScript API" 전용, HTTP 리퍼러 제한(paceleague.co.kr / www / localhost) 걸린 키.
@@ -135,7 +135,7 @@
     renderLangSelect(document.getElementById('lang-select'));
     renderAuthActions();
 
-    // ── 면적 기준 땅따먹기 랭킹 패널 ──────────────────────────────────────────────
+    // ── 면적 기준 랜드잇 랭킹 패널 ──────────────────────────────────────────────
     (function initRankingPanel() {
       var toggle = document.getElementById('rank-toggle');
       var panel = document.getElementById('rank-panel');
