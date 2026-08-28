@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>땅따먹기 지도 - Pace League</title>
+  <title>랜드잇 - Pace League</title>
   <link rel="icon" type="image/png" href="/img/favicon.png">
   <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -75,8 +75,8 @@
   </header>
 
   <nav class="main-nav">
-    <a href="/index.html" id="nav-community"></a>
-    <a href="/territory.html" class="active" id="nav-landit"></a>
+    <a href="/index.html" id="nav-community">커뮤니티</a>
+    <a href="/territory.html" class="active" id="nav-landit">랜드잇</a>
   </nav>
 
   <div class="map-wrap">
@@ -105,9 +105,12 @@
     var statusEl = document.getElementById('status');
     var zoomHintEl = document.getElementById('zoom-hint');
 
-    document.title = t('mapTitle') + ' - Pace League';
-    document.getElementById('nav-community').textContent = t('navCommunity');
-    document.getElementById('nav-landit').textContent = t('navLandit');
+    document.title = '랜드잇 - Pace League';
+    ['nav-community:navCommunity', 'nav-landit:navLandit'].forEach(function (pair) {
+      var id = pair.split(':')[0], key = pair.split(':')[1];
+      var el = document.getElementById(id), v = t(key);
+      if (el && v && v !== key) el.textContent = v;
+    });
     renderLangSelect(document.getElementById('lang-select'));
     renderAuthActions();
 

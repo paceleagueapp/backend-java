@@ -146,8 +146,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </header>
 
       <nav class="main-nav">
-        <a href="/index.html" class="active" id="nav-community"></a>
-        <a href="/territory.html" id="nav-landit"></a>
+        <a href="/index.html" class="active" id="nav-community">커뮤니티</a>
+        <a href="/territory.html" id="nav-landit">랜드잇</a>
       </nav>
 
       <div id="content"></div>
@@ -195,8 +195,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     });
 
     renderHeader();
-    document.getElementById('nav-community').textContent = t('navCommunity');
-    document.getElementById('nav-landit').textContent = t('navLandit');
+    // nav 라벨: i18n 키가 해석되면 번역으로 교체, 아니면 HTML의 한국어 기본값 유지(옛 i18n.js 캐시 대비)
+    ['nav-community:navCommunity', 'nav-landit:navLandit'].forEach(function (pair) {
+      var id = pair.split(':')[0], key = pair.split(':')[1];
+      var el = document.getElementById(id), v = t(key);
+      if (el && v && v !== key) el.textContent = v;
+    });
     renderFeed();
     renderTop10();
 
