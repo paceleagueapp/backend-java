@@ -28,6 +28,7 @@
     header h1 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
     header h1 a { color: #fff; text-decoration: none; display: flex; align-items: center; gap: 8px; }
     .site-logo { height: 24px; width: auto; display: block; }
+    .site-name { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
     .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .btn {
       background: #e53935; color: #fff; text-decoration: none; border: none;
@@ -39,6 +40,10 @@
       background: #1a1a1a; color: #ccc; border: 1px solid #333; border-radius: 16px;
       padding: 6px 10px; font-size: 13px; cursor: pointer;
     }
+    .main-nav { display: flex; gap: 8px; padding: 10px 16px; flex-shrink: 0; border-bottom: 1px solid #1f1f1f; }
+    .main-nav a { background: #1a1a1a; color: #ccc; padding: 8px 18px; border-radius: 16px; font-size: 14px; font-weight: 700; text-decoration: none; }
+    .main-nav a:hover { background: #262626; }
+    .main-nav a.active { background: #e53935; color: #fff; }
     .map-wrap { position: relative; flex: 1; min-height: 0; }
     #map { width: 100%; height: 100%; background: #1a1a1a; }
     #status, #zoom-hint {
@@ -62,12 +67,17 @@
   <!-- End Google Tag Manager (noscript) -->
 
   <header>
-    <h1><a href="/index.html"><img class="site-logo" src="/img/logo.png" alt="Pace League"><span id="page-title">땅따먹기 지도</span></a></h1>
+    <h1><a href="/index.html"><img class="site-logo" src="/img/logo.png" alt="Pace League"><span class="site-name">PACELEAGUE</span></a></h1>
     <div class="header-actions">
       <select id="lang-select" aria-label="language"></select>
       <span id="auth-actions"></span>
     </div>
   </header>
+
+  <nav class="main-nav">
+    <a href="/index.html" id="nav-community"></a>
+    <a href="/territory.html" class="active" id="nav-landit"></a>
+  </nav>
 
   <div class="map-wrap">
     <div id="map"></div>
@@ -95,8 +105,9 @@
     var statusEl = document.getElementById('status');
     var zoomHintEl = document.getElementById('zoom-hint');
 
-    document.getElementById('page-title').textContent = t('mapTitle');
     document.title = t('mapTitle') + ' - Pace League';
+    document.getElementById('nav-community').textContent = t('navCommunity');
+    document.getElementById('nav-landit').textContent = t('navLandit');
     renderLangSelect(document.getElementById('lang-select'));
     renderAuthActions();
 

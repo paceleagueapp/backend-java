@@ -61,6 +61,11 @@
     }
     footer { text-align: center; color: #444; font-size: 13px; padding: 30px 0; }
 
+    .main-nav { display: flex; gap: 8px; margin-bottom: 16px; }
+    .main-nav a { background: #1a1a1a; color: #ccc; padding: 9px 18px; border-radius: 16px; font-size: 14px; font-weight: 700; text-decoration: none; }
+    .main-nav a:hover { background: #262626; }
+    .main-nav a.active { background: #e53935; color: #fff; }
+
     .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
     .tab { background: #1a1a1a; color: #ccc; padding: 8px 14px; border-radius: 16px; font-size: 13px; text-decoration: none; }
     .tab.active { background: #e53935; color: #fff; }
@@ -140,6 +145,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="header-actions" id="header-actions"></div>
       </header>
 
+      <nav class="main-nav">
+        <a href="/index.html" class="active" id="nav-community"></a>
+        <a href="/territory.html" id="nav-landit"></a>
+      </nav>
+
       <div id="content"></div>
     </div>
 
@@ -185,6 +195,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     });
 
     renderHeader();
+    document.getElementById('nav-community').textContent = t('navCommunity');
+    document.getElementById('nav-landit').textContent = t('navLandit');
     renderFeed();
     renderTop10();
 
