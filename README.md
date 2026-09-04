@@ -114,7 +114,7 @@ GitHub push (main)
 ```text
 .
 ├── api/            Spring Boot 백엔드 (api.paceleague.co.kr)
-│   └── src/main/java/com/example/paceleague
+│   └── src/main/java/com/paceleague
 │       ├── member       회원 가입/로그인/토큰
 │       ├── record       러닝 기록 저장·조회, GPS 청크 수집
 │       ├── rank         내 점수/티어 조회

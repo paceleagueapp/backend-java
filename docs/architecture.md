@@ -57,7 +57,7 @@ Client
 포트화하는 대상은 딱 두 가지입니다: **(1)** 그 도메인 자신의 JPA 리포지토리, **(2)** 다른 도메인 저장소로의 실제 크로스 도메인 접근(예: `record`가 `rank`/`season`을 직접 찌르던 것, `board`가 `member`를 직접 찌르던 것). `StringRedisTemplate`, `TranslateClient`, `PasswordEncoder`, `JwtProperties` 같은 범용 인프라 클라이언트는 포트로 감싸지 않고 유스케이스 구현체에 그대로 주입합니다 — 여기까지 포트화하면 요청받지 않은 과도한 추상화이기 때문입니다(`MemberAuthServiceImpl`의 로그인 잠금 Redis 코드, `TranslationServiceImpl`의 AWS Translate/Redis 캐싱 코드가 대표적인 예).
 
 ```text
-com.example.paceleague
+com.paceleague
 ├── member       회원 가입/로그인/토큰 재발급/로그아웃 (인증 도메인)
 ├── record       러닝 기록 저장/조회, 기록 기반 점수 산출, GPS 청크 누적(record_track) + 유휴 세션 스위퍼(adapter/in/scheduler)
 ├── rank         "내 점수/티어" 조회 (개인 관점)

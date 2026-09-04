@@ -38,7 +38,7 @@ cd api
 ```bash
 cd api
 ./gradlew test
-./gradlew test --tests "com.example.paceleague.SomeTest"   # 단일 클래스만
+./gradlew test --tests "com.paceleague.SomeTest"   # 단일 클래스만
 ```
 
 ## 빌드

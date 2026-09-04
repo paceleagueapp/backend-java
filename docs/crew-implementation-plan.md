@@ -27,7 +27,7 @@ Notion "크루" 문서(기획) + 현재 코드베이스 컨벤션 기준 구현 
 
 ## 1단계 — 크루 기본
 
-### 백엔드: `crew` 신규 도메인 (`api/src/main/java/com/example/paceleague/crew/`, Clean Architecture)
+### 백엔드: `crew` 신규 도메인 (`api/src/main/java/com/paceleague/crew/`, Clean Architecture)
 
 | 구분 | 작업 |
 |---|---|

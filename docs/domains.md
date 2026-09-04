@@ -221,7 +221,7 @@ totalScore = baseScore + scaledScore + addScore
 
 - **지원 언어**: `ko`/`en`/`ja`/`zh`/`es`/`fr`/`de`/`pt`/`vi`/`th` 10개 — `TranslationServiceImpl.SUPPORTED_LANGUAGES`와 `web/js/i18n.js`의 `SUPPORTED_LANGUAGES`가 반드시 일치해야 함(하나를 바꾸면 다른 쪽도 같이 바꿀 것).
 - **비용 통제를 위해 조회성 동작인데도 로그인 필요**: board의 다른 조회(GET)는 전부 비로그인 공개인데, 번역만 유일하게 외부 유료 API(AWS Translate)를 호출하는 조회라 비로그인 남용으로 비용이 새는 걸 막기 위한 예외.
-- **Redis 캐싱**: 키 `translate:post:{sno}:{lang}` / `translate:comment:{sno}:{lang}`, TTL 180일. 게시글/댓글은 수정 기능이 없어 원문이 불변이므로 같은 조합은 최초 1회만 실제 API를 호출하고 이후는 캐시로 응답 — `member.adapter.out.token.RedisRefreshTokenAdapter`(`api/src/main/java/com/example/paceleague/member/adapter/out/token/RedisRefreshTokenAdapter.java`)와 동일한 `StringRedisTemplate` 사용 패턴.
+- **Redis 캐싱**: 키 `translate:post:{sno}:{lang}` / `translate:comment:{sno}:{lang}`, TTL 180일. 게시글/댓글은 수정 기능이 없어 원문이 불변이므로 같은 조합은 최초 1회만 실제 API를 호출하고 이후는 캐시로 응답 — `member.adapter.out.token.RedisRefreshTokenAdapter`(`api/src/main/java/com/paceleague/member/adapter/out/token/RedisRefreshTokenAdapter.java`)와 동일한 `StringRedisTemplate` 사용 패턴.
 - **번역 소스 언어는 자동 감지**(`SourceLanguageCode: "auto"`) — 게시글/댓글에 작성 언어를 저장하는 컬럼이 없기 때문.
 - `Post.content` 최대 길이를 10,000자로 제한(`BoardServiceImpl.CONTENT_MAX_LENGTH`) — 원래는 무제한이었으나, 번역 비용이 글자 수에 비례하므로 이번에 추가.
 - **사전 조건**: 운영 EC2의 IAM role(`paceleague-s3-read`)에 `translate:TranslateText` 권한(예: `TranslateReadOnly` 관리형 정책)이 연결되어 있어야 함. 앱은 AWS SDK 기본 자격증명 체인(인스턴스 메타데이터)을 그대로 쓰며, 별도 액세스 키를 설정에 넣지 않음(`common.config.AwsTranslateConfig`). 권한이 없으면 번역 엔드포인트만 500으로 실패하고 나머지 API는 영향받지 않음.
