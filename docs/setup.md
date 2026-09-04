@@ -62,7 +62,7 @@ docker build -t paceleague .          # 저장소 루트에서 실행
 docker run -d -p 8080:8080 --name paceleague paceleague
 ```
 
-컨테이너 실행 시에도 위 환경 변수(`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`)와 `SPRING_PROFILES_ACTIVE`(local 또는 prod), Redis 접속 정보를 `-e` 옵션이나 오케스트레이션 설정으로 주입해야 합니다.
+컨테이너 실행 시에도 위 환경 변수(`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`)와 `SPRING_PROFILES_ACTIVE`(local 또는 prod), Redis 접속 정보를 주입해야 합니다. 로컬은 `-e` 옵션, 운영 EC2는 `.github/ssm-commands.json`이 `--env-file /opt/paceleague/.env`로 주입합니다.
 
 ## 배포 (CI/CD)
 
@@ -70,17 +70,24 @@ docker run -d -p 8080:8080 --name paceleague paceleague
 
 ```text
 GitHub push (main)
-  → GitHub Actions: JDK 21 세팅, api/ 에서 `./gradlew clean build -x test`
+  → GitHub Actions: JDK 21 세팅, `./gradlew clean build -x test`로 빌드 검증
+       (이 산출 jar는 이미지에 쓰이지 않음 — 아래 Docker 빌드가 Dockerfile 안에서 새로 빌드)
   → AWS 자격증명 설정 (secrets: AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY, region ap-northeast-2)
-  → Docker 이미지 빌드(저장소 루트, api+web 모두 포함) & 태깅
+  → Docker 이미지 빌드(저장소 루트, api jar + web/를 /web-dist로 함께 포함) & 태깅
   → AWS ECR로 push
   → AWS SSM (`aws ssm send-command`, document `AWS-RunShellScript`)로 EC2 인스턴스(secret: EC2_INSTANCE_ID)에 배포 명령 전달
-     (`.github/ssm-commands.json`이 이미지 pull → web 정적 파일을 /var/www/paceleague로 교체 → 앱 컨테이너 재시작까지 순서대로 수행)
 ```
+
+EC2에서 `.github/ssm-commands.json`이 실행하는 순서:
+
+1. ECR 로그인 → `docker pull`
+2. **앱 컨테이너부터 재시작** (`docker rm -f paceleague` → `docker run -d --restart unless-stopped --env-file /opt/paceleague/.env -p 8080:8080 ...`) — `api.paceleague.co.kr`가 오래 끊기지 않는 게 최우선
+3. 이미지에서 `/web-dist`를 꺼내 `/var/www/paceleague`로 교체 (추출 실패 시 기존 정적 사이트를 그대로 두도록 가드)
+4. `docker image prune -f` / `docker builder prune -f`로 이전 `<none>` 이미지 정리 (8GB 루트 디스크가 차서 배포가 조용히 실패한 이력 있음 — [infra.md](./infra.md) 참고)
 
 - 배포는 EC2에 직접 SSH하지 않고 AWS Systems Manager(SSM)를 통해 명령을 실행하는 방식입니다.
 - 필요한 GitHub Secrets: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `EC2_INSTANCE_ID` (+ EC2 쪽에서 ECR pull 권한 및 `.env`/환경 변수 구성이 사전에 되어 있어야 함, 이 저장소 범위 밖의 설정).
-- 인프라는 EC2 + ECR만 사용하는 것이 원칙이며(`AGENTS.md`), 명시적 요청 없이 ECS/EKS/RDS/ElastiCache/S3 등을 추가하지 않는 것이 프로젝트 규칙입니다. `web/` 배포도 이 원칙에 따라 별도 스토리지(S3 등) 없이 기존 Docker 이미지에 실어 나르는 방식으로 구현했습니다.
+- 인프라는 EC2 + ECR만 사용하는 것이 원칙이며(`AGENTS.md`), 명시적 요청 없이 ECS/EKS/RDS/ElastiCache 등을 추가하지 않는 것이 프로젝트 규칙입니다. `web/` 배포도 이 원칙에 따라 별도 스토리지 없이 기존 Docker 이미지에 실어 나르는 방식으로 구현했습니다. (예외: 게시글 미디어 첨부용 S3 버킷 `paceleague-media`는 2026-08-11 사용자 요청으로 추가 — [architecture.md](./architecture.md#게시글-미디어-첨부이미지동영상링크--rekognition-모더레이션--2026-08-11-추가) 참고)
 - 실제 도메인별 라우팅(어느 도메인이 앱으로, 어느 도메인이 정적 사이트로 연결되는지)은 [infra.md](./infra.md)에서 다룹니다.
 
 ## Swagger / API 문서 UI
