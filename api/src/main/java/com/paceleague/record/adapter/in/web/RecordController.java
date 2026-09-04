@@ -3,8 +3,8 @@ package com.paceleague.record.adapter.in.web;
 import com.paceleague.common.response.ResponseApi;
 import com.paceleague.common.web.MemberSno;
 import com.paceleague.record.application.dto.*;
-import com.paceleague.record.application.port.in.RecordQueryService;
-import com.paceleague.record.application.port.in.RecordService;
+import com.paceleague.record.application.port.in.RecordQueryUseCase;
+import com.paceleague.record.application.port.in.RecordUseCase;
 import com.paceleague.record.application.port.in.SaveGpsSessionUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,15 +24,15 @@ import java.util.List;
 @Tag(name = "Record", description = "러닝 기록 저장/조회 API")
 @SecurityRequirement(name = "bearerAuth")
 public class RecordController {
-    private final RecordService recordService;
-    private final RecordQueryService recordQueryService;
+    private final RecordUseCase recordUseCase;
+    private final RecordQueryUseCase recordQueryUseCase;
     private final SaveGpsSessionUseCase saveGpsSessionUseCase;
 
-    public RecordController(RecordService recordService,
-                           RecordQueryService recordQueryService,
+    public RecordController(RecordUseCase recordUseCase,
+                           RecordQueryUseCase recordQueryUseCase,
                            SaveGpsSessionUseCase saveGpsSessionUseCase) {
-        this.recordService = recordService;
-        this.recordQueryService = recordQueryService;
+        this.recordUseCase = recordUseCase;
+        this.recordQueryUseCase = recordQueryUseCase;
         this.saveGpsSessionUseCase = saveGpsSessionUseCase;
     }
 
@@ -43,7 +43,7 @@ public class RecordController {
     public ResponseEntity<ResponseApi<RecordCreateResponse>> create(@MemberSno Long memberSno,
                                                                    @RequestBody RecordCreateRequest req) {
 
-        Long sno = recordService.create(memberSno, req);
+        Long sno = recordUseCase.create(memberSno, req);
         RecordCreateResponse response = new RecordCreateResponse(sno);
 
         return ResponseEntity.ok(ResponseApi.success("기록이 저장되었습니다.", response));
@@ -55,7 +55,7 @@ public class RecordController {
     @PostMapping("/bulk")
     public ResponseEntity<ResponseApi<BulkCreateResponse>> createBulk(@MemberSno Long memberSno,
                                                          @RequestBody List<RecordCreateRequest> reqList) {
-        List<Long> ids = recordService.createBulk(memberSno, reqList);
+        List<Long> ids = recordUseCase.createBulk(memberSno, reqList);
         BulkCreateResponse response = new BulkCreateResponse(ids);
 
         return ResponseEntity.ok(ResponseApi.success("기록이 일괄 저장되었습니다.", response));
@@ -78,7 +78,7 @@ public class RecordController {
     @GetMapping("/dataOne/{sno}")
     public ResponseEntity<ResponseApi<RecordResponse>> getOne(@MemberSno Long memberSno,
                                                                 @Parameter(description = "기록 PK") @PathVariable Long sno) {
-        var record = recordQueryService.getOne(memberSno, sno);
+        var record = recordQueryUseCase.getOne(memberSno, sno);
         RecordResponse response = RecordResponse.from(record);
 
         return ResponseEntity.ok(ResponseApi.success("기록 조회에 성공했습니다.", response));
@@ -93,7 +93,7 @@ public class RecordController {
             @Parameter(description = "페이지 번호(0-base)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "10") int size
     ) {
-        var result = recordQueryService.getPage(memberSno, page, size)
+        var result = recordQueryUseCase.getPage(memberSno, page, size)
                 .map(RecordResponse::from);
         return ResponseEntity.ok(ResponseApi.success("기록 목록 조회에 성공했습니다.", result));
     }
@@ -109,7 +109,7 @@ public class RecordController {
     ) {
         BigDecimal weightKg = BigDecimal.valueOf(70); // TODO 실제 회원 체중 조회
 
-        RecordMonthResponse response = recordQueryService.getMonthAll(memberSno, year, month, weightKg);
+        RecordMonthResponse response = recordQueryUseCase.getMonthAll(memberSno, year, month, weightKg);
 
         return ResponseEntity.ok(ResponseApi.success("월간 기록 조회에 성공했습니다.", response));
     }
@@ -121,7 +121,7 @@ public class RecordController {
             @MemberSno Long memberSno
     ) {
         List<RunningRecordResponse> response =
-                recordQueryService.getRecent30DaysRecords(memberSno);
+                recordQueryUseCase.getRecent30DaysRecords(memberSno);
 
         return ResponseApi.success(response);
     }

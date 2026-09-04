@@ -3,7 +3,7 @@ package com.paceleague.record.domain.policy;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-// RecordServiceImpl.saveRank에 섞여 있던 순수 점수 계산 로직만 추출 — RecordSummaryCalculator와 같은 패턴.
+// RecordService.saveRank에 섞여 있던 순수 점수 계산 로직만 추출 — RecordSummaryCalculator와 같은 패턴.
 public class RecordScoreCalculator {
 
     // 기본 점수 = 거리(km) * 10

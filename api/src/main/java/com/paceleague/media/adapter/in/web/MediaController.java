@@ -6,7 +6,7 @@ import com.paceleague.media.application.dto.CreateLinkRequest;
 import com.paceleague.media.application.dto.MediaStatusResponse;
 import com.paceleague.media.application.dto.MediaUploadInitResponse;
 import com.paceleague.media.application.dto.MediaUploadRequest;
-import com.paceleague.media.application.port.in.MediaService;
+import com.paceleague.media.application.port.in.MediaUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -20,10 +20,10 @@ import org.springframework.web.bind.annotation.*;
 @SecurityRequirement(name = "bearerAuth")
 public class MediaController {
 
-    private final MediaService mediaService;
+    private final MediaUseCase mediaUseCase;
 
-    public MediaController(MediaService mediaService) {
-        this.mediaService = mediaService;
+    public MediaController(MediaUseCase mediaUseCase) {
+        this.mediaUseCase = mediaUseCase;
     }
 
     @Operation(summary = "업로드 URL 발급", description = "이미지/동영상 업로드용 presigned PUT URL을 발급합니다. 클라이언트는 반환된 uploadUrl로 파일을 직접 PUT한 뒤 /complete를 호출해야 합니다.")
@@ -33,7 +33,7 @@ public class MediaController {
             @MemberSno Long memberSno,
             @RequestBody MediaUploadRequest req
     ) {
-        return ResponseApi.success(mediaService.requestUpload(memberSno, req));
+        return ResponseApi.success(mediaUseCase.requestUpload(memberSno, req));
     }
 
     @Operation(summary = "업로드 완료 처리", description = "S3에 파일 업로드가 끝난 뒤 호출합니다. 이미지는 즉시 모더레이션 결과를 반환하고, 동영상은 비동기 작업만 시작한 뒤 PENDING을 반환합니다(/status로 폴링).")
@@ -43,7 +43,7 @@ public class MediaController {
             @MemberSno Long memberSno,
             @PathVariable Long mediaSno
     ) {
-        return ResponseApi.success(mediaService.completeUpload(memberSno, mediaSno));
+        return ResponseApi.success(mediaUseCase.completeUpload(memberSno, mediaSno));
     }
 
     @Operation(summary = "업로드/모더레이션 상태 조회", description = "동영상처럼 비동기로 모더레이션 중인 미디어의 진행 상태를 폴링합니다.")
@@ -53,7 +53,7 @@ public class MediaController {
             @MemberSno Long memberSno,
             @PathVariable Long mediaSno
     ) {
-        return ResponseApi.success(mediaService.getUploadStatus(memberSno, mediaSno));
+        return ResponseApi.success(mediaUseCase.getUploadStatus(memberSno, mediaSno));
     }
 
     @Operation(summary = "링크 첨부 생성", description = "업로드 없이 URL만 첨부합니다. http(s) URL만 허용되며 모더레이션 대상이 아닙니다.")
@@ -63,6 +63,6 @@ public class MediaController {
             @MemberSno Long memberSno,
             @RequestBody CreateLinkRequest req
     ) {
-        return ResponseApi.success(mediaService.createLink(memberSno, req.url()));
+        return ResponseApi.success(mediaUseCase.createLink(memberSno, req.url()));
     }
 }

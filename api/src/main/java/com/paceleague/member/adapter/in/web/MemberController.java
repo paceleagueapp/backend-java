@@ -3,7 +3,7 @@ package com.paceleague.member.adapter.in.web;
 import com.paceleague.common.response.ResponseApi;
 import com.paceleague.common.web.MemberSno;
 import com.paceleague.member.application.dto.*;
-import com.paceleague.member.application.port.in.MemberAuthService;
+import com.paceleague.member.application.port.in.MemberAuthUseCase;
 import com.paceleague.member.application.port.in.SearchMembersPort;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -25,10 +25,10 @@ import java.util.List;
 @RequestMapping("/api/member")
 @Tag(name = "Member", description = "회원 인증 API")
 public class MemberController {
-    private final MemberAuthService authService;
+    private final MemberAuthUseCase authService;
     private final SearchMembersPort searchMembersPort;
 
-    public MemberController(MemberAuthService authService, SearchMembersPort searchMembersPort) {
+    public MemberController(MemberAuthUseCase authService, SearchMembersPort searchMembersPort) {
         this.authService = authService;
         this.searchMembersPort = searchMembersPort;
     }

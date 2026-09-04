@@ -10,7 +10,7 @@ JWT 기반, Stateless 인증. Spring Security는 필터 체인/`PasswordEncoder`
 | `common.security.JwtAuthenticationFilter` | 요청마다 `Authorization` 헤더의 access token을 검증하고 `SecurityContext`에 인증 정보 설정 |
 | `common.security.jwt.JwtTokenProvider` | JWT 생성/검증 (HMAC-SHA, `app.jwt.secret`) — 2026-08-10 클린 아키텍처 전환 시 `member` 패키지에서 `common`으로 재배치([architecture.md](./architecture.md) 참고) |
 | `member.adapter.out.token.RedisRefreshTokenAdapter` | refresh token 발급/검증/폐기 (Redis 기반, JWT 아님) — `member.application.port.out.RefreshTokenStorePort` 구현체 |
-| `member.application.port.in.MemberAuthService` / `member.application.service.MemberAuthServiceImpl` | 회원가입/로그인/재발급/로그아웃 유스케이스 |
+| `member.application.port.in.MemberAuthUseCase` / `member.application.service.MemberAuthService` | 회원가입/로그인/재발급/로그아웃 유스케이스 |
 
 ## Access Token
 

@@ -5,7 +5,7 @@ import com.paceleague.record.application.dto.GpsSessionRequest;
 import java.util.List;
 
 // GPS 청크 페이로드 자체의 형식 검증. 거리/페이스 상한 등 러닝 기록으로서의 검증은
-// 종료(finished) 시 RecordServiceImpl.validateRequest가 이어서 수행한다.
+// 종료(finished) 시 RecordService.validateRequest가 이어서 수행한다.
 public final class GpsSessionValidator {
 
     // 한 청크(5분)에 담길 수 있는 좌표 수의 보수적 상한 — 1초 간격이어도 300개면 충분.

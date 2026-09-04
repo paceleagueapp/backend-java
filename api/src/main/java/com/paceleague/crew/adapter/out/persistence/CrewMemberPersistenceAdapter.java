@@ -1,6 +1,6 @@
 package com.paceleague.crew.adapter.out.persistence;
 
-import com.paceleague.crew.application.port.in.GetMemberCrewBadgePort.CrewBadge;
+import com.paceleague.crew.application.port.in.shared.GetMemberCrewBadgePort.CrewBadge;
 import com.paceleague.crew.application.port.out.CrewMemberRepositoryPort;
 import com.paceleague.crew.domain.entity.CrewMember;
 import lombok.RequiredArgsConstructor;

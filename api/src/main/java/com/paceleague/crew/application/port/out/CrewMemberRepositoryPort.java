@@ -1,6 +1,6 @@
 package com.paceleague.crew.application.port.out;
 
-import com.paceleague.crew.application.port.in.GetMemberCrewBadgePort.CrewBadge;
+import com.paceleague.crew.application.port.in.shared.GetMemberCrewBadgePort.CrewBadge;
 import com.paceleague.crew.domain.entity.CrewMember;
 
 import java.util.Collection;

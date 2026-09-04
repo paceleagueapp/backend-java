@@ -1,9 +1,9 @@
 package com.paceleague.board.adapter.in.web;
 
 import com.paceleague.board.application.dto.*;
-import com.paceleague.board.application.port.in.BoardQueryService;
-import com.paceleague.board.application.port.in.BoardService;
-import com.paceleague.board.application.port.in.TranslationService;
+import com.paceleague.board.application.port.in.BoardQueryUseCase;
+import com.paceleague.board.application.port.in.BoardUseCase;
+import com.paceleague.board.application.port.in.TranslationUseCase;
 import com.paceleague.common.i18n.LocaleResolver;
 import com.paceleague.common.response.ResponseApi;
 import com.paceleague.common.web.MemberSno;
@@ -23,14 +23,14 @@ import java.util.List;
 @RequestMapping("/api/board")
 @Tag(name = "Board", description = "커뮤니티(게시판) API — 보드/게시글/댓글/추천. 조회(GET)는 비로그인도 가능, 작성/삭제/추천은 로그인 필요.")
 public class BoardController {
-    private final BoardService boardService;
-    private final BoardQueryService boardQueryService;
-    private final TranslationService translationService;
+    private final BoardUseCase boardUseCase;
+    private final BoardQueryUseCase boardQueryUseCase;
+    private final TranslationUseCase translationUseCase;
 
-    public BoardController(BoardService boardService, BoardQueryService boardQueryService, TranslationService translationService) {
-        this.boardService = boardService;
-        this.boardQueryService = boardQueryService;
-        this.translationService = translationService;
+    public BoardController(BoardUseCase boardUseCase, BoardQueryUseCase boardQueryUseCase, TranslationUseCase translationUseCase) {
+        this.boardUseCase = boardUseCase;
+        this.boardQueryUseCase = boardQueryUseCase;
+        this.translationUseCase = translationUseCase;
     }
 
     @Operation(summary = "보드 목록 조회")
@@ -40,7 +40,7 @@ public class BoardController {
             @Parameter(description = "보드명/설명 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang,
             @Parameter(description = "ISO 3166-1 alpha-2 국가코드(예: KR). 주어지면 lang 대신 이 국가에 맞는 언어로 응답") @RequestParam(required = false) String country
     ) {
-        return ResponseApi.success(boardQueryService.listBoards(resolveLang(lang, country)));
+        return ResponseApi.success(boardQueryUseCase.listBoards(resolveLang(lang, country)));
     }
 
     @Operation(summary = "게시글 목록 조회", description = "sort=new(기본)|top")
@@ -54,7 +54,7 @@ public class BoardController {
             @Parameter(description = "작성자 티어뱃지 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang,
             @Parameter(description = "ISO 3166-1 alpha-2 국가코드(예: KR). 주어지면 lang 대신 이 국가에 맞는 언어로 응답") @RequestParam(required = false) String country
     ) {
-        return ResponseApi.success(boardQueryService.listPosts(boardSno, page, size, sort, resolveLang(lang, country)));
+        return ResponseApi.success(boardQueryUseCase.listPosts(boardSno, page, size, sort, resolveLang(lang, country)));
     }
 
     @Operation(summary = "게시글 작성")
@@ -66,7 +66,7 @@ public class BoardController {
             @PathVariable Long boardSno,
             @RequestBody PostCreateRequest req
     ) {
-        Long sno = boardService.createPost(memberSno, boardSno, req);
+        Long sno = boardUseCase.createPost(memberSno, boardSno, req);
         return ResponseEntity.ok(ResponseApi.success("게시글이 작성되었습니다.", new CreatedResponse(sno)));
     }
 
@@ -79,7 +79,7 @@ public class BoardController {
             @Parameter(description = "보드명/티어뱃지 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang,
             @Parameter(description = "ISO 3166-1 alpha-2 국가코드(예: KR). 주어지면 lang 대신 이 국가에 맞는 언어로 응답") @RequestParam(required = false) String country
     ) {
-        return ResponseApi.success(boardQueryService.getPost(memberSno, postSno, resolveLang(lang, country)));
+        return ResponseApi.success(boardQueryUseCase.getPost(memberSno, postSno, resolveLang(lang, country)));
     }
 
     @Operation(summary = "게시글 수정", description = "본인 게시글만 수정 가능합니다. 요청 형식은 작성과 동일합니다.")
@@ -91,7 +91,7 @@ public class BoardController {
             @PathVariable Long postSno,
             @RequestBody PostCreateRequest req
     ) {
-        boardService.updatePost(memberSno, postSno, req);
+        boardUseCase.updatePost(memberSno, postSno, req);
         return ResponseApi.success("게시글이 수정되었습니다.");
     }
 
@@ -100,7 +100,7 @@ public class BoardController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/posts/{postSno}")
     public ResponseApi<String> deletePost(@MemberSno Long memberSno, @PathVariable Long postSno) {
-        boardService.deletePost(memberSno, postSno);
+        boardUseCase.deletePost(memberSno, postSno);
         return ResponseApi.success("게시글이 삭제되었습니다.");
     }
 
@@ -113,7 +113,7 @@ public class BoardController {
             @PathVariable Long postSno,
             @RequestBody TranslateRequest req
     ) {
-        return ResponseApi.success(translationService.translatePost(memberSno, postSno, req.targetLanguage()));
+        return ResponseApi.success(translationUseCase.translatePost(memberSno, postSno, req.targetLanguage()));
     }
 
     @Operation(summary = "게시글 추천/비추천", description = "같은 값 재요청 시 취소, 다른 값이면 전환됩니다.")
@@ -125,14 +125,14 @@ public class BoardController {
             @PathVariable Long postSno,
             @RequestBody VoteRequest req
     ) {
-        return ResponseApi.success(boardService.votePost(memberSno, postSno, req.voteValue()));
+        return ResponseApi.success(boardUseCase.votePost(memberSno, postSno, req.voteValue()));
     }
 
     @Operation(summary = "댓글 목록 조회", description = "최상위 댓글과 그 대댓글(1단계)만 포함합니다. 비로그인 시에도 조회 가능(이 경우 myVote는 항상 null).")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/posts/{postSno}/comments")
     public ResponseApi<List<CommentResponse>> listComments(@MemberSno(required = false) Long memberSno, @PathVariable Long postSno) {
-        return ResponseApi.success(boardQueryService.listComments(memberSno, postSno));
+        return ResponseApi.success(boardQueryUseCase.listComments(memberSno, postSno));
     }
 
     @Operation(summary = "댓글/대댓글 작성", description = "parentCommentSno를 주면 대댓글로 작성됩니다. 대댓글에는 답글을 달 수 없습니다.")
@@ -144,7 +144,7 @@ public class BoardController {
             @PathVariable Long postSno,
             @RequestBody CommentCreateRequest req
     ) {
-        Long sno = boardService.createComment(memberSno, postSno, req);
+        Long sno = boardUseCase.createComment(memberSno, postSno, req);
         return ResponseEntity.ok(ResponseApi.success("댓글이 작성되었습니다.", new CreatedResponse(sno)));
     }
 
@@ -157,7 +157,7 @@ public class BoardController {
             @PathVariable Long commentSno,
             @RequestBody TranslateRequest req
     ) {
-        return ResponseApi.success(translationService.translateComment(memberSno, commentSno, req.targetLanguage()));
+        return ResponseApi.success(translationUseCase.translateComment(memberSno, commentSno, req.targetLanguage()));
     }
 
     @Operation(summary = "댓글 삭제", description = "본인 댓글만 삭제 가능하며, 대댓글/추천도 함께 삭제됩니다.")
@@ -165,7 +165,7 @@ public class BoardController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/comments/{commentSno}")
     public ResponseApi<String> deleteComment(@MemberSno Long memberSno, @PathVariable Long commentSno) {
-        boardService.deleteComment(memberSno, commentSno);
+        boardUseCase.deleteComment(memberSno, commentSno);
         return ResponseApi.success("댓글이 삭제되었습니다.");
     }
 
@@ -178,7 +178,7 @@ public class BoardController {
             @PathVariable Long commentSno,
             @RequestBody VoteRequest req
     ) {
-        return ResponseApi.success(boardService.voteComment(memberSno, commentSno, req.voteValue()));
+        return ResponseApi.success(boardUseCase.voteComment(memberSno, commentSno, req.voteValue()));
     }
 
     private String resolveLang(String lang, String country) {

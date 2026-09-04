@@ -3,7 +3,7 @@ package com.paceleague.board.application.dto;
 import com.paceleague.board.domain.entity.Post;
 import com.paceleague.board.domain.policy.PostContentSanitizer;
 import com.paceleague.common.i18n.Language;
-import com.paceleague.crew.application.port.in.GetMemberCrewBadgePort.CrewBadge;
+import com.paceleague.crew.application.port.in.shared.GetMemberCrewBadgePort.CrewBadge;
 import com.paceleague.rank.domain.enums.RankTier;
 import com.paceleague.rank.domain.policy.RankTierLabelPolicy;
 

@@ -1,6 +1,6 @@
 package com.paceleague.season.application.service;
 
-import com.paceleague.season.application.port.in.GetCurrentSeasonPort;
+import com.paceleague.season.application.port.in.shared.GetCurrentSeasonPort;
 import com.paceleague.season.application.port.out.SeasonRepositoryPort;
 import com.paceleague.season.domain.entity.Season;
 import lombok.RequiredArgsConstructor;

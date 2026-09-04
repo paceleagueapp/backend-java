@@ -9,7 +9,7 @@ import java.util.List;
 // 시작점과 끝점이 close-threshold-meters 이내로 가까우면 닫힌 루프로 본다(마지막→처음을 이어 폐곡선으로 보정).
 //
 // record.domain.policy.GeoDistanceCalculator(haversine, 순수 static)를 그대로 재사용한다 —
-// board.BoardQueryServiceImpl이 rank.domain.policy.RankTierLabelPolicy를 포트 없이 직접 부르는 것과
+// board.BoardQueryService가 rank.domain.policy.RankTierLabelPolicy를 포트 없이 직접 부르는 것과
 // 같은 예외(상태 없는 순수 조회/계산 정책의 도메인 간 직접 호출). docs/architecture.md 참고.
 public final class ClosedLoopDetector {
 
