@@ -1,0 +1,38 @@
+package com.paceleague.record.adapter.out.persistence;
+
+import com.paceleague.record.application.port.out.RecordTrackRepositoryPort;
+import com.paceleague.record.domain.entity.RecordTrack;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+@Component
+@RequiredArgsConstructor
+public class RecordTrackPersistenceAdapter implements RecordTrackRepositoryPort {
+
+    private final RecordTrackJpaRepository recordTrackJpaRepository;
+
+    public RecordTrack save(RecordTrack track) {
+        return recordTrackJpaRepository.save(track);
+    }
+
+    public Optional<RecordTrack> findBySno(Long sno) {
+        return recordTrackJpaRepository.findById(sno);
+    }
+
+    public Optional<RecordTrack> findByUnoAndClientRunId(Long uno, String clientRunId) {
+        return recordTrackJpaRepository.findByUnoAndClientRunId(uno, clientRunId);
+    }
+
+    public Optional<RecordTrack> findByRecordSno(Long recordSno) {
+        return recordTrackJpaRepository.findByRecordSno(recordSno);
+    }
+
+    public List<Long> findIdleActiveSessionSnos(LocalDateTime idleBefore, int limit) {
+        return recordTrackJpaRepository.findIdleActiveSessionSnos(idleBefore, PageRequest.of(0, limit));
+    }
+}

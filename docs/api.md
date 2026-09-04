@@ -388,13 +388,13 @@ join/login/reissue가 공통으로 반환하는 구조:
 **동작**
 - 첫 청크: `record_track` 행 생성(`status=ACTIVE`, `record_sno=null`), 좌표를 `points_json`에 저장
 - 이후 청크: 워터마크 이후 좌표만 `points_json`에 append, 거리·좌표수·마지막 좌표 갱신
-- `finished: true`: 누적 거리·시작/종료 시각으로 `RecordCreateRequest`를 만들어 **기존 `POST /api/record/save`와 동일한 저장·점수 산정 로직**(`RecordService.create` — 거리/페이스 상한 검증, 최근 1개월 내 동일 `startTime` 중복 거부, `Rank`/`MemberScore` 반영)을 재사용하고, `record_track.status=FINISHED` + `record_sno` 채움
+- `finished: true`: 누적 거리·시작/종료 시각으로 `RecordCreateRequest`를 만들어 **기존 `POST /api/record/save`와 동일한 저장·점수 산정 로직**(`RecordUseCase.create` — 거리/페이스 상한 검증, 최근 1개월 내 동일 `startTime` 중복 거부, `Rank`/`MemberScore` 반영)을 재사용하고, `record_track.status=FINISHED` + `record_sno` 채움
 - 앱이 `finished: true`를 못 보내고 끊긴 경우: `GpsSessionSweeper`(스케줄러, 기본 5분 주기)가 마지막 청크 후 **30분(`paceleague.gps.sweeper.idle-minutes`) 넘게 조용한 `ACTIVE` 세션**을 쌓인 좌표로 자동 마감합니다. 좌표가 없거나 거리/페이스가 비정상이라 기록을 만들 수 없으면 `status=ABANDONED`로 두고 재시도하지 않습니다
 
 **실패**
 - `clientRunId` 누락/100자 초과, `activityType != RUNNING`, 좌표 없는데 `finished`도 아님, 한 청크 2,000개 초과, `recordedAt` 누락, 좌표 범위(위도 ±90 / 경도 ±180) 이탈, 러닝 전체 60,000개 초과 → 400
 - `finished: true` 인데 세션에 저장된 좌표가 하나도 없음 → 400
-- 종료 시 거리/페이스가 러닝 기록으로 불가능한 값, 최근 1개월 내 동일 `startTime` 존재 → 400 (`RecordService.create`의 기존 규칙). 이 경우 트랜잭션이 롤백되어 세션은 `ACTIVE`로 남고, 앱이 `finished: true`를 재시도할 수 있음
+- 종료 시 거리/페이스가 러닝 기록으로 불가능한 값, 최근 1개월 내 동일 `startTime` 존재 → 400 (`RecordUseCase.create`의 기존 규칙). 이 경우 트랜잭션이 롤백되어 세션은 `ACTIVE`로 남고, 앱이 `finished: true`를 재시도할 수 있음
 
 **마이그레이션**: [migrations/2026-08-27_record_gps_track.sql](./migrations/2026-08-27_record_gps_track.sql) → [migrations/2026-08-27_record_track_streaming.sql](./migrations/2026-08-27_record_track_streaming.sql) 순서로 (운영은 배포 전 직접 실행)
 

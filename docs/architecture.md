@@ -45,19 +45,27 @@ Client
     entity/         JPA @Entity 그대로 도메인 모델로 사용 (프레임워크 독립적인 순수 POJO로 이중화하지 않음 — 아래 "왜 엔티티를 분리하지 않았는가" 참고)
     policy/ enums/   순수 비즈니스 규칙 (RankTierPolicy, RecordScoreCalculator 등)
   application/
-    port/in/         유스케이스 인터페이스 — 기존 서비스 인터페이스가 있던 도메인(member/record/board)은 이름을 그대로 유지, 없던 도메인(rank/ranking/appversion)은 새로 추출
+    port/in/         그 도메인 자신의 유스케이스 인터페이스 — 접미사 `*UseCase` (2026-09-04 통일. 그 전에는 member/record/board가 전환 이전 이름 `*Service`를 유지하고 있었음)
+    port/in/shared/   다른 도메인이 호출하려고 만든 인바운드 포트만 따로 모음 (`GetMemberNicknamePort`, `ApplyScoreUseCase`, `GetCurrentSeasonPort` 등) — "이건 내 도메인이 밖에 노출하는 계약"이라는 신호. 자기 도메인이 밖에서 재사용하는 자기 유스케이스(`RecordQueryUseCase`, `MediaUseCase`)는 여기 아님, 그냥 `port/in/`
     port/out/         리포지토리 모양의 출력 포트 — JPA/Hibernate import 없이 실제 쓰는 메서드만 선언 (`PostRepositoryPort`·`RecordRepositoryPort`만 목록 페이지네이션을 위해 Spring Data `Page`/`Pageable`을 시그니처에 사용)
-    service/          유스케이스 구현체 (기존 *ServiceImpl 위치, 이제 port/out에만 의존)
+    service/          유스케이스 구현체 — 접미사 `*Service` (`Impl` 없음, 2026-09-04 통일), port/out에만 의존. 인터페이스는 `*UseCase`/`*Port`, 구현은 `*Service`로 역할이 이름에서 구분됨. 여러 인터페이스를 겸하는 것(`RankQueryService` = `GetMyRankUseCase` + tier 포트들)도 서술적 `*Service` 이름
     dto/              Command/Result 경계 타입 (기존 dto 그대로 이동)
   adapter/
     in/web/           컨트롤러 (port/in에만 의존)
     out/persistence/  Spring Data JpaRepository(`*JpaRepository`, 내부 구현 디테일) + port/out을 구현하는 얇은 어댑터(`*PersistenceAdapter`)
 ```
 
-포트화하는 대상은 딱 두 가지입니다: **(1)** 그 도메인 자신의 JPA 리포지토리, **(2)** 다른 도메인 저장소로의 실제 크로스 도메인 접근(예: `record`가 `rank`/`season`을 직접 찌르던 것, `board`가 `member`를 직접 찌르던 것). `StringRedisTemplate`, `TranslateClient`, `PasswordEncoder`, `JwtProperties` 같은 범용 인프라 클라이언트는 포트로 감싸지 않고 유스케이스 구현체에 그대로 주입합니다 — 여기까지 포트화하면 요청받지 않은 과도한 추상화이기 때문입니다(`MemberAuthServiceImpl`의 로그인 잠금 Redis 코드, `TranslationServiceImpl`의 AWS Translate/Redis 캐싱 코드가 대표적인 예).
+> **2026-09-04 네이밍 정리** (사용자 요청, 동작 변경 없음 — 전부 인터페이스로 주입되므로 DI 무영향):
+> 1. `port/in`의 전환 이전 이름 `*Service` 인터페이스 7개(`MemberAuthService`·`RecordService`·`RecordQueryService`·`BoardService`·`BoardQueryService`·`TranslationService`·`MediaService`)를 `*UseCase`로 리네임.
+> 2. 유스케이스 구현체 전부를 `*Service`로 통일 — `*ServiceImpl`/`*UseCaseImpl` 접미사 제거(`RecordServiceImpl` → `RecordService`, `SaveGpsSessionServiceImpl` → `SaveGpsSessionService`, …). `application/service/` 안에 `Impl` 클래스가 하나도 없음.
+> 3. 다른 도메인이 호출하려고 만든 인바운드 포트 9개(`GetMemberNicknamePort`, `GetRecordSummaryPort`, `ApplyScoreUseCase`, `GetMemberTierPort`, `GetMemberSeasonScoresPort`, `GetApprovedMediaUrlPort`, `GetPostAttachmentsPort`, `ProcessTerritoryRunUseCase`, `GetMemberCrewBadgePort`, `GetCurrentSeasonPort`)를 각 도메인의 `port/in/shared/`로 이동.
+>
+> 남은 흠: `member/port/in/SearchMembersPort`는 실제로는 `member` 자신의 컨트롤러만 쓰는 도메인 내부 유스케이스인데 이름이 `*Port` — 크로스도메인이 아니라 `shared/`로 옮기지 않았고 `*UseCase` 리네임도 보류.
+
+포트화하는 대상은 딱 두 가지입니다: **(1)** 그 도메인 자신의 JPA 리포지토리, **(2)** 다른 도메인 저장소로의 실제 크로스 도메인 접근(예: `record`가 `rank`/`season`을 직접 찌르던 것, `board`가 `member`를 직접 찌르던 것). `StringRedisTemplate`, `TranslateClient`, `PasswordEncoder`, `JwtProperties` 같은 범용 인프라 클라이언트는 포트로 감싸지 않고 유스케이스 구현체에 그대로 주입합니다 — 여기까지 포트화하면 요청받지 않은 과도한 추상화이기 때문입니다(`MemberAuthService`의 로그인 잠금 Redis 코드, `TranslationService`의 AWS Translate/Redis 캐싱 코드가 대표적인 예).
 
 ```text
-com.example.paceleague
+com.paceleague
 ├── member       회원 가입/로그인/토큰 재발급/로그아웃 (인증 도메인)
 ├── record       러닝 기록 저장/조회, 기록 기반 점수 산출, GPS 청크 누적(record_track) + 유휴 세션 스위퍼(adapter/in/scheduler)
 ├── rank         "내 점수/티어" 조회 (개인 관점)
@@ -81,24 +89,24 @@ com.example.paceleague
 
 ### 도메인 간 의존 — 포트로만 넘나든다
 
-이번 전환 전에는 `record.RecordServiceImpl`이 `rank`/`season`의 리포지토리를 직접 import해서 세 바운디드 컨텍스트가 한 클래스에 뒤섞여 있었고, `board.BoardQueryServiceImpl`도 닉네임 조회를 위해 `member`의 리포지토리를 직접 import했습니다. 지금은:
+이번 전환 전에는 `record.RecordService`이 `rank`/`season`의 리포지토리를 직접 import해서 세 바운디드 컨텍스트가 한 클래스에 뒤섞여 있었고, `board.BoardQueryService`도 닉네임 조회를 위해 `member`의 리포지토리를 직접 import했습니다. 지금은:
 
-- `record` → `season.application.port.in.GetCurrentSeasonPort`(현재 시즌 조회), `rank.application.port.in.ApplyScoreUseCase`(점수 반영 — 예전 `RecordServiceImpl.saveRank`/`applyScoreToSeason` 로직이 통째로 `rank` 도메인 소유로 이전됨)에만 의존.
-- `board` → `member.application.port.in.GetMemberNicknamePort`(작성자 닉네임), `rank.application.port.in.GetMemberTierPort`(작성자 티어뱃지), `record.application.port.in.RecordQueryService`(게시글 작성 시 첨부한 기록이 본인 소유인지 검증 — `getOne`은 원래 `record` 자신의 use-case지만 board가 그대로 재사용), `record.application.port.in.GetRecordSummaryPort`(게시글 조회 시 첨부 기록 요약 표시, 작성자가 아닌 제3자가 봐도 되도록 memberSno 소유권 검사 없이 recordSno만으로 조회)에 의존. 2026-08-11 "게시글에 러닝기록 첨부 + 작성자 프로필(티어)" 기능 추가 시 도입.
-- `board` → `media.application.port.in.MediaService`(게시글 작성 시 첨부 확정 — `attachToPost`), `media.application.port.in.GetPostAttachmentsPort`(게시글 조회 시 첨부 목록/개수 조회, `record.GetRecordSummaryPort`와 동일하게 소유권 검사 없이 postSno로만 조회)에 의존. `media`는 반대로 `board`를 전혀 모른다(단방향 의존) — `attachToPost`가 `postSno`를 그냥 값으로 받아 저장할 뿐, board 도메인 타입을 참조하지 않음. 2026-08-11 "게시글에 이미지/동영상/링크 첨부" 기능 추가 시 도입.
-- `rank`/`ranking` → `season.application.port.in.GetCurrentSeasonPort`에만 의존.
-- `record` → `territory.application.port.in.ProcessTerritoryRunUseCase`(땅따먹기 모드로 끝난 러닝의 땅 생성/데미지/점령 처리 — `record→rank`의 `ApplyScoreUseCase`와 같은 방향). 2026-08-27 "러닝 땅따먹기" 1차 구현 시 도입. `territory`는 반대로 `record`를 전혀 모른다(단방향 — 커맨드에 좌표를 값으로 담아 넘긴다).
+- `record` → `season.application.port.in.shared.GetCurrentSeasonPort`(현재 시즌 조회), `rank.application.port.in.shared.ApplyScoreUseCase`(점수 반영 — 예전 `RecordService.saveRank`/`applyScoreToSeason` 로직이 통째로 `rank` 도메인 소유로 이전됨)에만 의존.
+- `board` → `member.application.port.in.shared.GetMemberNicknamePort`(작성자 닉네임), `rank.application.port.in.shared.GetMemberTierPort`(작성자 티어뱃지), `record.application.port.in.RecordQueryUseCase`(게시글 작성 시 첨부한 기록이 본인 소유인지 검증 — `getOne`은 원래 `record` 자신의 use-case지만 board가 그대로 재사용), `record.application.port.in.shared.GetRecordSummaryPort`(게시글 조회 시 첨부 기록 요약 표시, 작성자가 아닌 제3자가 봐도 되도록 memberSno 소유권 검사 없이 recordSno만으로 조회)에 의존. 2026-08-11 "게시글에 러닝기록 첨부 + 작성자 프로필(티어)" 기능 추가 시 도입.
+- `board` → `media.application.port.in.MediaUseCase`(게시글 작성 시 첨부 확정 — `attachToPost`), `media.application.port.in.shared.GetPostAttachmentsPort`(게시글 조회 시 첨부 목록/개수 조회, `record.GetRecordSummaryPort`와 동일하게 소유권 검사 없이 postSno로만 조회)에 의존. `media`는 반대로 `board`를 전혀 모른다(단방향 의존) — `attachToPost`가 `postSno`를 그냥 값으로 받아 저장할 뿐, board 도메인 타입을 참조하지 않음. 2026-08-11 "게시글에 이미지/동영상/링크 첨부" 기능 추가 시 도입.
+- `rank`/`ranking` → `season.application.port.in.shared.GetCurrentSeasonPort`에만 의존.
+- `record` → `territory.application.port.in.shared.ProcessTerritoryRunUseCase`(땅따먹기 모드로 끝난 러닝의 땅 생성/데미지/점령 처리 — `record→rank`의 `ApplyScoreUseCase`와 같은 방향). 2026-08-27 "러닝 땅따먹기" 1차 구현 시 도입. `territory`는 반대로 `record`를 전혀 모른다(단방향 — 커맨드에 좌표를 값으로 담아 넘긴다).
 - `territory` → `member.GetMemberNicknamePort`·`rank.GetMemberTierPort`(지도 조회 시 소유자 표시), `season.GetCurrentSeasonPort`(땅 생성 시 시즌 스냅샷).
 - `crew` → `member.GetMemberNicknamePort`(크루원/초대/신청 목록 닉네임)·`member.SearchMembersPort`(초대 대상 검색, 2026-08-28 `member`에 추가)·`rank.GetMemberTierPort`(크루원 티어 배지)·`rank.GetMemberSeasonScoresPort`(크루원 랭킹 — 여러 회원 현재 시즌 점수 배치 조회, 2026-08-28 phase2에 `rank`에 추가)·`media.GetApprovedMediaUrlPort`(크루 아이콘 — media id로 APPROVED url 조회, 2026-08-28 `media`에 추가).
 - `board`·`ranking` → `crew.GetMemberCrewBadgePort`(작성자/랭커 옆 크루명·아이콘 배지 — 2026-08-28 phase2에 `crew`가 노출). `board`는 목록에서 배치(`getBadges`), 상세에서 단건(`getBadge`). `ranking`은 리더보드 각 행을 배치로. `crew` ↔ `board`/`ranking` 간 순환 의존 없음(`crew`는 board/ranking을 모름).
 
-**예외 — 순수 정적 정책 클래스는 포트 없이 직접 import**: `board.application.service.BoardQueryServiceImpl`이 `rank.domain.policy.RankTierLabelPolicy`(티어 → 언어별 라벨 고정 테이블)를 포트 없이 바로 호출합니다. 위 "도메인 간 의존은 포트로만" 원칙의 예외인데, 이 클래스가 Spring 빈도 아니고 DB/Redis 접근도 없는 순수 정적 조회 함수(`RankTier`, `Language` 두 enum만 받아 `String`을 반환)라 포트/어댑터를 만드는 비용이 실익보다 크다고 판단했기 때문입니다 — `common` 패키지의 `StringRedisTemplate` 같은 범용 인프라 클라이언트를 포트화하지 않는 것과 같은 이유. 상태를 갖거나 DB에 접근하는 진짜 크로스 도메인 접근(리포지토리 등)이라면 반드시 포트를 통해야 합니다. 같은 이유로 `territory.domain.policy.ClosedLoopDetector`는 `record.domain.policy.GeoDistanceCalculator`(haversine, 순수 static)를 포트 없이 직접 재사용합니다.
+**예외 — 순수 정적 정책 클래스는 포트 없이 직접 import**: `board.application.service.BoardQueryService`이 `rank.domain.policy.RankTierLabelPolicy`(티어 → 언어별 라벨 고정 테이블)를 포트 없이 바로 호출합니다. 위 "도메인 간 의존은 포트로만" 원칙의 예외인데, 이 클래스가 Spring 빈도 아니고 DB/Redis 접근도 없는 순수 정적 조회 함수(`RankTier`, `Language` 두 enum만 받아 `String`을 반환)라 포트/어댑터를 만드는 비용이 실익보다 크다고 판단했기 때문입니다 — `common` 패키지의 `StringRedisTemplate` 같은 범용 인프라 클라이언트를 포트화하지 않는 것과 같은 이유. 상태를 갖거나 DB에 접근하는 진짜 크로스 도메인 접근(리포지토리 등)이라면 반드시 포트를 통해야 합니다. 같은 이유로 `territory.domain.policy.ClosedLoopDetector`는 `record.domain.policy.GeoDistanceCalculator`(haversine, 순수 static)를 포트 없이 직접 재사용합니다.
 
 ### 게시글 미디어 첨부(이미지/동영상/링크) — 2026-08-11 추가
 
-`media` 도메인은 `record`/`rank`와 동일하게 query/write 유스케이스를 분리합니다(`MediaService`가 쓰기, `GetPostAttachmentsPort`를 구현하는 `MediaQueryServiceImpl`이 읽기). S3(`AwsS3Config`의 `S3Client`/`S3Presigner`)와 Rekognition(`AwsRekognitionConfig`의 `RekognitionClient`)은 `TranslateClient`와 동일하게 포트화하지 않고 `MediaServiceImpl`에 직접 주입합니다.
+`media` 도메인은 `record`/`rank`와 동일하게 query/write 유스케이스를 분리합니다(`MediaUseCase`가 쓰기, `GetPostAttachmentsPort`를 구현하는 `MediaQueryService`이 읽기). S3(`AwsS3Config`의 `S3Client`/`S3Presigner`)와 Rekognition(`AwsRekognitionConfig`의 `RekognitionClient`)은 `TranslateClient`와 동일하게 포트화하지 않고 `MediaService`에 직접 주입합니다.
 
-**record 첨부와 다른 지점 — `postSno` 연결 시점**: `record`는 게시글보다 먼저 존재하는 리소스를 참조만 하므로 `BoardServiceImpl.createPost`가 게시글을 저장하기 *전에* `recordQueryService.getOne(...)`으로 사전 검증합니다. 반면 미디어는 업로드 자체는 게시글 작성 이전에 끝나 있어도(파일 선택 즉시 S3 업로드+모더레이션이 진행됨) `media.post_sno`는 게시글이 실제로 저장돼 `post.sno`가 생긴 *이후에만* 채울 수 있습니다. 그래서 `BoardServiceImpl.createPost`는 `postRepositoryPort.save(post)` 다음에 `mediaService.attachToPost(memberSno, ids, post.getSno())`를 호출하고, 여기서 소유권/`APPROVED` 상태/중복첨부 검증에 실패해 예외가 던져지면 같은 `@Transactional` 메서드 안이므로 방금 저장한 게시글 insert까지 통째로 롤백됩니다 — "사전 검증 후 저장"이 아니라 "저장 후 검증 실패 시 롤백"으로 같은 원자성을 얻는 방식입니다.
+**record 첨부와 다른 지점 — `postSno` 연결 시점**: `record`는 게시글보다 먼저 존재하는 리소스를 참조만 하므로 `BoardService.createPost`가 게시글을 저장하기 *전에* `recordQueryService.getOne(...)`으로 사전 검증합니다. 반면 미디어는 업로드 자체는 게시글 작성 이전에 끝나 있어도(파일 선택 즉시 S3 업로드+모더레이션이 진행됨) `media.post_sno`는 게시글이 실제로 저장돼 `post.sno`가 생긴 *이후에만* 채울 수 있습니다. 그래서 `BoardService.createPost`는 `postRepositoryPort.save(post)` 다음에 `mediaService.attachToPost(memberSno, ids, post.getSno())`를 호출하고, 여기서 소유권/`APPROVED` 상태/중복첨부 검증에 실패해 예외가 던져지면 같은 `@Transactional` 메서드 안이므로 방금 저장한 게시글 insert까지 통째로 롤백됩니다 — "사전 검증 후 저장"이 아니라 "저장 후 검증 실패 시 롤백"으로 같은 원자성을 얻는 방식입니다.
 
 **모더레이션 흐름**: `Media.status`는 `PENDING`(업로드 직후) → `APPROVED`/`REJECTED`로 전이합니다. `IMAGE`는 Rekognition `DetectModerationLabels`(동기 API)로 `/complete` 호출 안에서 바로 결과가 나오지만, `VIDEO`는 `StartContentModeration`(비동기 작업)만 시작하고 `PENDING`을 유지하다가, 클라이언트가 `GET /status`를 폴링할 때마다 `GetContentModeration`으로 작업 상태를 재조회해 갱신합니다(SNS/웹훅 없이 순수 폴링 — 인프라를 늘리지 않기 위한 선택). `REJECTED`가 확정되면(모더레이션 거부든 용량 초과든) S3 객체를 즉시 `DeleteObject`로 삭제합니다 — 버킷의 `media/` prefix가 전체 공개 읽기라, API가 URL을 응답에 노출하지 않아도 객체가 남아있으면 키를 아는 사람이 직접 접근할 수 있기 때문입니다(`docs/database.md#media` 참고). `LINK` 타입은 업로드/모더레이션 대상이 아니라 생성 즉시 `APPROVED`입니다.
 
@@ -110,15 +118,15 @@ com.example.paceleague
 
 `board.domain.policy.PostContentSanitizer`가 이 sanitize를 전담합니다. OWASP Java HTML Sanitizer(`com.googlecode.owasp-java-html-sanitizer`)를 쓰되, 번들 `Sanitizers.FORMATTING`/`Sanitizers.LINKS`/`Sanitizers.IMAGES`는 쓰지 않고 **커스텀 `HtmlPolicyBuilder`로 전체 화이트리스트를 직접 구성**합니다 — `Sanitizers.FORMATTING`은 `font,s,u,o,sup,sub,ins,del,strike,tt,code,big,small,span` 등 "굵게/기울임/링크만"보다 훨씬 넓은 태그를 허용해버리고, `video` 태그는 애초에 어떤 번들에도 없기 때문입니다. 최종 화이트리스트: `p, br, div, b, strong, i, em, a[href], img[src,alt], video[src,controls]` — 그 외(`script`, `style`, `on*` 속성, `class`, `javascript:` URL 등)는 라이브러리 기본 동작("명시 허용 외 전부 차단")으로 제거됩니다.
 
-`BoardServiceImpl.createPost`가 클라이언트 입력을 받아 `Post.content`를 쓰는 유일한 경로이므로, 이 한 지점에서만 sanitize하면 됩니다(읽을 때마다 다시 sanitize하지 않음 — `web/post.html`이 `post.content`를 그대로 `innerHTML`에 꽂는 게 안전한 이유). "본문이 비어있는지" 판정도 여기서 재정의됩니다: sanitize 후 태그를 뺀 순수 텍스트가 비어 있어도 `<img>`/`<video>`가 하나라도 있으면 유효한 게시글로 인정합니다(이미지/동영상만 있는 글 허용) — `PostContentSanitizer.toPlainText`(정규식 기반 태그 제거, sanitize를 이미 거친 안전한 HTML에만 쓰므로 이 정도 수준으로 충분)와 `containsMedia`로 판정합니다.
+`BoardService.createPost`가 클라이언트 입력을 받아 `Post.content`를 쓰는 유일한 경로이므로, 이 한 지점에서만 sanitize하면 됩니다(읽을 때마다 다시 sanitize하지 않음 — `web/post.html`이 `post.content`를 그대로 `innerHTML`에 꽂는 게 안전한 이유). "본문이 비어있는지" 판정도 여기서 재정의됩니다: sanitize 후 태그를 뺀 순수 텍스트가 비어 있어도 `<img>`/`<video>`가 하나라도 있으면 유효한 게시글로 인정합니다(이미지/동영상만 있는 글 허용) — `PostContentSanitizer.toPlainText`(정규식 기반 태그 제거, sanitize를 이미 거친 안전한 HTML에만 쓰므로 이 정도 수준으로 충분)와 `containsMedia`로 판정합니다.
 
-`TranslationServiceImpl.translatePost`도 영향을 받습니다: AWS Translate는 HTML을 이해하지 못해 태그가 섞인 채로 넘기면 그대로 깨져서 번역되므로, `PostContentSanitizer.toPlainText(post.getContent())`로 평문만 추출해 번역합니다. 평문이 비어있으면(이미지 전용 글) Translate 호출 자체를 생략하고 빈 문자열을 반환합니다.
+`TranslationService.translatePost`도 영향을 받습니다: AWS Translate는 HTML을 이해하지 못해 태그가 섞인 채로 넘기면 그대로 깨져서 번역되므로, `PostContentSanitizer.toPlainText(post.getContent())`로 평문만 추출해 번역합니다. 평문이 비어있으면(이미지 전용 글) Translate 호출 자체를 생략하고 빈 문자열을 반환합니다.
 
 이미 구축된 `media` 도메인의 presign→PUT→complete→poll 파이프라인은 **전혀 변경되지 않았습니다** — 에디터는 그 결과(승인된 `url`)를 커서 위치의 placeholder에 삽입하는 방식으로만 바뀌었을 뿐입니다. `POST /api/media/links`도 API에는 남아 있지만, 웹 에디터는 더 이상 호출하지 않습니다(링크는 업로드/모더레이션이 필요 없어 `document.execCommand('createLink', ...)`로 즉시 삽입하고, sanitizer의 URL 프로토콜 화이트리스트가 유일한 검증). `PostSummaryResponse.attachmentCount`/`PostDetailResponse.attachments`(`GetPostAttachmentsPort` 기반)도 API에는 그대로 남아 있으나, 웹 클라이언트는 이미지/동영상이 `content` 안에 인라인으로 있으므로 더 이상 별도 갤러리를 그리지 않습니다(중복 표시 방지).
 
 ### 정적 UI 라벨 다국어(i18n) — 2026-08-11 추가
 
-카테고리명(보드 name/description)과 티어 등급 표시는 웹 UI 언어 선택기(`web/js/i18n.js`, 10개 언어)에 맞춰 서버가 직접 번역된 문자열을 내려주도록 했습니다. 게시글 본문처럼 자유 텍스트가 아니라 **값의 종류가 고정**(보드 3개, 티어 7개)돼 있어 AWS Translate(`board.TranslationServiceImpl`, 유료·조회성 API)를 쓰지 않고, 코드 안에 고정 번역 테이블을 두는 방식을 택했습니다.
+카테고리명(보드 name/description)과 티어 등급 표시는 웹 UI 언어 선택기(`web/js/i18n.js`, 10개 언어)에 맞춰 서버가 직접 번역된 문자열을 내려주도록 했습니다. 게시글 본문처럼 자유 텍스트가 아니라 **값의 종류가 고정**(보드 3개, 티어 7개)돼 있어 AWS Translate(`board.TranslationService`, 유료·조회성 API)를 쓰지 않고, 코드 안에 고정 번역 테이블을 두는 방식을 택했습니다.
 
 - `common.i18n.Language` — `web/js/i18n.js`의 `SUPPORTED_LANGUAGES`와 동일한 10개 코드(ko/en/ja/zh/es/fr/de/pt/vi/th)의 enum. `fromCode(String)`이 `null`/미지원 코드를 항상 `KO`로 폴백한다 (컨트롤러의 `translatePost` 같은 자유 번역 API는 미지원 언어를 400으로 거부하지만, 이건 정적 UI 라벨이라 관대하게 기본값으로 떨어지는 쪽을 택함).
 - `rank.domain.policy.RankTierLabelPolicy` — `RankTier` 7개 × `Language` 10개 고정 테이블. `RankMeResponse`(`currentTierLabel`/`nextTierLabel`), `RankingUserResponse`(`tierLabel`), `PostSummaryResponse`/`PostDetailResponse`(`authorTierLabel`)에서 사용. 원본 `RankTier` enum 필드(`currentTier`/`tier`/`authorTier`)는 그대로 남겨둬서, 로직/필터링이 필요한 클라이언트(모바일 앱 등)는 언어와 무관한 코드를 계속 쓸 수 있다.
@@ -131,10 +139,10 @@ com.example.paceleague
 
 ### 러닝 땅따먹기(Territory) — 2026-08-27 추가
 
-`territory` 도메인은 `record`/`rank` 패턴을 그대로 따릅니다(query/write 유스케이스 분리: `ProcessTerritoryRunServiceImpl`이 쓰기, `TerritoryQueryServiceImpl`이 지도 조회). 전체 기획은 Notion "러닝 땅따먹기" 문서이며 이번은 1차 슬라이스 — 도메인 규칙은 [domains.md](./domains.md#러닝-땅따먹기territory-도메인) 참고.
+`territory` 도메인은 `record`/`rank` 패턴을 그대로 따릅니다(query/write 유스케이스 분리: `ProcessTerritoryRunService`이 쓰기, `TerritoryQueryService`이 지도 조회). 전체 기획은 Notion "러닝 땅따먹기" 문서이며 이번은 1차 슬라이스 — 도메인 규칙은 [domains.md](./domains.md#러닝-땅따먹기territory-도메인) 참고.
 
 - **폴리곤 계산에 JTS 도입**: `org.locationtech.jts:jts-core`(순수 Java, 전이 의존성 없음). 러닝 GPS 루프는 임의의 오목 다각형이라 면적/교집합을 직접 구현하면 버그 소지가 커서 도입. 공간 DB 타입(`GEOMETRY`)은 여전히 안 쓰고, 좌표는 `polygon_json`(LONGTEXT)에 저장하고 계산만 Java에서 한다(`record_track.points_json`과 동일 방침). `PolygonGeometry`가 위/경도를 bbox 중심 기준 등거리 평면(미터)으로 투영해 JTS로 계산.
-- **`ProcessTerritoryRunUseCase.process`는 `@Transactional(REQUIRES_NEW)`** — `record→rank`의 `ApplyScoreUseCase`(호출자 트랜잭션 합류, 실패 시 함께 롤백)와 의도적으로 다르다. 땅 판정 실패가 러닝 기록 저장을 롤백시키면 안 되므로 별도 트랜잭션으로 분리하고, 호출부(`SaveGpsSessionServiceImpl.finalizeRun`)가 예외를 잡아 삼킨다("닫힌 도형 아님"은 애초에 예외가 아니라 결과값으로 반환).
+- **`ProcessTerritoryRunUseCase.process`는 `@Transactional(REQUIRES_NEW)`** — `record→rank`의 `ApplyScoreUseCase`(호출자 트랜잭션 합류, 실패 시 함께 롤백)와 의도적으로 다르다. 땅 판정 실패가 러닝 기록 저장을 롤백시키면 안 되므로 별도 트랜잭션으로 분리하고, 호출부(`SaveGpsSessionService.finalizeRun`)가 예외를 잡아 삼킨다("닫힌 도형 아님"은 애초에 예외가 아니라 결과값으로 반환).
 - **설정은 `@ConfigurationProperties`**: `paceleague.territory.*`가 10개쯤 뭉쳐 있어 `app.jwt`(`JwtProperties`)처럼 `TerritoryProperties` 레코드로 묶고 `@EnableConfigurationProperties`에 등록. `paceleague.gps.sweeper.*`가 `@Value` + `:기본값`으로 흩어져 있는 것과 대비.
 - **동시성**: 같은 땅을 여러 명이 동시에 공격할 수 있어 `findActiveIntersectingBboxForUpdate`가 `PESSIMISTIC_WRITE` 락으로 후보 territory들을 조회한다(`MemberScore`의 `findBy...ForUpdate`와 동일 패턴). `GpsSessionSweeper`처럼 단일 인스턴스 전제 — 스케일아웃 시 재검토 필요.
 
@@ -156,7 +164,7 @@ com.example.paceleague
 
 ## 레이어 규칙
 
-- **Controller (`adapter/in/web`)**: 요청/응답 매핑만 담당. 비즈니스 로직, `@Transactional` 금지. `port/in` 유스케이스 인터페이스에만 의존하고 구현체(`*ServiceImpl`)를 직접 주입받지 않는다.
+- **Controller (`adapter/in/web`)**: 요청/응답 매핑만 담당. 비즈니스 로직, `@Transactional` 금지. `port/in` 유스케이스 인터페이스(`*UseCase`)에만 의존하고 구현체(`*Service`)를 직접 주입받지 않는다.
 - **UseCase 구현체 (`application/service`)**: 비즈니스 로직과 트랜잭션 경계를 소유. 조회는 `@Transactional(readOnly = true)`, 변경은 `@Transactional`. `port/out`에만 의존하고 Spring Data `JpaRepository`를 직접 주입받지 않는다.
 - **PersistenceAdapter (`adapter/out/persistence`)**: DB 접근은 오직 이 계층에서만. 단순 CRUD는 내부 `*JpaRepository`의 `JpaRepository` 메서드 이름 규칙 사용, 복잡한 집계는 네이티브 쿼리(`@Query(nativeQuery = true)`) 사용 (예: `RankingJpaRepository`, `RecordJpaRepository`의 요약 집계). 어댑터 클래스 자체는 `port/out` 인터페이스를 구현만 하고 위임할 뿐 로직을 갖지 않는다.
 - **DTO (`application/dto`)**: Entity를 API 응답으로 직접 반환하지 않는다. 모든 응답 DTO는 엔티티 필드를 그대로 담지 않고 명시적으로 값을 옮겨 담는다(`RecordResponse.from(Record)` 같은 정적 팩토리 메서드 패턴).
@@ -167,7 +175,7 @@ com.example.paceleague
 
 - **DTO는 엔티티를 감싸지 않는다**: 응답 DTO 필드는 엔티티 타입이 아닌 원시/값 타입만 사용한다. 타입이 불확실하다고 `Object`로 남겨두지 않는다 — 엔티티의 실제 컬럼 타입을 그대로 명시한다.
 - **중복 로직은 private 메서드로 추출한다**: 같은 유스케이스 구현체 안에서 2회 이상 반복되는 로직(예: 토큰 발급, 기록 저장+점수 산정)은 새 클래스를 만들지 않고 private 메서드로 뽑아낸다.
-- **긴 메서드는 의미 단위로 분리한다**: 여러 계산 단계가 섞인 메서드(예: 점수 산정)는 각 단계를 이름이 있는 private 메서드로 나눠, 메서드 이름 자체가 문서 역할을 하도록 한다. `RecordServiceImpl`의 `computeAndApplyScore`가 순수 계산 부분(`RecordScoreCalculator.calculateBaseScore`/`calculatePaceBonus`)과 리포지토리 접근이 필요한 `calculateWeeklyBonus`로 나뉘고, 최종 반영은 `rank.ApplyScoreUseCase`에 위임하는 것이 예시이며, 각 단계는 [domains.md](./domains.md)의 점수 산정 문서와 1:1로 대응한다.
+- **긴 메서드는 의미 단위로 분리한다**: 여러 계산 단계가 섞인 메서드(예: 점수 산정)는 각 단계를 이름이 있는 private 메서드로 나눠, 메서드 이름 자체가 문서 역할을 하도록 한다. `RecordService`의 `computeAndApplyScore`가 순수 계산 부분(`RecordScoreCalculator.calculateBaseScore`/`calculatePaceBonus`)과 리포지토리 접근이 필요한 `calculateWeeklyBonus`로 나뉘고, 최종 반영은 `rank.ApplyScoreUseCase`에 위임하는 것이 예시이며, 각 단계는 [domains.md](./domains.md)의 점수 산정 문서와 1:1로 대응한다.
 - **인증된 컨트롤러의 memberSno 추출은 공유 리졸버로 통합했다**: 클린 아키텍처 전환 전에는 `uno(authentication)` 캐스팅 헬퍼가 컨트롤러마다 반복됐지만, 지금은 `@MemberSno Long memberSno`(`common.web.MemberSnoArgumentResolver`) 하나로 통일했다 — 이건 "새 추상화 계층"이 아니라 유스케이스 포트 도입과 함께 자연스럽게 정리된 것이며, 이 이상으로 공통 유틸리티를 늘리지는 않는다.
 
 ## 인증 전체 구조

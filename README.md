@@ -92,18 +92,17 @@ Client → Nginx → Spring Boot (DispatcherServlet)
 
 # 배포 흐름
 
+`main` 브랜치 push 시 `api/`와 `web/`이 한 번의 파이프라인으로 함께 배포됩니다. 상세는 [docs/setup.md](./docs/setup.md) · [docs/infra.md](./docs/infra.md) 참고.
+
 ```text
-GitHub
-  ↓
-GitHub Actions
-  ↓
-Docker Build
-  ↓
-AWS ECR Push
-  ↓
-EC2 Pull
-  ↓
-Docker Run
+GitHub push (main)
+  → GitHub Actions
+      · 저장소 루트에서 Docker 이미지 빌드 (api jar + web/ 를 /web-dist 로 함께 포함)
+      · AWS ECR push
+      · AWS SSM (AWS-RunShellScript) 로 EC2 에 배포 명령 전달
+  → EC2 (.github/ssm-commands.json)
+      1. docker pull → 앱 컨테이너 먼저 재시작 (api.paceleague.co.kr 우선)
+      2. 이미지에서 /web-dist 추출 → /var/www/paceleague 교체 (실패 시 기존 정적 사이트 유지)
 ```
 
 ---
@@ -115,7 +114,7 @@ Docker Run
 ```text
 .
 ├── api/            Spring Boot 백엔드 (api.paceleague.co.kr)
-│   └── src/main/java/com/example/paceleague
+│   └── src/main/java/com/paceleague
 │       ├── member       회원 가입/로그인/토큰
 │       ├── record       러닝 기록 저장·조회, GPS 청크 수집
 │       ├── rank         내 점수/티어 조회

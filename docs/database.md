@@ -86,7 +86,7 @@ MySQL, Spring Data JPA(Hibernate) 사용. 로컬은 `ddl-auto: update`, 운영�
 
 ## `territory`
 
-러닝 땅따먹기의 "땅" 1구획 = 닫힌 GPS 도형 1개. `record_track.territory_mode = 1`인 러닝이 종료될 때 `ProcessTerritoryRunServiceImpl`이 생성/갱신. 마이그레이션: [migrations/2026-08-27_territory_feature.sql](./migrations/2026-08-27_territory_feature.sql). 도메인 규칙은 [domains.md](./domains.md#러닝-땅따먹기territory-도메인) 참고.
+러닝 땅따먹기의 "땅" 1구획 = 닫힌 GPS 도형 1개. `record_track.territory_mode = 1`인 러닝이 종료될 때 `ProcessTerritoryRunService`이 생성/갱신. 마이그레이션: [migrations/2026-08-27_territory_feature.sql](./migrations/2026-08-27_territory_feature.sql). 도메인 규칙은 [domains.md](./domains.md#러닝-땅따먹기territory-도메인) 참고.
 
 | 컬럼 | 타입(Java) | 설명 |
 |---|---|---|
@@ -191,7 +191,7 @@ DDL로 시딩만 하고(자유게시판/질문/인증 3개), 생성/수정 API�
 | sno | Long (PK, IDENTITY) | |
 | board_sno | Long | `board.sno` FK 값 |
 | member_sno | Long | 작성자, `member.sno` FK 값 |
-| record_sno | Long, nullable | 첨부한 `record.sno` FK 값. 작성 시점에 작성자 본인 소유 기록인지만 검증하고(`RecordQueryService.getOne`) 이후엔 값만 저장 — 기록이 나중에 삭제돼도 `post` 쪽엔 반영되지 않으므로 조회 시(`GetRecordSummaryPort`) 없으면 `attachedRecord: null`로 응답. [migrations/2026-08-11_post_record_attachment.sql](./migrations/2026-08-11_post_record_attachment.sql) 참고. |
+| record_sno | Long, nullable | 첨부한 `record.sno` FK 값. 작성 시점에 작성자 본인 소유 기록인지만 검증하고(`RecordQueryUseCase.getOne`) 이후엔 값만 저장 — 기록이 나중에 삭제돼도 `post` 쪽엔 반영되지 않으므로 조회 시(`GetRecordSummaryPort`) 없으면 `attachedRecord: null`로 응답. [migrations/2026-08-11_post_record_attachment.sql](./migrations/2026-08-11_post_record_attachment.sql) 참고. |
 | title | String(200) | |
 | content | String (TEXT) | |
 | view_count | int | 조회할 때마다 원자적 `UPDATE ... SET view_count = view_count + 1`로 증가, 중복 방지 없음 |

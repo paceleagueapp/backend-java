@@ -35,9 +35,10 @@
     entity/        JPA @Entity 그대로 도메인 모델로 사용 (순수 POJO로 이중화하지 않음)
     policy/ enums/  순수 비즈니스 규칙
   application/
-    port/in/        유스케이스 인터페이스 (기존 서비스 인터페이스와 1:1 대응, 도메인당 보통 1~3개)
-    port/out/        리포지토리 모양의 출력 포트 — Spring Data/JPA import 금지
-    service/         유스케이스 구현체, port/out에만 의존
+    port/in/        그 도메인 자신의 유스케이스 인터페이스 — 접미사 `*UseCase` (도메인당 보통 1~3개)
+    port/in/shared/  다른 도메인이 호출하려고 만든 인바운드 포트만 모음 (`GetMemberNicknamePort` 등). 자기 유스케이스를 다른 도메인이 재사용하는 경우는 여기 아님
+    port/out/        리포지토리 모양의 출력 포트 — Spring Data/JPA import 금지 (페이지네이션 `Page`/`Pageable`만 예외)
+    service/         유스케이스 구현체 — 접미사 `*Service` (`Impl` 금지: `RecordService implements RecordUseCase`), port/out에만 의존
     dto/             Command/Result 경계 타입
   adapter/
     in/web/          컨트롤러, port/in에만 의존
