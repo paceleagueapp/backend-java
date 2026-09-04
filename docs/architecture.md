@@ -46,7 +46,7 @@ Client
     policy/ enums/   순수 비즈니스 규칙 (RankTierPolicy, RecordScoreCalculator 등)
   application/
     port/in/         유스케이스 인터페이스 — 기존 서비스 인터페이스가 있던 도메인(member/record/board)은 이름을 그대로 유지, 없던 도메인(rank/ranking/appversion)은 새로 추출
-    port/out/         리포지토리 모양의 출력 포트 — Spring Data/JPA import 없음, 실제 쓰는 메서드만 선언
+    port/out/         리포지토리 모양의 출력 포트 — JPA/Hibernate import 없이 실제 쓰는 메서드만 선언 (`PostRepositoryPort`·`RecordRepositoryPort`만 목록 페이지네이션을 위해 Spring Data `Page`/`Pageable`을 시그니처에 사용)
     service/          유스케이스 구현체 (기존 *ServiceImpl 위치, 이제 port/out에만 의존)
     dto/              Command/Result 경계 타입 (기존 dto 그대로 이동)
   adapter/
@@ -66,6 +66,8 @@ com.example.paceleague
 ├── appversion   모바일 앱 강제/선택 업데이트, 점검 여부 체크
 ├── board        커뮤니티(보드/게시글/댓글/추천) — record 도메인과 동일하게 query/write 유스케이스 분리
 ├── media        게시글 첨부(이미지/동영상/링크) — S3 presigned URL 업로드 + Rekognition 모더레이션. 2026-08-11 추가
+├── territory    러닝 땅따먹기 — 닫힌 GPS 루프를 "땅"으로, 겹친 러닝이 데미지/점령. query/write 유스케이스 분리. 2026-08-27 추가
+├── crew         크루(길드) — 1인 1크루, 초대/가입 승인, 크루 랭킹·배지. 2026-08-28 추가
 └── common       횡단 관심사: 설정, 응답 포맷, 에러 처리, JWT 필터. 위 도메인별 구조에 억지로 끼워맞추지 않고 지금 형태를 유지.
     ├── config       SecurityConfig, JwtConfig/JwtProperties, RedisConfig, JpaConfig, OpenApiConfig, WebMvcConfig, SchedulingConfig(@EnableScheduling), AwsTranslateConfig/AwsS3Config/AwsRekognitionConfig
     ├── i18n         Language(10개 언어 enum), CountryLanguageResolver, LocaleResolver — 정적 UI 라벨 다국어(아래 참고)
@@ -140,7 +142,7 @@ com.example.paceleague
 
 "진짜" 클린 아키텍처는 JPA `@Entity`와 프레임워크 독립적인 도메인 모델을 완전히 분리하고 그 사이를 매퍼로 연결하지만, 이 프로젝트는 그렇게 하지 않기로 결정했습니다. 이유:
 
-- 엔티티 11개 중 다수(`MemberScore.addScore`, `Rank`의 `@PreUpdate` 등)가 이미 실질적인 도메인 동작을 갖고 있어 완전한 빈혈 모델이 아닙니다 — 분리해도 그 동작을 어딘가로 옮기고 매퍼를 추가하는 비용만 늘어날 뿐, 단일 모듈에서 영속 기술을 바꿀 계획도 없어 실익이 없습니다.
+- 엔티티(현재 19개) 중 다수(`MemberScore.addScore`, `Rank`의 `@PreUpdate`, `Post.edit`, `Territory`의 HP 연산 등)가 이미 실질적인 도메인 동작을 갖고 있어 완전한 빈혈 모델이 아닙니다 — 분리해도 그 동작을 어딘가로 옮기고 매퍼를 추가하는 비용만 늘어날 뿐, 단일 모듈에서 영속 기술을 바꿀 계획도 없어 실익이 없습니다.
 - `Member.sno`가 `Integer`인데 리포지토리는 `Long`을 쓰는 기존 타입 불일치, `season.getSeason()`/`season.getSno()`를 서로 다르게 쓰는 `rank`/`ranking`의 불일치 같은 **기존 결함을 이번 리팩토링에서 그대로 보존**해야 했는데, 엔티티를 이중화하면 두 곳에 결함을 전파하거나 리팩토링 도중 몰래 "고쳐버리는" 위험이 커집니다.
 
 ### `rank` vs `ranking` — 왜 나뉘어 있는가
@@ -181,4 +183,4 @@ com.example.paceleague
 
 - `RecordController.getMonthAll`: 실제 회원 체중을 조회하지 않고 `weightKg = 70`으로 하드코딩되어 있음 (칼로리 계산에 사용됨, 코드에 TODO 명시). `Member` 엔티티에 체중 컬럼 자체가 없어서, 해소하려면 DB 스키마 변경(운영은 `ddl-auto: validate`라 수동 마이그레이션 필요)과 회원가입/API 계약 변경이 함께 필요한 별도 작업입니다.
 - 테스트는 `PaceleagueApplicationTests`(컨텍스트 로드 스모크 테스트) 하나뿐. `AGENTS.md`는 JUnit5 + Mockito로 성공/실패 케이스를 작성하도록 규정하지만 아직 실제로 지켜지지 않음.
-- README에 언급된 QueryDSL은 `build.gradle` 의존성에 없음 (아직 도입되지 않음, 복잡한 집계는 현재 네이티브 SQL로 처리).
+- QueryDSL은 도입되지 않음 — 복잡한 집계는 `@Query(nativeQuery = true)`로 처리 (2026-09-04 README에서도 QueryDSL 언급 제거).
