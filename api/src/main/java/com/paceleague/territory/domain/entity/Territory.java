@@ -60,6 +60,11 @@ public class Territory {
     @Column(name = "perimeter_m", precision = 14, scale = 4)
     private BigDecimal perimeterM;
 
+    // 이 땅을 이루는 H3(resolution 12) 헥사곤 개수. 생성 시 고정되며 점령(capture)으로도 바뀌지 않는다 —
+    // territory_hex 행 자체는 소유자 변경과 무관하게 그대로 이 territory_sno에 남는다.
+    @Column(name = "hex_count")
+    private Integer hexCount;
+
     @Column(name = "hp", nullable = false)
     private int hp;
 
@@ -85,7 +90,7 @@ public class Territory {
     private Territory(Long ownerMemberSno, Long season, String polygonJson,
                       BigDecimal bboxMinLat, BigDecimal bboxMinLng, BigDecimal bboxMaxLat, BigDecimal bboxMaxLng,
                       BigDecimal centerLat, BigDecimal centerLng, BigDecimal areaSqm, BigDecimal perimeterM,
-                      int maxHp, Long sourceRecordSno, Long sourceTrackSno) {
+                      Integer hexCount, int maxHp, Long sourceRecordSno, Long sourceTrackSno) {
         this.ownerMemberSno = ownerMemberSno;
         this.season = season;
         this.polygonJson = polygonJson;
@@ -97,6 +102,7 @@ public class Territory {
         this.centerLng = centerLng;
         this.areaSqm = areaSqm;
         this.perimeterM = perimeterM;
+        this.hexCount = hexCount;
         this.hp = maxHp;
         this.maxHp = maxHp;
         this.sourceRecordSno = sourceRecordSno;

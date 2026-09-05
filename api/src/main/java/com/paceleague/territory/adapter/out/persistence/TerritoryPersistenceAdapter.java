@@ -31,9 +31,8 @@ public class TerritoryPersistenceAdapter implements TerritoryRepositoryPort {
                 minLat, minLng, maxLat, maxLng, PageRequest.of(0, limit));
     }
 
-    public List<Territory> findActiveIntersectingBboxForUpdate(BigDecimal minLat, BigDecimal minLng,
-                                                              BigDecimal maxLat, BigDecimal maxLng) {
-        return territoryJpaRepository.findActiveIntersectingBboxForUpdate(minLat, minLng, maxLat, maxLng);
+    public List<Territory> findAllByIdForUpdate(List<Long> snos) {
+        return territoryJpaRepository.findAllByIdForUpdate(snos);
     }
 
     public List<TerritoryOwnerArea> findTopOwnersByArea(int limit) {

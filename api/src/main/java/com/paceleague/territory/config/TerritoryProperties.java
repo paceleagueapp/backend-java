@@ -17,7 +17,8 @@ public record TerritoryProperties(
         Double attackFactor,
         Double healFactor,
         Integer contributionWindowMinutes,
-        Integer rankingMaxResults
+        Integer rankingMaxResults,
+        Integer hexResolution
 ) {
     public TerritoryProperties {
         if (minZoom == null) minZoom = 13;
@@ -31,5 +32,6 @@ public record TerritoryProperties(
         if (attackFactor == null) attackFactor = 0.5;
         if (healFactor == null) healFactor = 0.5;
         if (contributionWindowMinutes == null) contributionWindowMinutes = 60;
+        if (hexResolution == null) hexResolution = 12; // H3 res12 평균 ~307㎡ — 소유권/충돌 판정의 최소 단위
     }
 }

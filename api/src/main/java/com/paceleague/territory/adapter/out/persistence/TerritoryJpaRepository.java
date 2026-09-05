@@ -28,17 +28,8 @@ public interface TerritoryJpaRepository extends JpaRepository<Territory, Long> {
                                                Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-            select t from Territory t
-            where t.status = 'ACTIVE'
-              and t.bboxMinLat <= :maxLat and t.bboxMaxLat >= :minLat
-              and t.bboxMinLng <= :maxLng and t.bboxMaxLng >= :minLng
-            order by t.sno asc
-            """)
-    List<Territory> findActiveIntersectingBboxForUpdate(@Param("minLat") BigDecimal minLat,
-                                                        @Param("minLng") BigDecimal minLng,
-                                                        @Param("maxLat") BigDecimal maxLat,
-                                                        @Param("maxLng") BigDecimal maxLng);
+    @Query("select t from Territory t where t.sno in (:snos) order by t.sno asc")
+    List<Territory> findAllByIdForUpdate(@Param("snos") List<Long> snos);
 
     // 소유자별 총 점령 면적 랭킹(면적 큰 순).
     @Query(value = """

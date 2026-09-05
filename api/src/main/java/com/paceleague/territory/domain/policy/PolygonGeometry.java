@@ -141,13 +141,14 @@ public final class PolygonGeometry {
         return METERS_PER_DEG_LAT * Math.cos(Math.toRadians(refLat));
     }
 
-    private static double[] project(double lat, double lng, double refLat, double refLng) {
+    // package-private: H3TerritoryGrid가 헥사곤 경계를 같은 등거리 평면에 투영/역투영할 때 재사용한다.
+    static double[] project(double lat, double lng, double refLat, double refLng) {
         double x = (lng - refLng) * metersPerDegLng(refLat);
         double y = (lat - refLat) * METERS_PER_DEG_LAT;
         return new double[]{x, y};
     }
 
-    private static double[] unproject(double x, double y, double refLat, double refLng) {
+    static double[] unproject(double x, double y, double refLat, double refLng) {
         double lat = refLat + y / METERS_PER_DEG_LAT;
         double lng = refLng + x / metersPerDegLng(refLat);
         return new double[]{lat, lng};
