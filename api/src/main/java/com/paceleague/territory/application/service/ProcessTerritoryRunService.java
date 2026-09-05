@@ -7,18 +7,15 @@ import com.paceleague.territory.application.dto.ProcessTerritoryRunResult;
 import com.paceleague.territory.application.dto.ProcessTerritoryRunResult.CapturedTerritory;
 import com.paceleague.territory.application.dto.TerritoryHexOverlap;
 import com.paceleague.territory.application.port.in.shared.ProcessTerritoryRunUseCase;
-import com.paceleague.territory.application.port.out.TerritoryContributionRepositoryPort;
 import com.paceleague.territory.application.port.out.TerritoryHexRepositoryPort;
 import com.paceleague.territory.application.port.out.TerritoryRepositoryPort;
 import com.paceleague.territory.config.TerritoryProperties;
 import com.paceleague.territory.domain.entity.Territory;
-import com.paceleague.territory.domain.entity.TerritoryContribution;
 import com.paceleague.territory.domain.entity.TerritoryHex;
 import com.paceleague.territory.domain.policy.ClosedLoopDetector;
 import com.paceleague.territory.domain.policy.H3TerritoryGrid;
 import com.paceleague.territory.domain.policy.PolygonGeometry;
 import com.paceleague.territory.domain.policy.TerritoryClaimValidator;
-import com.paceleague.territory.domain.policy.TerritoryDamagePolicy;
 import com.uber.h3core.H3Core;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +24,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,7 +35,6 @@ public class ProcessTerritoryRunService implements ProcessTerritoryRunUseCase {
 
     private final TerritoryRepositoryPort territoryRepositoryPort;
     private final TerritoryHexRepositoryPort territoryHexRepositoryPort;
-    private final TerritoryContributionRepositoryPort contributionRepositoryPort;
     private final GetCurrentSeasonPort getCurrentSeasonPort;
     private final GetMemberNicknamePort getMemberNicknamePort;
     private final TerritoryProperties props;
@@ -82,64 +77,32 @@ public class ProcessTerritoryRunService implements ProcessTerritoryRunUseCase {
         if (overlaps.isEmpty()) {
             return createNewTerritory(command, polygon, perimeterM, coveredHexes);
         }
-        return interactWithExisting(command, overlaps);
+        return captureOverlapping(command, overlaps);
     }
 
-    private ProcessTerritoryRunResult interactWithExisting(ProcessTerritoryRunCommand command,
-                                                             List<TerritoryHexOverlap> overlaps) {
+    // HP 없음(2026-09-05 제거) — 남의 땅과 조금이라도 겹치면 무조건 이번 러너의 소유로 즉시 바뀐다.
+    // 이미 내 땅과 겹친 경우는 변화가 없다(그래도 새 땅 생성은 막는다 — "빈 땅이면 즉시 내 땅" 규칙 유지).
+    private ProcessTerritoryRunResult captureOverlapping(ProcessTerritoryRunCommand command,
+                                                          List<TerritoryHexOverlap> overlaps) {
         Map<Long, Long> overlapBySno = new LinkedHashMap<>();
         for (TerritoryHexOverlap o : overlaps) {
             overlapBySno.put(o.territorySno(), o.overlapHexCount());
         }
         List<Territory> targets = territoryRepositoryPort.findAllByIdForUpdate(new ArrayList<>(overlapBySno.keySet()));
 
-        List<Long> damaged = new ArrayList<>();
         List<CapturedTerritory> captured = new ArrayList<>();
-        List<Long> healed = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
-
         for (Territory target : targets) {
             long overlapHexCount = overlapBySno.getOrDefault(target.getSno(), 0L);
-            if (overlapHexCount <= 0) {
+            if (overlapHexCount <= 0 || target.isOwnedBy(command.memberSno())) {
                 continue;
             }
-            long targetHexCount = target.getHexCount() == null ? overlapHexCount : target.getHexCount();
-
-            if (target.isOwnedBy(command.memberSno())) {
-                target.heal(TerritoryDamagePolicy.heal(overlapHexCount, targetHexCount, target.getMaxHp(), props.healFactor()));
-                territoryRepositoryPort.save(target);
-                healed.add(target.getSno());
-                continue;
-            }
-
-            int dmg = TerritoryDamagePolicy.damage(overlapHexCount, targetHexCount, target.getMaxHp(), props.attackFactor());
-            boolean willDeplete = (target.getHp() - dmg) <= 0;
-
-            List<TerritoryDamagePolicy.Contribution> priorWindow = willDeplete
-                    ? contributionRepositoryPort
-                    .findByTerritorySnoAndCreatedAfter(target.getSno(), now.minusMinutes(props.contributionWindowMinutes()))
-                    .stream()
-                    .map(c -> new TerritoryDamagePolicy.Contribution(c.getMemberSno(), c.getDamage(), c.getCreateAt()))
-                    .toList()
-                    : List.of();
-
-            target.applyDamage(dmg);
-            contributionRepositoryPort.save(TerritoryContribution.of(target.getSno(), command.memberSno(), dmg));
-
-            if (target.isDepleted()) {
-                Long previousOwner = target.getOwnerMemberSno();
-                Long newOwner = TerritoryDamagePolicy.resolveNewOwner(priorWindow, command.memberSno(), dmg, now);
-                target.capture(newOwner);
-                contributionRepositoryPort.deleteByTerritorySno(target.getSno());
-                captured.add(new CapturedTerritory(
-                        target.getSno(), previousOwner, nicknameOf(previousOwner)));
-            } else {
-                damaged.add(target.getSno());
-            }
+            Long previousOwner = target.getOwnerMemberSno();
+            target.capture(command.memberSno());
             territoryRepositoryPort.save(target);
+            captured.add(new CapturedTerritory(target.getSno(), previousOwner, nicknameOf(previousOwner)));
         }
 
-        return ProcessTerritoryRunResult.interacted(captured, damaged, healed);
+        return ProcessTerritoryRunResult.interacted(captured, List.of(), List.of());
     }
 
     private ProcessTerritoryRunResult createNewTerritory(ProcessTerritoryRunCommand command, PolygonGeometry polygon,
@@ -159,7 +122,6 @@ public class ProcessTerritoryRunService implements ProcessTerritoryRunUseCase {
                 .centerLat(bd(centroid[0])).centerLng(bd(centroid[1]))
                 .areaSqm(BigDecimal.valueOf(hexAreaSqm)).perimeterM(BigDecimal.valueOf(perimeterM))
                 .hexCount(coveredHexes.size())
-                .maxHp(props.defaultMaxHp())
                 .sourceRecordSno(command.recordSno()).sourceTrackSno(command.trackSno())
                 .build();
         created = territoryRepositoryPort.save(created);

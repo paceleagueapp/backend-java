@@ -103,7 +103,7 @@ totalScore = baseScore + scaledScore + addScore
 
 ## 러닝 땅따먹기(Territory) 도메인
 
-`territory` 패키지 (2026-08-27 1차 구현, 2026-09-05 H3 헥사곤 격자 전환). 러닝 GPS 경로가 이룬 닫힌 도형을 "땅"으로 저장하고, 겹치는 러닝으로 데미지를 주고받으며 HP가 0이 되면 소유권이 넘어가는 게임 기능. 전체 기획은 Notion "러닝 땅따먹기" 문서 참고 — 이번 범위는 그중 1차 슬라이스이며, 시즌 리셋·크루전·부정기록 판정 정교화는 제외.
+`territory` 패키지 (2026-08-27 1차 구현, 2026-09-05 H3 헥사곤 격자 전환 + HP 제거). 러닝 GPS 경로가 이룬 닫힌 도형을 "땅"으로 저장하고, 겹치는 러닝이 있으면 그 땅이 즉시 이번 러너의 소유로 바뀌는 게임 기능(HP 없음 — 겹치면 무조건, 즉시 소유권 이전). 전체 기획은 Notion "러닝 땅따먹기" 문서 참고 — 이번 범위는 그중 1차 슬라이스이며, 시즌 리셋·크루전·부정기록 판정 정교화는 제외.
 
 ### 땅따먹기 모드
 
@@ -115,10 +115,11 @@ totalScore = baseScore + scaledScore + addScore
 2. **도형 유효성** (`PolygonGeometry` + `TerritoryClaimValidator`): 둘레 ≥ `min-perimeter-meters`(300), 면적은 `min-area-sqm`(10,000) ~ `max-area-sqm`(5,000,000) 범위. 벗어나면 no-op(`INVALID_SHAPE`). 이 단계는 지금도 실제 러닝 폴리곤 기준 그대로다.
 3. **헥사곤 변환** (`H3TerritoryGrid.coverRing`, 2026-09-05 추가): 검증을 통과한 폴리곤을 H3(`paceleague.territory.hex-resolution`, 기본 12) 헥사곤 집합으로 바꾼다. `H3Core.polygonToCellsExperimental(..., PolygonToCellsFlags.containment_overlapping)`을 써서 도형 안에 완전히 포함되거나 경계에 걸쳐진 헥사곤까지 전부 포함 — 소유권은 이제 이 헥사곤 집합 단위다.
 4. **겹침 조회**: 이번 러닝의 헥사곤 인덱스들과 겹치는 `ACTIVE` territory를 `territory_hex`⋈`territory` 집계 쿼리로 찾고(`territory_sno`별 겹친 헥사곤 개수), 그 territory 행들만 비관적 락(`PESSIMISTIC_WRITE`, `findAllByIdForUpdate`)으로 잠근다.
-   - **내 소유 땅** → `heal`: 회복량 = `겹친헥사곤수/내땅헥사곤수(hex_count) × maxHp × heal-factor`(0.5), 최대치까지.
-   - **남의 땅** → `damage`: 데미지 = `겹친헥사곤수/대상땅헥사곤수(hex_count) × maxHp × attack-factor`(0.5), 최소 1. `territory_contribution`에 기여도 1건 기록.
-     - HP가 0 이하가 되면 최근 1시간(`contribution-window-minutes`) 기여도 합이 가장 큰 사람이 **즉시 점령**(동점 → 가장 최근 기여자 → 이번 공격자). 소유자 변경 + HP를 maxHp로 리셋 + 해당 땅의 `territory_contribution` 전체 삭제(`TerritoryDamagePolicy.resolveNewOwner`) — **`territory_hex` 매핑 자체는 캡처로도 바뀌지 않는다**, 소유자만 `territory` 행에서 바뀐다.
-5. **겹친 땅이 하나도 없으면** → 새 `Territory` 생성(HP = `default-max-hp` 100, `season` = 생성 시점 시즌 번호 스냅샷, `hex_count` = 덮은 헥사곤 개수, `area_sqm` = 헥사곤 면적 합, `polygon_json` = 헥사곤 합집합 외곽선) + `territory_hex`에 헥사곤들을 그 territory로 매핑. 겹친 게 있었으면 새 땅은 만들지 않는다("빈 땅이면 즉시 내 땅").
+   - **내 소유 땅** → 아무 일도 없다(변화 없음).
+   - **남의 땅** → 겹친 헥사곤이 1개라도 있으면 **HP/비율 계산 없이 즉시, 무조건 점령**(`Territory.capture`가 `owner_member_sno`만 바꾼다). **`territory_hex` 매핑 자체는 캡처로도 바뀌지 않는다** — 소유자만 `territory` 행에서 바뀐다.
+5. **겹친 땅이 하나도 없으면** → 새 `Territory` 생성(`season` = 생성 시점 시즌 번호 스냅샷, `hex_count` = 덮은 헥사곤 개수, `area_sqm` = 헥사곤 면적 합, `polygon_json` = 헥사곤 합집합 외곽선) + `territory_hex`에 헥사곤들을 그 territory로 매핑. 겹친 게 있었으면 새 땅은 만들지 않는다("빈 땅이면 즉시 내 땅").
+
+> 2026-08-27~2026-09-05 사이에는 HP/공격력/회복력/1시간 기여도 윈도우 시스템이 있었다(`TerritoryDamagePolicy`, `territory_contribution` 테이블) — 2026-09-05 사용자 요청으로 완전히 제거하고 위처럼 단순화했다.
 
 ### 지도 조회 (`GET /api/territory/map`)
 
@@ -130,7 +131,7 @@ totalScore = baseScore + scaledScore + addScore
 
 ### 설정 (`paceleague.territory.*`, `TerritoryProperties`)
 
-`app.jwt`(`JwtProperties`)와 같은 `@ConfigurationProperties` 방식. `application*.yml`에는 없고 아래 기본값을 사용: `min-zoom`(13), `map-max-results`(300), `ranking-max-results`(100), `close-threshold-meters`(50), `min-perimeter-meters`(300), `min-area-sqm`(10000), `max-area-sqm`(5000000), `default-max-hp`(100), `attack-factor`(0.5), `heal-factor`(0.5), `contribution-window-minutes`(60), `hex-resolution`(12, 2026-09-05 추가).
+`app.jwt`(`JwtProperties`)와 같은 `@ConfigurationProperties` 방식. `application*.yml`에는 없고 아래 기본값을 사용: `min-zoom`(13), `map-max-results`(300), `ranking-max-results`(100), `close-threshold-meters`(50), `min-perimeter-meters`(300), `min-area-sqm`(10000), `max-area-sqm`(5000000), `hex-resolution`(12). (`default-max-hp`/`attack-factor`/`heal-factor`/`contribution-window-minutes`는 2026-09-05 HP 제거와 함께 삭제됨.)
 
 ### 알려진 한계 (v1)
 
@@ -138,7 +139,8 @@ totalScore = baseScore + scaledScore + addScore
 - 소유권/겹침 판정 자체는 2026-09-05부터 H3(resolution 12) 헥사곤 격자 기준이다 — `com.uber:h3`는 JTS와 달리 순수 Java가 아니라 JNI + 네이티브 바이너리 내장.
 - `REQUIRES_NEW` 특성상, 땅 판정 성공 후 바깥 GPS 트랜잭션이 실패하면 러닝은 롤백되어도 땅은 남는다(확률 낮음 — 바깥 트랜잭션의 마지막 단계가 세션 저장뿐).
 - 모바일 앱이 `territoryMode`를 보내기 전까지는 실제로 아무 땅도 생성되지 않는다(하위호환: 필드 없으면 false).
-- 2026-08-27~2026-09-05 사이에 이미 생성된 ACTIVE territory는 `territory_hex` 매핑이 없어 이 전환 이후로는 공격/회복/점령 대상이 되지 않는다("유령 땅") — 별도 백필 전까지는 지도에만 남는다. 자세한 내용은 `docs/migrations/2026-09-05_territory_hex_grid.sql` 참고.
+- 2026-08-27~2026-09-05 사이에 이미 생성된 ACTIVE territory는 `territory_hex` 매핑이 없어 이 전환 이후로는 공격/점령 대상이 되지 않는다("유령 땅") — 별도 백필 전까지는 지도에만 남는다. 자세한 내용은 `docs/migrations/2026-09-05_territory_hex_grid.sql` 참고.
+- HP가 없으므로 "내 땅 지키기"는 없다 — 남이 한 번이라도 겹쳐 뛰면 그 즉시 넘어간다. 밸런스/재미 관련 조정은 이후 단계.
 
 ## 크루(Crew) 도메인
 

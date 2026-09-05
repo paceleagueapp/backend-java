@@ -40,7 +40,7 @@ class TerritoryQueryServiceTest {
     @BeforeEach
     void setUp() {
         TerritoryProperties props = new TerritoryProperties(
-                null, null, null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null);
         service = new TerritoryQueryService(
                 territoryRepositoryPort, getMemberNicknamePort, getMemberTierPort, props, new ObjectMapper());
         when(getMemberNicknamePort.getNickname(1L)).thenReturn("일등");

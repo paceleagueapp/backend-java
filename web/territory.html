@@ -292,8 +292,7 @@
           var mineTag = terr.mine ? ' <span class="iw-mine">(' + escapeHtml(t('territoryMine')) + ')</span>' : '';
           infoWindow.setContent(
             '<div class="iw"><b>' + escapeHtml(terr.ownerNickname || '-') + '</b>' + mineTag
-            + '<br>' + escapeHtml(terr.ownerTierLabel || terr.ownerTier || '')
-            + '<br>' + escapeHtml(t('territoryHp')) + ': ' + terr.hp + ' / ' + terr.maxHp + '</div>'
+            + '<br>' + escapeHtml(terr.ownerTierLabel || terr.ownerTier || '') + '</div>'
           );
           infoWindow.setPosition(e.latLng);
           infoWindow.open(map);

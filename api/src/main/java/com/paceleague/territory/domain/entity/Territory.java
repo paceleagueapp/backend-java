@@ -10,9 +10,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 // 땅따먹기의 "땅" 1구획. 러닝 GPS 경로가 이룬 닫힌 도형 하나가 territory 한 행이 된다.
-//  - polygon_json: 실제 러닝 경로 기반 위/경도 링([[lat,lng], ...]). 지도에 그대로 그린다.
+//  - polygon_json: 소유 헥사곤 합집합 외곽선 위/경도 링([[lat,lng], ...]). 지도에 그대로 그린다.
 //  - bbox_*: 지도 bounds 조회용 경계 상자(공간 인덱스 대신 DECIMAL 범위 비교).
-//  - hp/max_hp: 겹치는 러닝에 데미지를 입고, 0이 되면 최다 기여자에게 소유권이 넘어간다.
+//  - HP 없음(2026-09-05 제거) — 겹치는 러닝이 있으면 무조건 그 러너의 소유로 즉시 바뀐다.
 @Entity
 @Table(name = "territory")
 @Getter
@@ -65,12 +65,6 @@ public class Territory {
     @Column(name = "hex_count")
     private Integer hexCount;
 
-    @Column(name = "hp", nullable = false)
-    private int hp;
-
-    @Column(name = "max_hp", nullable = false)
-    private int maxHp;
-
     @Column(name = "source_record_sno")
     private Long sourceRecordSno;
 
@@ -90,7 +84,7 @@ public class Territory {
     private Territory(Long ownerMemberSno, Long season, String polygonJson,
                       BigDecimal bboxMinLat, BigDecimal bboxMinLng, BigDecimal bboxMaxLat, BigDecimal bboxMaxLng,
                       BigDecimal centerLat, BigDecimal centerLng, BigDecimal areaSqm, BigDecimal perimeterM,
-                      Integer hexCount, int maxHp, Long sourceRecordSno, Long sourceTrackSno) {
+                      Integer hexCount, Long sourceRecordSno, Long sourceTrackSno) {
         this.ownerMemberSno = ownerMemberSno;
         this.season = season;
         this.polygonJson = polygonJson;
@@ -103,8 +97,6 @@ public class Territory {
         this.areaSqm = areaSqm;
         this.perimeterM = perimeterM;
         this.hexCount = hexCount;
-        this.hp = maxHp;
-        this.maxHp = maxHp;
         this.sourceRecordSno = sourceRecordSno;
         this.sourceTrackSno = sourceTrackSno;
         this.status = STATUS_ACTIVE;
@@ -112,27 +104,10 @@ public class Territory {
         this.updateAt = this.createAt;
     }
 
-    // 남의 러닝이 이 땅을 겹쳐 지나가 데미지를 입는다.
-    public void applyDamage(int amount) {
-        this.hp -= amount;
-        this.updateAt = LocalDateTime.now();
-    }
-
-    // 소유자가 자기 땅을 다시 달려 체력을 회복한다(최대치 초과 불가).
-    public void heal(int amount) {
-        this.hp = Math.min(this.maxHp, this.hp + amount);
-        this.updateAt = LocalDateTime.now();
-    }
-
-    // HP 0 → 최다 기여자에게 즉시 소유권 이전 + HP 리셋.
+    // 남의 러닝이 겹치면 HP 소모 없이 즉시 소유권이 넘어간다.
     public void capture(Long newOwnerMemberSno) {
         this.ownerMemberSno = newOwnerMemberSno;
-        this.hp = this.maxHp;
         this.updateAt = LocalDateTime.now();
-    }
-
-    public boolean isDepleted() {
-        return this.hp <= 0;
     }
 
     public boolean isOwnedBy(Long memberSno) {

@@ -66,8 +66,6 @@ public class TerritoryQueryService implements GetTerritoryMapUseCase, GetTerrito
                     nickname,
                     tier,
                     RankTierLabelPolicy.label(tier, lang),
-                    t.getHp(),
-                    t.getMaxHp(),
                     query.memberSno() != null && query.memberSno().equals(owner)
             ));
         }
