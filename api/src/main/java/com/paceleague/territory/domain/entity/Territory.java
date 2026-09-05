@@ -113,4 +113,18 @@ public class Territory {
     public boolean isOwnedBy(Long memberSno) {
         return memberSno != null && memberSno.equals(this.ownerMemberSno);
     }
+
+    // 백필 전용(TerritoryHexBackfillService): H3 도입 전에 생성된 땅의 폴리곤을 헥사곤 집합으로 환산한
+    // 결과를 반영한다. 소유자/시즌/생성 출처는 그대로 두고 도형·면적·hexCount만 갱신한다.
+    public void applyHexBackfill(int hexCount, double areaSqm, String polygonJson,
+                                  double bboxMinLat, double bboxMinLng, double bboxMaxLat, double bboxMaxLng) {
+        this.hexCount = hexCount;
+        this.areaSqm = BigDecimal.valueOf(areaSqm);
+        this.polygonJson = polygonJson;
+        this.bboxMinLat = BigDecimal.valueOf(bboxMinLat);
+        this.bboxMinLng = BigDecimal.valueOf(bboxMinLng);
+        this.bboxMaxLat = BigDecimal.valueOf(bboxMaxLat);
+        this.bboxMaxLng = BigDecimal.valueOf(bboxMaxLng);
+        this.updateAt = LocalDateTime.now();
+    }
 }

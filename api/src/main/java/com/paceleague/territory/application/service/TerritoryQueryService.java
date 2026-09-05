@@ -14,9 +14,13 @@ import com.paceleague.territory.application.dto.TerritoryRankingResponse;
 import com.paceleague.territory.application.dto.TerritoryView;
 import com.paceleague.territory.application.port.in.GetTerritoryMapUseCase;
 import com.paceleague.territory.application.port.in.GetTerritoryRankingUseCase;
+import com.paceleague.territory.application.port.out.TerritoryHexRepositoryPort;
 import com.paceleague.territory.application.port.out.TerritoryRepositoryPort;
 import com.paceleague.territory.config.TerritoryProperties;
 import com.paceleague.territory.domain.entity.Territory;
+import com.paceleague.territory.domain.entity.TerritoryHex;
+import com.paceleague.territory.domain.policy.H3TerritoryGrid;
+import com.uber.h3core.H3Core;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,9 +38,11 @@ import java.util.Map;
 public class TerritoryQueryService implements GetTerritoryMapUseCase, GetTerritoryRankingUseCase {
 
     private final TerritoryRepositoryPort territoryRepositoryPort;
+    private final TerritoryHexRepositoryPort territoryHexRepositoryPort;
     private final GetMemberNicknamePort getMemberNicknamePort;
     private final GetMemberTierPort getMemberTierPort;
     private final TerritoryProperties props;
+    private final H3Core h3Core;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -52,6 +58,7 @@ public class TerritoryQueryService implements GetTerritoryMapUseCase, GetTerrito
         Language lang = Language.fromCode(query.lang());
         Map<Long, String> nicknameCache = new HashMap<>();
         Map<Long, RankTier> tierCache = new HashMap<>();
+        Map<Long, List<Long>> hexIndexesByTerritory = loadHexIndexesIfDetailZoom(query.zoom(), found);
 
         List<TerritoryView> views = new ArrayList<>(found.size());
         for (Territory t : found) {
@@ -66,10 +73,34 @@ public class TerritoryQueryService implements GetTerritoryMapUseCase, GetTerrito
                     nickname,
                     tier,
                     RankTierLabelPolicy.label(tier, lang),
-                    query.memberSno() != null && query.memberSno().equals(owner)
+                    query.memberSno() != null && query.memberSno().equals(owner),
+                    hexBoundariesOf(hexIndexesByTerritory.get(t.getSno()))
             ));
         }
         return new TerritoryMapResponse(false, minZoom, views);
+    }
+
+    // hexDetailZoom 이상일 때만 territory_hex를 조회한다 — 저줌에서 지도가 넓게 보일 때는 헥사곤 개수가
+    // 너무 많아지므로(성능/응답크기) 외곽선(polygon)만으로 충분하다.
+    private Map<Long, List<Long>> loadHexIndexesIfDetailZoom(int zoom, List<Territory> found) {
+        if (zoom < props.hexDetailZoom() || found.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> snos = found.stream().map(Territory::getSno).toList();
+        Map<Long, List<Long>> byTerritory = new HashMap<>();
+        for (TerritoryHex hex : territoryHexRepositoryPort.findByTerritorySnoIn(snos)) {
+            byTerritory.computeIfAbsent(hex.getTerritorySno(), k -> new ArrayList<>()).add(hex.getH3Index());
+        }
+        return byTerritory;
+    }
+
+    private List<double[][]> hexBoundariesOf(List<Long> hexIndexes) {
+        if (hexIndexes == null || hexIndexes.isEmpty()) {
+            return List.of();
+        }
+        return H3TerritoryGrid.cellBoundariesLatLng(h3Core, hexIndexes).stream()
+                .map(ring -> ring.toArray(new double[0][]))
+                .toList();
     }
 
     @Override

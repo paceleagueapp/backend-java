@@ -25,4 +25,16 @@ public class TerritoryHexPersistenceAdapter implements TerritoryHexRepositoryPor
                 .map(p -> new TerritoryHexOverlap(p.getTerritorySno(), p.getOverlapHexCount()))
                 .toList();
     }
+
+    @Override
+    public List<Long> findExistingIndexes(List<Long> h3Indexes) {
+        return territoryHexJpaRepository.findAllById(h3Indexes).stream()
+                .map(TerritoryHex::getH3Index)
+                .toList();
+    }
+
+    @Override
+    public List<TerritoryHex> findByTerritorySnoIn(List<Long> territorySnos) {
+        return territoryHexJpaRepository.findByTerritorySnoIn(territorySnos);
+    }
 }

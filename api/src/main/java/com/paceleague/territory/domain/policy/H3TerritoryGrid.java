@@ -87,6 +87,24 @@ public final class H3TerritoryGrid {
         return ring;
     }
 
+    // 헥사곤 하나하나의 경계를 위/경도 링으로 반환 — 지도 확대 시 격자 모양을 그대로 그리기 위함
+    // (unionBoundaryLatLng는 합쳐진 외곽선 하나만 주는 것과 대조적으로, 이건 셀별 개별 링 목록).
+    public static List<List<double[]>> cellBoundariesLatLng(H3Core h3, List<Long> hexIndexes) {
+        List<List<double[]>> out = new ArrayList<>(hexIndexes.size());
+        for (long idx : hexIndexes) {
+            List<LatLng> boundary = h3.cellToBoundary(idx);
+            List<double[]> ring = new ArrayList<>(boundary.size() + 1);
+            for (LatLng p : boundary) {
+                ring.add(new double[]{p.lat, p.lng});
+            }
+            if (!ring.isEmpty()) {
+                ring.add(ring.get(0)); // 다른 ring들과 동일하게 닫힌 링으로 맞춘다
+            }
+            out.add(ring);
+        }
+        return out;
+    }
+
     private static Polygon largestPolygon(Geometry geometry) {
         if (geometry instanceof Polygon polygon) {
             return polygon;

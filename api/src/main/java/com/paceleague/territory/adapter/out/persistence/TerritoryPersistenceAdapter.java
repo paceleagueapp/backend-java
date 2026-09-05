@@ -43,4 +43,8 @@ public class TerritoryPersistenceAdapter implements TerritoryRepositoryPort {
                         p.getTerritoryCount() == null ? 0L : p.getTerritoryCount()))
                 .toList();
     }
+
+    public List<Territory> findActiveMissingHex() {
+        return territoryJpaRepository.findActiveMissingHex();
+    }
 }

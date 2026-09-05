@@ -18,4 +18,6 @@ public interface TerritoryHexJpaRepository extends JpaRepository<TerritoryHex, L
             group by th.territory_sno
             """, nativeQuery = true)
     List<TerritoryHexOverlapProjection> findActiveOverlapCounts(@Param("hexIndexes") List<Long> hexIndexes);
+
+    List<TerritoryHex> findByTerritorySnoIn(List<Long> territorySnos);
 }

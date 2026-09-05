@@ -298,6 +298,20 @@
           infoWindow.open(map);
         });
         drawn.push(poly);
+
+        // 헥사곤 격자 오버레이 — 서버가 충분히 높은 줌에서만 hexes를 채워 보내준다(낮은 줌에서는 빈 배열).
+        (terr.hexes || []).forEach(function (hex) {
+          if (!hex || hex.length < 3) return;
+          var hexPath = hex.map(function (pt) { return { lat: pt[0], lng: pt[1] }; });
+          var hexPoly = new google.maps.Polygon({
+            paths: hexPath,
+            strokeColor: color, strokeOpacity: 0.55, strokeWeight: 1,
+            fillOpacity: 0,
+            clickable: false,
+            map: map
+          });
+          drawn.push(hexPoly);
+        });
       });
     }
 

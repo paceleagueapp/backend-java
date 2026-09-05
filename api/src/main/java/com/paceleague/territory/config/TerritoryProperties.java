@@ -15,7 +15,8 @@ public record TerritoryProperties(
         Double minAreaSqm,
         Double maxAreaSqm,
         Integer rankingMaxResults,
-        Integer hexResolution
+        Integer hexResolution,
+        Integer hexDetailZoom
 ) {
     public TerritoryProperties {
         if (minZoom == null) minZoom = 13;
@@ -26,5 +27,7 @@ public record TerritoryProperties(
         if (minAreaSqm == null) minAreaSqm = 10_000.0;
         if (maxAreaSqm == null) maxAreaSqm = 5_000_000.0;
         if (hexResolution == null) hexResolution = 12; // H3 res12 평균 ~307㎡ — 소유권/충돌 판정의 최소 단위
+        // 이 줌 이상에서만 GET /api/territory/map이 개별 헥사곤 경계도 함께 내려준다(저줌에서는 외곽선만).
+        if (hexDetailZoom == null) hexDetailZoom = 17;
     }
 }

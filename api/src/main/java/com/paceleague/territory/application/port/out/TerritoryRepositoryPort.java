@@ -23,4 +23,8 @@ public interface TerritoryRepositoryPort {
 
     // 면적 랭킹용 — 소유자별 총 점령 면적(ACTIVE) 내림차순, 최대 limit명.
     List<TerritoryOwnerArea> findTopOwnersByArea(int limit);
+
+    // 헥사곤 백필 대상 — territory_hex 행이 하나도 없는 ACTIVE 땅(H3 도입 전에 생성된 "유령 땅" 후보).
+    // 오래된 것부터(생성일 오름차순) 처리해 먼저 생긴 땅이 겹치는 헥사곤을 먼저 차지하게 한다.
+    List<Territory> findActiveMissingHex();
 }

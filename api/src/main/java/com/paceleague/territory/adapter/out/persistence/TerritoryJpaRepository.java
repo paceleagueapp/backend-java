@@ -43,4 +43,14 @@ public interface TerritoryJpaRepository extends JpaRepository<Territory, Long> {
             limit :limit
             """, nativeQuery = true)
     List<TerritoryOwnerAreaProjection> findTopOwnersByArea(@Param("limit") int limit);
+
+    // territory_hex 행이 하나도 없는 ACTIVE 땅 — TerritoryHex와 JPA 연관관계는 없지만 JPQL 서브쿼리는
+    // 엔티티 간 연관관계 없이도 사용할 수 있다.
+    @Query("""
+            select t from Territory t
+            where t.status = 'ACTIVE'
+              and t.sno not in (select distinct h.territorySno from TerritoryHex h)
+            order by t.createAt asc
+            """)
+    List<Territory> findActiveMissingHex();
 }
