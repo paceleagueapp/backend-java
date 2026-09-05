@@ -20,6 +20,7 @@ import com.paceleague.territory.config.TerritoryProperties;
 import com.paceleague.territory.domain.entity.Territory;
 import com.paceleague.territory.domain.entity.TerritoryHex;
 import com.paceleague.territory.domain.policy.H3TerritoryGrid;
+import com.paceleague.record.domain.policy.GeoDistanceCalculator;
 import com.uber.h3core.H3Core;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +30,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +52,7 @@ public class TerritoryQueryService implements GetTerritoryMapUseCase, GetTerrito
     public TerritoryMapResponse getMap(TerritoryMapQuery query) {
         int minZoom = props.minZoom();
         if (query.zoom() < minZoom) {
-            return new TerritoryMapResponse(true, minZoom, List.of());
+            return new TerritoryMapResponse(true, minZoom, List.of(), List.of());
         }
 
         List<Territory> found = territoryRepositoryPort.findActiveIntersectingBbox(
@@ -77,7 +80,46 @@ public class TerritoryQueryService implements GetTerritoryMapUseCase, GetTerrito
                     hexBoundariesOf(hexIndexesByTerritory.get(t.getSno()))
             ));
         }
-        return new TerritoryMapResponse(false, minZoom, views);
+
+        List<double[][]> emptyHexes = query.zoom() >= props.hexDetailZoom()
+                ? emptyHexesInBounds(query)
+                : List.of();
+
+        return new TerritoryMapResponse(false, minZoom, views, emptyHexes);
+    }
+
+    // 아직 아무도 점령하지 않은 땅도 육각형이 보이게 — 현재 지도 bounds 전체를 덮는 H3 격자를 만들고,
+    // 이미 어딘가에 배정된 셀(= territories[].hexes로 이미 그려진 것들)은 제외한다.
+    private List<double[][]> emptyHexesInBounds(TerritoryMapQuery query) {
+        double diagonalMeters = GeoDistanceCalculator.haversineMeters(
+                query.swLat(), query.swLng(), query.neLat(), query.neLng());
+        if (diagonalMeters > props.emptyHexMaxBoundsMeters()) {
+            return List.of(); // bounds가 비정상적으로 넓음 — 격자 전체 계산 비용을 피하기 위해 건너뜀
+        }
+
+        List<double[]> boundsRing = List.of(
+                new double[]{query.swLat(), query.swLng()},
+                new double[]{query.swLat(), query.neLng()},
+                new double[]{query.neLat(), query.neLng()},
+                new double[]{query.neLat(), query.swLng()},
+                new double[]{query.swLat(), query.swLng()});
+
+        List<Long> covered;
+        try {
+            covered = H3TerritoryGrid.coverRing(h3Core, boundsRing, props.hexResolution());
+        } catch (RuntimeException e) {
+            return List.of();
+        }
+        if (covered.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> owned = new HashSet<>(territoryHexRepositoryPort.findExistingIndexes(covered));
+        List<Long> empty = covered.stream()
+                .filter(h -> !owned.contains(h))
+                .limit(props.emptyHexMaxCells())
+                .toList();
+        return hexBoundariesOf(empty);
     }
 
     // hexDetailZoom 이상일 때만 territory_hex를 조회한다 — 저줌에서 지도가 넓게 보일 때는 헥사곤 개수가

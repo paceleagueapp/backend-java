@@ -45,7 +45,7 @@ class TerritoryHexBackfillServiceTest {
     void setUp() throws Exception {
         h3Core = H3Core.newInstance();
         TerritoryProperties props = new TerritoryProperties(
-                null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null);
         service = new TerritoryHexBackfillService(
                 territoryRepositoryPort, territoryHexRepositoryPort, props, h3Core, objectMapper);
     }

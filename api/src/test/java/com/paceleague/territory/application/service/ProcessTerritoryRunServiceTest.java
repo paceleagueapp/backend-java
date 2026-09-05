@@ -61,7 +61,7 @@ class ProcessTerritoryRunServiceTest {
     void setUp() throws Exception {
         h3Core = H3Core.newInstance();
         TerritoryProperties props = new TerritoryProperties(
-                null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null);
         service = new ProcessTerritoryRunService(
                 territoryRepositoryPort, territoryHexRepositoryPort,
                 getCurrentSeasonPort, getMemberNicknamePort, props, h3Core, objectMapper);

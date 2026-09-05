@@ -54,7 +54,7 @@ class TerritoryQueryServiceTest {
     void setUp() throws Exception {
         h3Core = H3Core.newInstance();
         TerritoryProperties props = new TerritoryProperties(
-                null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null);
         service = new TerritoryQueryService(territoryRepositoryPort, territoryHexRepositoryPort,
                 getMemberNicknamePort, getMemberTierPort, props, h3Core, new ObjectMapper());
         when(getMemberNicknamePort.getNickname(1L)).thenReturn("일등");
@@ -102,6 +102,48 @@ class TerritoryQueryServiceTest {
 
     private void verifyNoHexLookup() {
         verify(territoryHexRepositoryPort, never()).findByTerritorySnoIn(any());
+    }
+
+    private static final List<double[]> TINY_BOUNDS_RING = List.of(
+            new double[]{37.5, 127.0}, new double[]{37.5, 127.001},
+            new double[]{37.501, 127.001}, new double[]{37.501, 127.0},
+            new double[]{37.5, 127.0});
+
+    @Test
+    void 미점령_헥사곤도_경계가_함께_내려간다() {
+        when(territoryRepositoryPort.findActiveIntersectingBbox(any(), any(), any(), any(), anyInt()))
+                .thenReturn(List.of());
+        when(territoryHexRepositoryPort.findExistingIndexes(any())).thenReturn(List.of());
+
+        TerritoryMapResponse res = service.getMap(new TerritoryMapQuery(
+                37.5, 127.0, 37.501, 127.001, 17, "ko", null));
+
+        assertThat(res.emptyHexes()).isNotEmpty();
+    }
+
+    @Test
+    void 이미_점령된_헥사곤은_미점령_목록에서_빠진다() {
+        when(territoryRepositoryPort.findActiveIntersectingBbox(any(), any(), any(), any(), anyInt()))
+                .thenReturn(List.of());
+        List<Long> covered = H3TerritoryGrid.coverRing(h3Core, TINY_BOUNDS_RING, 12);
+        when(territoryHexRepositoryPort.findExistingIndexes(any())).thenReturn(covered);
+
+        TerritoryMapResponse res = service.getMap(new TerritoryMapQuery(
+                37.5, 127.0, 37.501, 127.001, 17, "ko", null));
+
+        assertThat(res.emptyHexes()).isEmpty();
+    }
+
+    @Test
+    void bounds가_너무_넓으면_미점령_헥사곤_계산을_건너뛴다() {
+        when(territoryRepositoryPort.findActiveIntersectingBbox(any(), any(), any(), any(), anyInt()))
+                .thenReturn(List.of());
+
+        TerritoryMapResponse res = service.getMap(new TerritoryMapQuery(
+                37.0, 127.0, 37.1, 127.1, 17, "ko", null));
+
+        assertThat(res.emptyHexes()).isEmpty();
+        verify(territoryHexRepositoryPort, never()).findExistingIndexes(any());
     }
 
     @Test

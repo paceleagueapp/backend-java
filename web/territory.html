@@ -263,7 +263,7 @@
           return;
         }
         zoomHintEl.classList.add('hidden');
-        render(data.territories || []);
+        render(data.territories || [], data.emptyHexes || []);
       }).catch(function () {
         showStatus(t('territoryLoadFailed'));
         setTimeout(hideStatus, 3000);
@@ -276,8 +276,23 @@
       if (infoWindow) infoWindow.close();
     }
 
-    function render(territories) {
+    function render(territories, emptyHexes) {
       clearPolygons();
+
+      // 아직 아무도 점령하지 않은 칸도 격자로 보이게 — 소유된 칸(아래)보다 먼저, 옅은 회색으로 깔아준다.
+      (emptyHexes || []).forEach(function (hex) {
+        if (!hex || hex.length < 3) return;
+        var hexPath = hex.map(function (pt) { return { lat: pt[0], lng: pt[1] }; });
+        var hexPoly = new google.maps.Polygon({
+          paths: hexPath,
+          strokeColor: '#888', strokeOpacity: 0.35, strokeWeight: 1,
+          fillOpacity: 0,
+          clickable: false,
+          map: map
+        });
+        drawn.push(hexPoly);
+      });
+
       territories.forEach(function (terr) {
         if (!terr.polygon || terr.polygon.length < 3) return;
         var path = terr.polygon.map(function (pt) { return { lat: pt[0], lng: pt[1] }; });
