@@ -38,6 +38,14 @@ app:
     refresh-token-ttl-seconds: 1209600
     secret: ${JWT_SECRET}
 
+# H3 도입(2026-09-05) 이전 ACTIVE 땅을 헥사곤으로 백필하는 1회성 startup 배치 스위치.
+# TerritoryHexBackfillRunner는 findActiveMissingHex()가 빈 목록이면 아무 일도 안 하는 멱등 로직이라
+# 켜둔 채로 둬도 안전하다 — 매 재시작마다 "채울 게 남았는지" 가벼운 조회 한 번만 더 할 뿐.
+paceleague:
+  territory:
+    backfill:
+      enabled: true
+
 logging:
   level:
     org.springframework.security: WARN
