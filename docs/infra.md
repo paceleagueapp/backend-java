@@ -4,10 +4,12 @@
 
 ## 서버 구성 (EC2 2대)
 
-| 인스턴스 이름 | 역할 |
-|---|---|
-| `paceleague` | Java 앱(Docker 컨테이너) + Nginx. 이 저장소가 배포되는 대상. |
-| `paceleague-db` | MariaDB + Redis(둘 다 이 EC2에 직접 설치·구동). 로컬 `.env`(`api/.env`, gitignored)의 `DB_URL`/`REDIS_URL`이 이 인스턴스를 가리킴. RDS 아님(과거 RDS를 쓰다 이 EC2로 옮겼고 RDS는 삭제됨). |
+| 인스턴스 이름 | 인스턴스 ID / 사설 IP | 역할 |
+|---|---|---|
+| `paceleague` | `i-0998774e170eb0928` / `172.31.12.246` | Java 앱(Docker 컨테이너) + Nginx. 이 저장소가 배포되는 대상. `/etc/nginx/conf.d/paceleague.conf`(+ 별도 사이트 `word-battle.conf`). |
+| `paceleague-db` | `i-0885ce927e836e6a6` / `172.31.42.246` | MariaDB + Redis(둘 다 이 EC2에 직접 설치·구동). 로컬 `.env`(`api/.env`, gitignored)의 `DB_URL`/`REDIS_URL`이 이 인스턴스를 가리킴. RDS 아님(과거 RDS를 쓰다 이 EC2로 옮겼고 RDS는 삭제됨). |
+
+> 인스턴스 ID/IP는 2026-09-07에 `aws ssm describe-instance-information`으로 확인(`github-actions-deploy`에 `ec2:DescribeInstances`는 없지만 SSM 조회 권한은 있음). 배포 파이프라인은 인스턴스 ID를 GitHub Secret `EC2_INSTANCE_ID`로 들고 있습니다.
 
 `paceleague` / `paceleague-db` **둘 다** SSM 관리 대상(Managed Instance)이지만, 배포 파이프라인(`.github/workflows/deploy.yml`)은 `paceleague`(앱 서버)에만 명령을 보냅니다.
 
@@ -74,6 +76,16 @@ add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" alway
 적용 전 기존 설정 파일을 `paceleague.conf.bak.<타임스탬프>`로 백업하고, `nginx -t` 문법 검증 통과 후에만 `systemctl reload nginx`가 실행되도록 스크립트로 처리(검증 실패 시 자동 롤백). `curl -I https://paceleague.co.kr/login.html`로 헤더 적용과 `api.paceleague.co.kr` 정상 동작을 함께 재확인했습니다.
 
 이 저장소의 배포 파이프라인(`.github/workflows/deploy.yml`, `.github/ssm-commands.json`)은 건드리지 않았습니다 — Nginx 설정은 여전히 이 저장소 밖(서버)에서만 관리되며, 이번 변경도 저장소에 기록되지 않는 서버 측 상태이므로 향후 서버 재구축/AMI 교체 시에는 이 문서를 참고해 다시 적용해야 합니다.
+
+### 정적 파일 `Cache-Control` 부재로 브라우저가 옛 버전을 캐시하는 문제
+
+2026-09-07 확인: `paceleague.co.kr`이 서빙하는 정적 파일(`*.html`, `js/*.js` 등)에 `Cache-Control`/`Expires` 헤더가 **전혀 없었습니다** — `Last-Modified`/`ETag`만 있는 상태. 이 경우 브라우저는 **휴리스틱 캐싱**(RFC 9111 §4.2.2, 대략 `(now - Last-Modified) × 10%` 동안 재검증 없이 캐시본 사용)을 적용합니다. 배포 후에도 크롬 프로필마다 며칠 전 `territory.html`/`app.js`/`i18n.js`를 그대로 쓰면서 "프로필에 따라 최신 코드가 반영되기도, 안 되기도" 하는 증상이 나왔습니다(육각형 격자·CORS 수정이 일부 프로필에만 반영).
+
+**2026-09-07 조치 완료.** SSM(`AWS-RunShellScript`)으로 `i-0998774e170eb0928`(= `paceleague` 앱/Nginx 서버, `paceleague-db`가 아님)의 `paceleague.co.kr`/`www` 서버 블록(443)에 위 3개 보안 헤더와 **같은 레벨**로 한 줄 추가:
+```
+add_header Cache-Control "no-cache" always;
+```
+`no-cache`는 "저장 금지"가 아니라 "매 사용 전 재검증" — Nginx가 정적 파일에 자동 생성하는 `ETag`로 재검증은 대부분 `304`라 저렴하고, 새 배포가 즉시 반영됩니다. **중첩 `location`이 아니라 server 레벨에 넣은 이유**: Nginx `add_header` 상속은 레벨 단위 all-or-nothing이라, `location`에 넣으면 그 응답에서 기존 보안 헤더 3개가 통째로 사라집니다. `location /`는 `add_header`가 없어 4개를 모두 상속합니다. 적용은 백업(`paceleague.conf.bak.<타임스탬프>`) → `nginx -t` → 실패 시 자동 롤백 스크립트로 처리했고, 적용 후 `curl -I`로 4개 헤더 모두 확인 + `api.paceleague.co.kr` 정상 동작을 재확인했습니다. 2026-08-10 헤더 변경과 마찬가지로 저장소에 기록되지 않는 서버 측 상태이므로 서버 재구축 시 재적용 필요.
 
 ### 배포 시 디스크 부족으로 이미지가 갱신되지 않는 문제
 
