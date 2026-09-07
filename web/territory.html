@@ -118,7 +118,7 @@
     var CLIENT_HEX_ZOOM = 16;           // 이 미만 줌에서는 서버가 육각형 격자(hexes/emptyHexes)를 안 내려줌
                                         // — 서버 paceleague.territory.hex-detail-zoom 과 반드시 일치시킬 것
     var DEFAULT_CENTER = { lat: 37.5665, lng: 126.9780 }; // 서울시청
-    var DEFAULT_ZOOM = 15;
+    var DEFAULT_ZOOM = 16;             // 첫 화면부터 육각형 격자가 보이도록 CLIENT_HEX_ZOOM 이상으로 맞춤
 
     var map = null;
     var infoWindow = null;
