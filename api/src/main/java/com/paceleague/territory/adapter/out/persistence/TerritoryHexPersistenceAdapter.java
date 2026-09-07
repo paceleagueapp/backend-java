@@ -37,4 +37,9 @@ public class TerritoryHexPersistenceAdapter implements TerritoryHexRepositoryPor
     public List<TerritoryHex> findByTerritorySnoIn(List<Long> territorySnos) {
         return territoryHexJpaRepository.findByTerritorySnoIn(territorySnos);
     }
+
+    @Override
+    public void deleteAll() {
+        territoryHexJpaRepository.deleteAllInBatch();
+    }
 }

@@ -171,6 +171,14 @@ com.paceleague
 - **기존 운영 데이터에는 소급 적용하지 않음**: 이미 저장된 territory/territory_hex는 옛(전체 강탈) 로직으로 만들어진 상태 그대로 둔다. 정확히 재현하려면 territory-mode 러닝 전체를 시간순으로 새 알고리즘으로 재생해야 하는데, "점령만 하고 새 땅은 안 만든" 과거 러닝들의 실제 폴리곤은 어느 territory 행에도 연결돼 있지 않아(캡처는 헥사곤을 건드리지 않았으므로) `record_track` 이력을 별도로 훑어야 하고, 운영 DB를 되돌릴 수 없게 재작성하는 작업이라 이 코드 변경과 별개로 사용자의 명시적 확인을 받기로 함.
 - 마이그레이션 없음 — 테이블은 그대로, 조회/점령 로직과 `TerritoryHexRepositoryPort`의 메서드 하나(이름+반환형)만 바뀌었다.
 
+**2026-09-07 (같은 날, 후속): 운영에 이미 쌓인 territory 데이터를 새 규칙으로 재구성하는 1회성 재생(historical replay).** 사용자의 명시적 요청("지금 데이터도 판단해서 뒤에 뛴 사람한테 적용되게 해줘"). 위 헥사곤 단위 캡처로 코드를 바꿔도, 그 이전 로직(territory 전체 강탈)으로 이미 만들어진 운영 데이터는 저절로 안 바뀐다 — 게다가 `territory_hex.h3_index`가 PK라 지금 이 순간 두 땅이 겹쳐 있는 상태 자체가 없으므로, "겹친 걸 찾아서 고치는" 방식이 아예 불가능하다(과거의 과잉 강탈이 "어느 territory가 통째로 주인이 바뀌었는가"라는 형태로만 남아 있음). 그래서 유일하게 정확한 방법은 처음부터 다시 재생하는 것.
+
+- **`TerritoryHistoricalReplayService.replay()`**: `territory`/`territory_hex`를 통째로 지우고, `territory_mode=true, status=FINISHED`인 `record_track`을 `ended_at` 오름차순으로 전부 다시 태운다. 재생에 쓰는 처리 로직은 새로 만들지 않고 **이미 고쳐진 운영 코드(`ProcessTerritoryRunUseCase.process`)를 그대로 재사용** — 알고리즘이 두 곳에 따로 존재해 어긋날 위험이 없다.
+- **`record.GetTerritoryRunHistoryPort`(신규 shared 포트, `record`→`territory` 방향)**: `territory`가 `record` 도메인의 원본 GPS 이력을 읽어야 하는 첫 사례라 반대 방향의 shared 포트가 새로 생겼다(`record→rank`/`record→season`은 이미 있었음). 좌표 파싱은 `SaveGpsSessionService.claimTerritoryBestEffort`가 실시간 처리 때 하는 것과 완전히 동일한 로직(`GpsPoint` 목록 → `[lat,lng]`)이며, 배치 하나 때문에 별도 유틸로 추출하지는 않았다.
+- **멱등하지 않다 — 백필 러너와 반대되는 안전 전제**: `TerritoryHexBackfillRunner`는 켜둔 채 재시작해도 무해하지만(이미 채워진 건 다시 안 건드림), 이 재생은 매번 전체를 지우고 다시 만든다. 켜둔 채로 서비스가 재시작될 때마다 그 시점까지의 `record_track` 이력 전체로 다시 재생되므로 결과 자체는 매번 일관되지만(그 사이 실유저가 만든 땅도 이력에 포함되어 함께 재생됨), 재생이 진행되는 동안 들어오는 새 GPS 종료 요청과는 경합할 수 있다 — 트래픽이 적은 시간에 한 번 돌리고 결과(`TerritoryReplaySummary` 로그)를 확인한 뒤 `paceleague.territory.replay.enabled`를 반드시 다시 꺼야 한다.
+- **시즌 스냅샷 주의**: 재생된 땅의 `season`은 재생을 실행하는 "현재" 시점의 시즌 번호로 찍힌다(`ProcessTerritoryRunService.seasonNumber()`가 항상 현재 시즌을 조회하므로) — 이 프로젝트는 아직 시즌 리셋이 구현 전이라 지금까지 시즌이 하나뿐이라 실질적 문제는 없지만, 시즌이 여러 개로 나뉜 뒤에 이 배치를 다시 돌리면 과거 시즌의 땅도 전부 "현재 시즌"으로 재기록된다는 점을 알아둬야 한다.
+- 마이그레이션 없음. 새 조회 메서드만 추가: `RecordTrackRepositoryPort.findFinishedTerritoryModeSnosOrderByEndedAt`, `TerritoryRepositoryPort`/`TerritoryHexRepositoryPort.deleteAll`.
+
 ### 왜 엔티티를 순수 도메인 객체로 분리하지 않았는가
 
 "진짜" 클린 아키텍처는 JPA `@Entity`와 프레임워크 독립적인 도메인 모델을 완전히 분리하고 그 사이를 매퍼로 연결하지만, 이 프로젝트는 그렇게 하지 않기로 결정했습니다. 이유:

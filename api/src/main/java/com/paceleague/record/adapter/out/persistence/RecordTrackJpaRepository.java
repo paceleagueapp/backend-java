@@ -21,4 +21,11 @@ public interface RecordTrackJpaRepository extends JpaRepository<RecordTrack, Lon
             order by t.updateAt asc
             """)
     List<Long> findIdleActiveSessionSnos(@Param("idleBefore") LocalDateTime idleBefore, Pageable pageable);
+
+    @Query("""
+            select t.sno from RecordTrack t
+            where t.territoryMode = true and t.status = 'FINISHED'
+            order by t.endedAt asc
+            """)
+    List<Long> findFinishedTerritoryModeSnosOrderByEndedAt();
 }

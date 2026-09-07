@@ -35,4 +35,8 @@ public class RecordTrackPersistenceAdapter implements RecordTrackRepositoryPort 
     public List<Long> findIdleActiveSessionSnos(LocalDateTime idleBefore, int limit) {
         return recordTrackJpaRepository.findIdleActiveSessionSnos(idleBefore, PageRequest.of(0, limit));
     }
+
+    public List<Long> findFinishedTerritoryModeSnosOrderByEndedAt() {
+        return recordTrackJpaRepository.findFinishedTerritoryModeSnosOrderByEndedAt();
+    }
 }

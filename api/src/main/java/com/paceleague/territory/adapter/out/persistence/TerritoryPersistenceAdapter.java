@@ -51,4 +51,8 @@ public class TerritoryPersistenceAdapter implements TerritoryRepositoryPort {
     public List<Territory> findActiveMissingHex() {
         return territoryJpaRepository.findActiveMissingHex();
     }
+
+    public void deleteAll() {
+        territoryJpaRepository.deleteAllInBatch();
+    }
 }

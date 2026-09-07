@@ -18,4 +18,8 @@ public interface TerritoryHexRepositoryPort {
 
     // 지도 상세(헥사곤 격자) 렌더링용 — 여러 territory의 소유 헥사곤을 한 번에 조회.
     List<TerritoryHex> findByTerritorySnoIn(List<Long> territorySnos);
+
+    // territory 재생(historical replay, 2026-09-07) 전용 — 기존 헥사곤 매핑 전부를 지운다.
+    // TerritoryHistoricalReplayService 외에는 호출하지 않는다.
+    void deleteAll();
 }

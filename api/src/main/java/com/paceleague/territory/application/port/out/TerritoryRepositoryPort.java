@@ -30,4 +30,8 @@ public interface TerritoryRepositoryPort {
     // 헥사곤 백필 대상 — territory_hex 행이 하나도 없는 ACTIVE 땅(H3 도입 전에 생성된 "유령 땅" 후보).
     // 오래된 것부터(생성일 오름차순) 처리해 먼저 생긴 땅이 겹치는 헥사곤을 먼저 차지하게 한다.
     List<Territory> findActiveMissingHex();
+
+    // territory 재생(historical replay, 2026-09-07) 전용 — 기존 territory 전부를 지우고 처음부터
+    // 다시 만든다. TerritoryHistoricalReplayService 외에는 호출하지 않는다.
+    void deleteAll();
 }
