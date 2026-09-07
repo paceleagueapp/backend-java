@@ -21,6 +21,10 @@ public class TerritoryPersistenceAdapter implements TerritoryRepositoryPort {
         return territoryJpaRepository.save(territory);
     }
 
+    public void delete(Territory territory) {
+        territoryJpaRepository.delete(territory);
+    }
+
     public Optional<Territory> findBySno(Long sno) {
         return territoryJpaRepository.findById(sno);
     }

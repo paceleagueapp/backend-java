@@ -1,6 +1,6 @@
 package com.paceleague.territory.adapter.out.persistence;
 
-import com.paceleague.territory.application.dto.TerritoryHexOverlap;
+import com.paceleague.territory.application.dto.TerritoryHexOwnership;
 import com.paceleague.territory.application.port.out.TerritoryHexRepositoryPort;
 import com.paceleague.territory.domain.entity.TerritoryHex;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +20,9 @@ public class TerritoryHexPersistenceAdapter implements TerritoryHexRepositoryPor
     }
 
     @Override
-    public List<TerritoryHexOverlap> findActiveOverlapCounts(List<Long> h3Indexes) {
-        return territoryHexJpaRepository.findActiveOverlapCounts(h3Indexes).stream()
-                .map(p -> new TerritoryHexOverlap(p.getTerritorySno(), p.getOverlapHexCount()))
+    public List<TerritoryHexOwnership> findActiveOwners(List<Long> h3Indexes) {
+        return territoryHexJpaRepository.findActiveOwners(h3Indexes).stream()
+                .map(p -> new TerritoryHexOwnership(p.getH3Index(), p.getTerritorySno()))
                 .toList();
     }
 

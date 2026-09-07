@@ -35,6 +35,21 @@ public final class H3TerritoryGrid {
                 PolygonToCellsFlags.containment_overlapping);
     }
 
+    // 헥사곤 집합의 중심 = 각 셀 중심의 단순 평균. resolution 12 셀은 크기가 균일해 도형 중심의
+    // 근사값으로 충분하고(합집합 폴리곤의 진짜 centroid를 다시 계산하는 것보다 훨씬 간단하다), 백필
+    // 대상처럼 도형이 깨져 있어도(자기교차 등) 항상 안전하게 계산된다.
+    public static double[] centroidLatLng(H3Core h3, List<Long> hexIndexes) {
+        double sumLat = 0.0;
+        double sumLng = 0.0;
+        for (long idx : hexIndexes) {
+            LatLng c = h3.cellToLatLng(idx);
+            sumLat += c.lat;
+            sumLng += c.lng;
+        }
+        int n = hexIndexes.size();
+        return new double[]{sumLat / n, sumLng / n};
+    }
+
     public static double totalAreaSqm(H3Core h3, List<Long> hexIndexes) {
         double sum = 0.0;
         for (long idx : hexIndexes) {

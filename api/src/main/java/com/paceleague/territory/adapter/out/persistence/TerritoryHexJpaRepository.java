@@ -10,14 +10,13 @@ import java.util.List;
 public interface TerritoryHexJpaRepository extends JpaRepository<TerritoryHex, Long> {
 
     @Query(value = """
-            select th.territory_sno as territorySno,
-                   count(*)         as overlapHexCount
+            select th.h3_index     as h3Index,
+                   th.territory_sno as territorySno
             from territory_hex th
             join territory t on t.sno = th.territory_sno
             where t.status = 'ACTIVE' and th.h3_index in (:hexIndexes)
-            group by th.territory_sno
             """, nativeQuery = true)
-    List<TerritoryHexOverlapProjection> findActiveOverlapCounts(@Param("hexIndexes") List<Long> hexIndexes);
+    List<TerritoryHexOwnershipProjection> findActiveOwners(@Param("hexIndexes") List<Long> hexIndexes);
 
     List<TerritoryHex> findByTerritorySnoIn(List<Long> territorySnos);
 }

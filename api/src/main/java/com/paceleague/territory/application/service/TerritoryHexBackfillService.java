@@ -70,7 +70,7 @@ public class TerritoryHexBackfillService {
         double areaSqm = H3TerritoryGrid.totalAreaSqm(h3Core, free);
         List<double[]> unionRing = H3TerritoryGrid.unionBoundaryLatLng(h3Core, free);
         double[] bbox = bboxOf(unionRing);
-        territory.applyHexBackfill(free.size(), areaSqm, writeRing(unionRing),
+        territory.recomputeFromHexes(free.size(), areaSqm, writeRing(unionRing),
                 bbox[0], bbox[1], bbox[2], bbox[3]);
         territoryRepositoryPort.save(territory);
         return true;

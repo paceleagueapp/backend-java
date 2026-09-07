@@ -12,7 +12,11 @@ import java.time.LocalDateTime;
 // 땅따먹기의 "땅" 1구획. 러닝 GPS 경로가 이룬 닫힌 도형 하나가 territory 한 행이 된다.
 //  - polygon_json: 소유 헥사곤 합집합 외곽선 위/경도 링([[lat,lng], ...]). 지도에 그대로 그린다.
 //  - bbox_*: 지도 bounds 조회용 경계 상자(공간 인덱스 대신 DECIMAL 범위 비교).
-//  - HP 없음(2026-09-05 제거) — 겹치는 러닝이 있으면 무조건 그 러너의 소유로 즉시 바뀐다.
+//  - HP 없음(2026-09-05 제거) — 겹치는 러닝이 있으면 즉시 소유가 바뀐다.
+//  - 2026-09-07: 겹침 판정이 헥사곤 단위로 바뀌면서 "점령"도 땅 전체가 아니라 겹친 헥사곤만 옮긴다.
+//    그래서 이 행의 소유자(owner_member_sno)는 이제 절대 바뀌지 않는다 — 남의 헥사곤을 뺏으면 그 헥사곤들은
+//    뺏은 사람의 새 territory 행으로 편입되고, 뺏긴 땅은 남은 헥사곤만으로 도형이 줄어든다(recomputeFromHexes).
+//    남은 헥사곤이 하나도 없으면 이 행 자체가 삭제된다. (자세한 흐름은 ProcessTerritoryRunService 참고)
 @Entity
 @Table(name = "territory")
 @Getter
@@ -60,8 +64,8 @@ public class Territory {
     @Column(name = "perimeter_m", precision = 14, scale = 4)
     private BigDecimal perimeterM;
 
-    // 이 땅을 이루는 H3(resolution 12) 헥사곤 개수. 생성 시 고정되며 점령(capture)으로도 바뀌지 않는다 —
-    // territory_hex 행 자체는 소유자 변경과 무관하게 그대로 이 territory_sno에 남는다.
+    // 이 땅을 이루는 H3(resolution 12) 헥사곤 개수. 생성 시 정해지지만, 이후 남의 러닝이 이 헥사곤 중
+    // 일부만 겹쳐 뺏어가면 recomputeFromHexes로 줄어들 수 있다(부분 점령, 2026-09-07).
     @Column(name = "hex_count")
     private Integer hexCount;
 
@@ -104,19 +108,14 @@ public class Territory {
         this.updateAt = this.createAt;
     }
 
-    // 남의 러닝이 겹치면 HP 소모 없이 즉시 소유권이 넘어간다.
-    public void capture(Long newOwnerMemberSno) {
-        this.ownerMemberSno = newOwnerMemberSno;
-        this.updateAt = LocalDateTime.now();
-    }
-
     public boolean isOwnedBy(Long memberSno) {
         return memberSno != null && memberSno.equals(this.ownerMemberSno);
     }
 
-    // 백필 전용(TerritoryHexBackfillService): H3 도입 전에 생성된 땅의 폴리곤을 헥사곤 집합으로 환산한
-    // 결과를 반영한다. 소유자/시즌/생성 출처는 그대로 두고 도형·면적·hexCount만 갱신한다.
-    public void applyHexBackfill(int hexCount, double areaSqm, String polygonJson,
+    // 이 땅의 헥사곤 집합이 바뀌었을 때(도형·면적·hexCount·bbox) 갱신한다. 소유자/시즌/생성 출처는 그대로 둔다.
+    // 두 호출부가 쓴다: TerritoryHexBackfillService(H3 도입 전 땅을 헥사곤 집합으로 처음 환산할 때)와
+    // ProcessTerritoryRunService(다른 러닝이 이 땅의 헥사곤 일부만 뺏어가 남은 헥사곤으로 도형이 줄어들 때).
+    public void recomputeFromHexes(int hexCount, double areaSqm, String polygonJson,
                                   double bboxMinLat, double bboxMinLng, double bboxMaxLat, double bboxMaxLng) {
         this.hexCount = hexCount;
         this.areaSqm = BigDecimal.valueOf(areaSqm);

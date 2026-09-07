@@ -11,6 +11,9 @@ public interface TerritoryRepositoryPort {
 
     Territory save(Territory territory);
 
+    // 땅의 헥사곤을 전부 뺏겨 하나도 안 남았을 때(부분 점령의 극단값) 이 행 자체를 지운다.
+    void delete(Territory territory);
+
     Optional<Territory> findBySno(Long sno);
 
     // 지도 조회용 — bbox가 요청 영역과 겹치는 ACTIVE 땅, 면적 큰 순, 최대 limit개.

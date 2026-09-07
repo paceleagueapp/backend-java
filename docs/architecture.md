@@ -161,6 +161,16 @@ com.paceleague
 - **API 영향**: `GET /api/territory/map`의 `TerritoryView`에서 `hp`/`maxHp` 필드 제거(`web/territory.html`의 InfoWindow도 HP 표시 줄 삭제) — 이 엔드포인트는 응답 축소. 반면 GPS 종료 응답(`ProcessTerritoryRunResult` → `GpsSessionResponse.territoryResult`, 앱이 소비)의 `damagedTerritorySnos`/`healedTerritorySnos` 필드는 앞으로 항상 빈 배열이 되지만 **필드 자체는 남겨뒀다** — 앱과 사전 협의 없이 이 응답 계약을 바꾸지 않는다는 원칙(`record`의 `weightKg` TODO와 같은 이유)에 따른 것.
 - 마이그레이션: `docs/migrations/2026-09-05_territory_remove_hp.sql`(hex-grid 마이그레이션 다음 실행) — `territory.hp`/`max_hp` 컬럼과 `territory_contribution` 테이블 전체를 삭제한다.
 
+**2026-09-07: 점령 단위를 territory 전체에서 헥사곤 단위로 축소 — "겹친 부분만" 뺏는다.** 사용자의 명시적 요청("겹치면 겹친 부분만 뺏도록", "먼저 점령된 사람 것을 나중에 뛴 사람이 뺏는 것"). 그동안은 헥사곤 하나만 겹쳐도 상대 territory 전체가 넘어갔는데(위 2026-09-05 항목), 이제 실제로 겹친 헥사곤만 옮겨간다.
+
+- **겹침 조회가 헥사곤 단위로 바뀜**: `TerritoryHexRepositoryPort.findActiveOverlapCounts`(territory_sno별 겹침 개수 집계)를 `findActiveOwners`(겹친 헥사곤 하나하나의 `h3_index`→`territory_sno`)로 교체. 어느 헥사곤을 누구에게서 옮길지 알아야 하므로 집계로는 부족해졌다.
+- **`ProcessTerritoryRunService.captureAndClaim`**(옛 `captureOverlapping` 대체): 이번 러닝이 덮은 헥사곤을 내 것 / 남의 것 / 빈 것 세 갈래로 나눈다. 내 것은 그대로 두고(다른 내 territory 소속이라 중복 편입 방지), 남의 것은 그 헥사곤만 떼어와 이번 러너 몫에 합치고, 빈 것도 이번 러너 몫에 합친다. 즉 "빈 헥사곤 + 이번에 뺏은 헥사곤"을 모아 이번 러닝 전용 새 `Territory` 행 하나를 만든다(옛 `createNewTerritory`와 같은 헬퍼를 재사용 — 이제 겹침이 있어도 새 땅이 생길 수 있다는 뜻).
+- **뺏긴 쪽은 남은 헥사곤만으로 도형이 줄어든다**: `Territory.recomputeFromHexes`(옛 `applyHexBackfill`을 일반화한 이름 — 이제 `TerritoryHexBackfillService`와 `ProcessTerritoryRunService` 두 곳에서 쓴다)로 `polygon_json`/`area_sqm`/`hex_count`/bbox를 남은 헥사곤 기준으로 다시 계산해 저장한다. 가진 헥사곤을 전부 뺏기면(remaining이 빈 리스트) 그 행 자체를 삭제한다(`TerritoryRepositoryPort.delete`, 신규) — `territory_hex`는 FK 제약이 없는 평범한 `BIGINT` 컬럼(`docs/migrations/2026-09-05_territory_hex_grid.sql` 참고)이라, 같은 트랜잭션 안에서 옛 행을 지우고 그 헥사곤 행들을 새 territory_sno로 재배정하는 순서가 뒤바뀌어도 문제없다.
+- **`Territory.capture()` 제거**: territory 행의 소유자는 이제 절대 안 바뀐다(전부 뺏기면 삭제, 일부만 뺏기면 그대로 소유자 유지 + 도형만 축소). 소유권 이전은 오직 "헥사곤이 새 territory 행으로 옮겨간다"는 형태로만 일어난다 — 옛 방식처럼 같은 행이 소유자만 바뀐 채 살아남는 경우는 더 이상 없다(항상 새 행 생성 + 원래 행 축소/삭제로 통일해, 여러 territory에서 동시에 뺏고 빈 헥사곤도 있는 복합 상황을 한 가지 경로로 처리한다).
+- **API 영향**: `ProcessTerritoryRunResult.interacted(...)`에 `createdTerritorySno` 파라미터 추가 — `Outcome.INTERACTED`도 이제 `createdTerritorySno`가 채워질 수 있다(캡처와 신규 편입이 한 러닝에서 동시에 일어날 수 있으므로, 기존처럼 `CREATED`/`INTERACTED`가 필드까지 상호 배타적이던 가정이 깨졌다). `damagedTerritorySnos`/`healedTerritorySnos`는 위 2026-09-05 항목과 같은 이유로 계속 유지(항상 빈 배열).
+- **기존 운영 데이터에는 소급 적용하지 않음**: 이미 저장된 territory/territory_hex는 옛(전체 강탈) 로직으로 만들어진 상태 그대로 둔다. 정확히 재현하려면 territory-mode 러닝 전체를 시간순으로 새 알고리즘으로 재생해야 하는데, "점령만 하고 새 땅은 안 만든" 과거 러닝들의 실제 폴리곤은 어느 territory 행에도 연결돼 있지 않아(캡처는 헥사곤을 건드리지 않았으므로) `record_track` 이력을 별도로 훑어야 하고, 운영 DB를 되돌릴 수 없게 재작성하는 작업이라 이 코드 변경과 별개로 사용자의 명시적 확인을 받기로 함.
+- 마이그레이션 없음 — 테이블은 그대로, 조회/점령 로직과 `TerritoryHexRepositoryPort`의 메서드 하나(이름+반환형)만 바뀌었다.
+
 ### 왜 엔티티를 순수 도메인 객체로 분리하지 않았는가
 
 "진짜" 클린 아키텍처는 JPA `@Entity`와 프레임워크 독립적인 도메인 모델을 완전히 분리하고 그 사이를 매퍼로 연결하지만, 이 프로젝트는 그렇게 하지 않기로 결정했습니다. 이유:
