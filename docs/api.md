@@ -409,6 +409,8 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 지도가 보고 있는 영역(bounds)과 줌 레벨로 점령된 땅 목록을 반환합니다. `web/territory.html`(Google Maps JS API)이 폴리곤으로 그립니다. 로그인 상태로 호출하면 각 땅의 `mine` 플래그가 채워집니다.
 
+> **CORS**: `paceleague.co.kr`/`www.paceleague.co.kr` 오리진에서 GET + `Authorization` 헤더 허용(`CorsConfig`의 `getWithAuthHeader`, `/api/territory/ranking`도 동일). 비로그인도 되지만 `web/js/app.js`의 `apiFetch`가 로그인 시 `Authorization`을 붙이므로 이 헤더를 허용하지 않으면 로그인 사용자의 preflight가 403으로 막혀 지도/랭킹이 안 뜬다(2026-09-07 수정). `zoom`은 정수만 받으므로 클라이언트는 `Math.floor(map.getZoom())`로 내려서 보낸다(소수 → 400).
+
 줌이 `paceleague.territory.hex-detail-zoom`(기본 16) 이상이면 응답에 **개별 헥사곤 경계 링**도 함께 내려갑니다 — 소유된 땅은 각 `territories[].hexes`, 아직 아무도 점령하지 않은 셀은 `emptyHexes`. 그 미만 줌에서는 두 값 모두 항상 빈 배열이고 땅 외곽선(`polygon`)만 채워집니다(저줌에서 응답이 과도하게 커지는 것 방지). `web/territory.html`의 `CLIENT_HEX_ZOOM` 상수가 이 값과 일치해야 합니다.
 
 **Query params**

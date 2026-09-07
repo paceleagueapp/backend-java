@@ -240,7 +240,9 @@
 
     function refreshTerritories() {
       if (!map) return;
-      var zoom = map.getZoom();
+      // Google Maps는 벡터/트랙패드 확대 시 getZoom()이 소수(예: 16.5)를 돌려줄 수 있고,
+      // 서버 zoom 파라미터는 int라 소수를 그대로 보내면 500이 난다 → 내림해서 보낸다.
+      var zoom = Math.floor(map.getZoom());
       if (zoom < CLIENT_MIN_ZOOM) {
         clearPolygons();
         zoomHintEl.textContent = t('territoryZoomIn');

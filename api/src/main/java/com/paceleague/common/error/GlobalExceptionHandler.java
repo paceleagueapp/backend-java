@@ -4,8 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -20,6 +22,17 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiError.of(ErrorCode.BAD_REQUEST, e.getMessage()));
+    }
+
+    // 쿼리/경로 파라미터 바인딩 실패(타입 불일치 예: zoom=16.5 → int, 필수 파라미터 누락) — 클라이언트 잘못이므로
+    // catch-all의 500이 아니라 400으로 내린다. (도메인 검증 실패를 IllegalArgumentException→400으로 처리하는 것과 같은 취지.)
+    @ExceptionHandler({MethodArgumentTypeMismatchException.class, MissingServletRequestParameterException.class})
+    public ResponseEntity<ApiError> handleBadParam(Exception e) {
+
+        log.warn("Bad request param: {}", e.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.of(ErrorCode.BAD_REQUEST, "요청 파라미터가 올바르지 않습니다."));
     }
 
     // 존재하지 않는 경로 요청 — 아래 catch-all(Exception)에 걸리면 500이 되므로 먼저 404로 처리한다.
