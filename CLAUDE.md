@@ -171,7 +171,7 @@ The existing `media` domain/pipeline from the entry above is **unchanged** — t
 
 ## Testing
 
-`AGENTS.md` calls for JUnit 5 + Mockito with both success/failure cases per feature (Korean test method names are acceptable). Coverage is partial: `PaceleagueApplicationTests` (context-load smoke test — needs a DB, so it fails without a `local`/`prod` profile + datasource; CI runs `build -x test` so this never blocks a deploy), plus pure-unit tests for the `record`/`rank`/`board`/`territory` domain policies and `GpsSessionSweeperTest` / `ProcessTerritoryRunServiceTest` (Mockito). Newer domains follow the rule; older ones don't yet. Existing tests must never be deleted per project rules.
+`AGENTS.md` calls for JUnit 5 + Mockito with both success/failure cases per feature (Korean test method names are acceptable). Coverage is partial: `PaceleagueApplicationTests` (context-load smoke test — needs a DB, so it fails without a `local`/`prod` profile + datasource; CI runs `build -x test` so this never blocks a deploy), plus pure-unit tests for the `record`/`rank`/`board`/`territory` domain policies, `GpsSessionSweeperTest` / `ProcessTerritoryRunServiceTest` (Mockito), and `common` config/error tests (`CorsConfigTest` asserts each registered path's allowed origin/method/headers straight off the `CorsConfigurationSource` bean — no Spring context; `GlobalExceptionHandlerTest`). Newer domains follow the rule; older ones don't yet. Existing tests must never be deleted per project rules.
 
 ## Keeping docs in sync
 
