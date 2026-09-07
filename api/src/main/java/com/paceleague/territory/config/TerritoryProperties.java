@@ -30,7 +30,8 @@ public record TerritoryProperties(
         if (maxAreaSqm == null) maxAreaSqm = 5_000_000.0;
         if (hexResolution == null) hexResolution = 12; // H3 res12 평균 ~307㎡ — 소유권/충돌 판정의 최소 단위
         // 이 줌 이상에서만 GET /api/territory/map이 개별 헥사곤 경계도 함께 내려준다(저줌에서는 외곽선만).
-        if (hexDetailZoom == null) hexDetailZoom = 17;
+        // 16 = 도심 한 블록 정도 시야 — 이보다 낮추면 emptyHexes가 4000개 상한에 자주 걸려 응답이 커진다.
+        if (hexDetailZoom == null) hexDetailZoom = 16;
         // 미점령 셀 격자(emptyHexes) 응답 개수 상한 — hexDetailZoom 자체가 이미 화면을 좁혀주지만,
         // 넓은 화면/이상한 bounds 요청에서도 한 응답이 과도하게 커지지 않도록 하는 안전장치.
         if (emptyHexMaxCells == null) emptyHexMaxCells = 4000;

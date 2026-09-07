@@ -125,13 +125,21 @@ totalScore = baseScore + scaledScore + addScore
 
 공개(인증 불필요). 지도 bounds(남서/북동 위경도) + 줌 레벨로 `ACTIVE` territory를 bbox 겹침으로 조회. 줌이 `paceleague.territory.min-zoom`(13) 미만이면 빈 목록 + `zoomTooLow: true`(데이터 과다 방지). 최대 `map-max-results`(300)개, 면적 큰 순. 소유자 닉네임은 `member.GetMemberNicknamePort`, 티어는 `rank.GetMemberTierPort`(+ `RankTierLabelPolicy` 라벨) — 소유자별 캐시로 N+1 회피. 로그인 상태면 각 항목의 `mine` 플래그가 채워진다. `web/territory.html`(Google Maps JS API)이 이 응답을 폴리곤으로 그린다.
 
+**헥사곤 격자 (줌 `hex-detail-zoom`(16) 이상일 때만, 2026-09-05):** 응답에 개별 H3 헥사곤 경계 링도 함께 내려간다. `web/territory.html`의 `CLIENT_HEX_ZOOM` 상수가 이 값과 일치해야 하며, 그 미만~`min-zoom` 사이 줌에서는 "조금 더 확대하면 육각형 격자가 표시됩니다" 힌트를 띄운다.
+- `TerritoryView.hexes` — 각 땅을 이루는 헥사곤들(`territory_hex`에서 `findByTerritorySnoIn`으로 벌크 조회 → `H3TerritoryGrid.cellBoundariesLatLng`).
+- `TerritoryMapResponse.emptyHexes` — 요청 bounds 안에서 아직 아무도 점령하지 않은 셀. `TerritoryQueryService.emptyHexesInBounds`가 bounds 사각형을 `H3TerritoryGrid.coverRing`으로 덮은 뒤 `TerritoryHexRepositoryPort.findExistingIndexes`가 이미 점령됐다고 하는 셀을 뺀다. 공개 API라 임의로 넓은 bounds가 올 수 있어, H3 계산 전에 bounds 대각선이 `empty-hex-max-bounds-meters`(3000m, `GeoDistanceCalculator.haversineMeters` 재사용)를 넘으면 `[]`로 조기 반환하고, 그 외엔 `empty-hex-max-cells`(4000)개로 자른다.
+
+줌이 `hex-detail-zoom` 미만이면 `hexes`/`emptyHexes` 모두 항상 `[]`(저줌에서 셀 개수가 폭증 → 성능/응답크기, `min-zoom`/`map-max-results`와 같은 이유). `web/territory.html`은 이 링들을 외곽선 위에 얇은 채움 없는 폴리곤(소유 헥사곤은 땅 색, 미점령은 회색 `#888`)으로 덧그린다 — 클릭/InfoWindow 동작에는 영향 없음.
+
+**유령 땅 백필 (`TerritoryHexBackfillRunner`, `adapter/in/batch`):** 2026-09-05 이전에 만들어져 `territory_hex` 매핑이 없는 ACTIVE territory를, 앱 시작 시 한 번 `TerritoryHexBackfillService.backfillOne`으로 옛 `polygon_json`을 다시 H3로 덮어 채운다(다른 땅이 이미 가진 헥사곤은 건너뜀 — 생성 오래된 순, 먼저 만든 땅이 이김). `paceleague.territory.backfill.enabled`로 게이트(미설정/`false`면 빈 자체가 안 만들어짐), `application-prod.yml`은 `true`로 켜둠(멱등이라 재시작마다 켜둬도 무해).
+
 ### 면적 랭킹 (`GET /api/territory/ranking`)
 
 공개(인증 불필요). `owner_member_sno`별 `SUM(area_sqm)`(ACTIVE만) 내림차순 랭킹. 네이티브 집계 쿼리(`TerritoryJpaRepository.findTopOwnersByArea`) → `TerritoryOwnerArea` → `TerritoryQueryService.getRanking`이 소유자별 닉네임/티어를 붙여 `TerritoryRankingResponse`로 반환. 최대 `ranking-max-results`(100)명. 로그인 상태면 본인 항목에 `mine: true`. `web/territory.html` 지도 우상단 "랭킹" 패널이 사용. 지도 조회와 같은 서비스(`TerritoryQueryService`)가 `GetTerritoryRankingUseCase`도 구현한다.
 
 ### 설정 (`paceleague.territory.*`, `TerritoryProperties`)
 
-`app.jwt`(`JwtProperties`)와 같은 `@ConfigurationProperties` 방식. `application*.yml`에는 없고 아래 기본값을 사용: `min-zoom`(13), `map-max-results`(300), `ranking-max-results`(100), `close-threshold-meters`(50), `min-perimeter-meters`(300), `min-area-sqm`(10000), `max-area-sqm`(5000000), `hex-resolution`(12). (`default-max-hp`/`attack-factor`/`heal-factor`/`contribution-window-minutes`는 2026-09-05 HP 제거와 함께 삭제됨.)
+`app.jwt`(`JwtProperties`)와 같은 `@ConfigurationProperties` 방식. `application*.yml`에는 없고(단 `backfill.enabled`는 `application-prod.yml`에서 `true`) 아래 기본값을 사용: `min-zoom`(13), `map-max-results`(300), `ranking-max-results`(100), `close-threshold-meters`(50), `min-perimeter-meters`(300), `min-area-sqm`(10000), `max-area-sqm`(5000000), `hex-resolution`(12), `hex-detail-zoom`(16), `empty-hex-max-cells`(4000), `empty-hex-max-bounds-meters`(3000). (`default-max-hp`/`attack-factor`/`heal-factor`/`contribution-window-minutes`는 2026-09-05 HP 제거와 함께 삭제됨.)
 
 ### 알려진 한계 (v1)
 

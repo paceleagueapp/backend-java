@@ -32,7 +32,9 @@ public class TerritoryController {
     @Operation(summary = "지도 영역 내 땅 조회",
             description = "인증 불필요. 지도가 보고 있는 bounds(남서/북동 위경도)와 줌 레벨로 점령된 땅 목록을 반환합니다. "
                     + "줌이 임계값 미만이면 빈 목록 + zoomTooLow=true 를 돌려줍니다(데이터 과다 방지). "
-                    + "로그인 상태면 각 땅의 mine 플래그가 채워집니다.")
+                    + "로그인 상태면 각 땅의 mine 플래그가 채워집니다. "
+                    + "줌이 hex-detail-zoom(기본 17) 이상이면 개별 H3 헥사곤 경계 링도 함께 내려갑니다 — "
+                    + "소유된 땅은 territories[].hexes, 미점령 셀은 emptyHexes (그 미만 줌에서는 둘 다 빈 배열).")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @SecurityRequirements
     @GetMapping("/map")

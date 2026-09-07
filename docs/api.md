@@ -377,11 +377,10 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 | 필드 | 설명 |
 |---|---|
-| outcome | `NO_LOOP`(경로가 닫힌 도형이 아님) / `INVALID_SHAPE`(너무 작거나 큰 도형) / `CREATED`(빈 구역이라 새 땅 생성) / `INTERACTED`(기존 땅과 겹쳐 데미지·회복·점령 발생) |
+| outcome | `NO_LOOP`(경로가 닫힌 도형이 아님) / `INVALID_SHAPE`(너무 작거나 큰 도형) / `CREATED`(빈 구역이라 새 땅 생성) / `INTERACTED`(기존 땅과 겹쳐 점령 발생) |
 | createdTerritorySno | `outcome=CREATED`일 때 새로 만든 `territory.sno` |
-| capturedTerritories | HP를 0으로 만들어 이번 러닝으로 뺏어온 남의 땅 목록. 각 원소에 `territorySno`, `previousOwnerMemberSno`, `previousOwnerNickname` |
-| damagedTerritorySnos | 데미지만 주고 점령까지는 못 한 땅 `sno` 목록 |
-| healedTerritorySnos | 내 소유 땅 중 이번 러닝으로 HP를 회복시킨 땅 `sno` 목록 |
+| capturedTerritories | 이번 러닝으로 뺏어온 남의 땅 목록(헥사곤 1개라도 겹치면 즉시·무조건 점령). 각 원소에 `territorySno`, `previousOwnerMemberSno`, `previousOwnerNickname` |
+| damagedTerritorySnos / healedTerritorySnos | 2026-09-05 HP 제거로 **항상 빈 배열**. 앱과의 호환을 위해 필드만 유지 |
 
 **멱등성**: 마지막으로 저장된 좌표 시각(`last_point_at`) 이후 좌표만 저장하므로, 같은 청크를 다시 보내도 `skippedPoints`로 집계될 뿐 중복 저장되지 않습니다. 이미 `FINISHED`된 러닝에 청크가 또 와도 무시하고 확정된 결과만 돌려줍니다.
 
@@ -402,13 +401,15 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 ## Territory API (`/api/territory`) — 러닝 땅따먹기
 
-러닝 GPS 경로가 이룬 닫힌 도형을 "땅"으로 저장하고, 겹치는 러닝으로 데미지를 주고받는 게임 기능(2026-08-27 1차 구현). 도메인 로직은 [domains.md](./domains.md#러닝-땅따먹기territory-도메인) 참고.
+러닝 GPS 경로가 이룬 닫힌 도형을 "땅"으로 저장하는 게임 기능(2026-08-27 1차 구현, 2026-09-05 H3 헥사곤 격자 전환 + HP 제거 — 남의 땅과 한 헥사곤이라도 겹치면 즉시·무조건 소유권이 넘어감). 도메인 로직은 [domains.md](./domains.md#러닝-땅따먹기territory-도메인) 참고.
 
-땅 생성/데미지/점령은 **별도 엔드포인트가 아니라** `POST /api/record/gps`의 러닝 종료 시점에 일어난다 — 그 러닝이 `territoryMode: true`로 시작한 세션일 때만. 아래는 그 결과를 지도에 보여주는 조회 엔드포인트.
+땅 생성/점령은 **별도 엔드포인트가 아니라** `POST /api/record/gps`의 러닝 종료 시점에 일어난다 — 그 러닝이 `territoryMode: true`로 시작한 세션일 때만. 아래는 그 결과를 지도에 보여주는 조회 엔드포인트.
 
 ### GET `/api/territory/map` — 지도 영역 내 땅 조회 (공개, 인증 불필요)
 
 지도가 보고 있는 영역(bounds)과 줌 레벨로 점령된 땅 목록을 반환합니다. `web/territory.html`(Google Maps JS API)이 폴리곤으로 그립니다. 로그인 상태로 호출하면 각 땅의 `mine` 플래그가 채워집니다.
+
+줌이 `paceleague.territory.hex-detail-zoom`(기본 16) 이상이면 응답에 **개별 헥사곤 경계 링**도 함께 내려갑니다 — 소유된 땅은 각 `territories[].hexes`, 아직 아무도 점령하지 않은 셀은 `emptyHexes`. 그 미만 줌에서는 두 값 모두 항상 빈 배열이고 땅 외곽선(`polygon`)만 채워집니다(저줌에서 응답이 과도하게 커지는 것 방지). `web/territory.html`의 `CLIENT_HEX_ZOOM` 상수가 이 값과 일치해야 합니다.
 
 **Query params**
 
@@ -416,7 +417,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 |---|---|---|
 | swLat, swLng | double | 지도 남서쪽 모서리 위경도. **필수** |
 | neLat, neLng | double | 지도 북동쪽 모서리 위경도. **필수** |
-| zoom | int | 지도 줌 레벨. **필수**. `paceleague.territory.min-zoom`(기본 13) 미만이면 빈 목록 + `zoomTooLow: true` (데이터 과다 방지) |
+| zoom | int | 지도 줌 레벨. **필수**. `paceleague.territory.min-zoom`(기본 13) 미만이면 빈 목록 + `zoomTooLow: true` (데이터 과다 방지). `hex-detail-zoom`(기본 16) 이상이면 `hexes`/`emptyHexes`도 채워짐 |
 | lang | string | 티어 라벨 언어(`ko`/`en`/`ja`/`zh`/`es`/`fr`/`de`/`pt`/`vi`/`th`), 미지원 값이면 `ko`. 기본 `ko` |
 | country | string | ISO 3166-1 alpha-2 국가코드(예: `KR`). 주어지면 `lang` 대신 이 국가에 맞는 언어로 응답 |
 
@@ -428,17 +429,20 @@ join/login/reissue가 공통으로 반환하는 구조:
     { "sno": 12, "polygon": [[37.5665,126.978],[37.5665,126.979],[37.5673,126.979],[37.5673,126.978],[37.5665,126.978]],
       "centerLat": 37.5669, "centerLng": 126.9785,
       "ownerNickname": "달리는곰", "ownerTier": "GOLD", "ownerTierLabel": "골드",
-      "hp": 70, "maxHp": 100, "mine": false }
-  ] }
+      "mine": false,
+      "hexes": [ [[37.5666,126.9781],[37.5668,126.9783],[37.5667,126.9786],[37.5664,126.9786],[37.5663,126.9783],[37.5664,126.9781],[37.5666,126.9781]] ] }
+  ],
+  "emptyHexes": [ [[37.5670,126.9790],[37.5672,126.9792],[37.5671,126.9795],[37.5668,126.9795],[37.5667,126.9792],[37.5668,126.9790],[37.5670,126.9790]] ] }
 ```
 
 | 필드 | 설명 |
 |---|---|
-| zoomTooLow | `true`이면 `territories`는 항상 빈 목록. 클라이언트는 "지도를 더 확대하세요" 안내를 표시 |
-| polygon | `[[lat,lng], ...]` 위/경도 링(실제 러닝 경로 기반) |
+| zoomTooLow | `true`이면 `territories`·`emptyHexes`는 항상 빈 목록. 클라이언트는 "지도를 더 확대하세요" 안내를 표시 |
+| polygon | `[[lat,lng], ...]` 위/경도 링. 그 땅이 소유한 헥사곤들의 합집합 외곽선(생성 시점에 한 번 계산) |
 | ownerTier / ownerTierLabel | 소유자의 현재 시즌 티어 enum / 언어별 라벨. 점수 없으면 `SILVER` |
-| hp / maxHp | 현재 체력 / 최대 체력. 겹치는 러닝에 데미지를 입고 0이 되면 소유권이 넘어감 |
 | mine | 호출자 소유 여부. 비로그인이면 항상 `false` |
+| territories[].hexes | 그 땅을 이루는 **개별 H3 헥사곤 경계 링** 목록(`[[lat,lng], ...]`). 줌 `< hex-detail-zoom`(16)이면 항상 `[]`. `web/territory.html`이 외곽선 위에 얇은 채움 없는 폴리곤으로 덧그림 |
+| emptyHexes | 요청 bounds 안에서 **아직 아무에게도 점령되지 않은** H3 셀의 경계 링 목록. 줌 `< hex-detail-zoom`이면 `[]`. bounds 대각선이 `empty-hex-max-bounds-meters`(3000m)를 넘으면 계산을 건너뛰어 `[]`, 그 외엔 `empty-hex-max-cells`(4000)개까지 잘라서 반환 |
 
 ### GET `/api/territory/ranking` — 면적 기준 랜드잇 랭킹 (공개, 인증 불필요)
 
@@ -470,7 +474,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 | territoryCount | 보유 중인 ACTIVE 땅 개수 |
 | mine | 호출자 본인 항목 여부. 비로그인이면 항상 `false` |
 
-**마이그레이션**: [migrations/2026-08-27_territory_feature.sql](./migrations/2026-08-27_territory_feature.sql) (운영은 배포 전 직접 실행. `record_track.territory_mode` 컬럼 + `territory`/`territory_contribution` 테이블). 랭킹은 기존 `territory` 테이블만 조회하므로 추가 마이그레이션 없음.
+**마이그레이션**(운영은 배포 전 직접 실행): [2026-08-27_territory_feature.sql](./migrations/2026-08-27_territory_feature.sql) (`record_track.territory_mode` 컬럼 + `territory`/`territory_contribution` 테이블) → [2026-09-05_territory_hex_grid.sql](./migrations/2026-09-05_territory_hex_grid.sql) (`territory_hex` 테이블 + `territory.hex_count`) → [2026-09-05_territory_remove_hp.sql](./migrations/2026-09-05_territory_remove_hp.sql) (`territory.hp`/`max_hp` + `territory_contribution` 테이블 삭제). `map`의 `hexes`/`emptyHexes`, `ranking` 모두 이 스키마만 조회하므로 추가 마이그레이션 없음.
 
 ---
 

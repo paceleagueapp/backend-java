@@ -106,8 +106,8 @@
     </div>
   </div>
 
-  <script src="/js/app.js?v=20260828f"></script>
-  <script src="/js/i18n.js?v=20260828f"></script>
+  <script src="/js/app.js?v=20260907a"></script>
+  <script src="/js/i18n.js?v=20260907a"></script>
   <script>
     // ── Google Maps API 키 ──────────────────────────────────────────────────────
     // "Maps JavaScript API" 전용, HTTP 리퍼러 제한(paceleague.co.kr / www / localhost) 걸린 키.
@@ -115,6 +115,8 @@
     var GOOGLE_MAPS_API_KEY = 'AIzaSyCO8M-PtHdhcCAxQShVwqARdNoGv11Ti_w';
 
     var CLIENT_MIN_ZOOM = 13;           // 이 미만 줌에서는 서버 호출 없이 안내만
+    var CLIENT_HEX_ZOOM = 16;           // 이 미만 줌에서는 서버가 육각형 격자(hexes/emptyHexes)를 안 내려줌
+                                        // — 서버 paceleague.territory.hex-detail-zoom 과 반드시 일치시킬 것
     var DEFAULT_CENTER = { lat: 37.5665, lng: 126.9780 }; // 서울시청
     var DEFAULT_ZOOM = 15;
 
@@ -262,8 +264,14 @@
           zoomHintEl.classList.remove('hidden');
           return;
         }
-        zoomHintEl.classList.add('hidden');
         render(data.territories || [], data.emptyHexes || []);
+        // 땅 외곽선은 나왔지만 아직 육각형 격자가 안 나오는 줌 구간 → 조금 더 확대하라고 안내
+        if (zoom < CLIENT_HEX_ZOOM) {
+          zoomHintEl.textContent = t('territoryHexZoomIn');
+          zoomHintEl.classList.remove('hidden');
+        } else {
+          zoomHintEl.classList.add('hidden');
+        }
       }).catch(function () {
         showStatus(t('territoryLoadFailed'));
         setTimeout(hideStatus, 3000);
