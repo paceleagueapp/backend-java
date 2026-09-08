@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>게시글 - Pace League</title>
   <link rel="icon" type="image/png" href="/img/favicon.png">
+  <link rel="stylesheet" href="/css/app.css?v=20260908">
   <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
   new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -13,94 +14,72 @@
   })(window,document,'script','dataLayer','GTM-K4Q3GDB8');</script>
   <!-- End Google Tag Manager -->
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0f0f0f;
-      color: #fff;
-      min-height: 100vh;
-      padding: 20px;
-    }
-    .wrap { max-width: 640px; margin: 0 auto; }
-    nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-    nav a { color: #ccc; text-decoration: none; font-size: 13px; margin-left: 12px; }
-    .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: #fff; margin-bottom: 14px; }
-    .brand .site-logo { height: 24px; width: auto; display: block; }
-    .brand .site-name { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
-    #lang-select {
-      background: #1a1a1a; color: #ccc; border: 1px solid #333; border-radius: 16px;
-      padding: 6px 10px; font-size: 13px; cursor: pointer;
-    }
+    /* 공용 스타일은 /css/app.css. 아래는 게시글 상세 전용. */
+    .page { max-width: 640px; }
+    .post-nav { display: flex; gap: 14px; font-size: 13px; margin-bottom: 14px; }
+    .post-nav a { color: #6a6f78; }
 
-    .post-box { background: #1a1a1a; border-radius: 10px; padding: 18px; margin-bottom: 20px; }
-    .post-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-    .post-meta { font-size: 12px; color: #888; margin-bottom: 14px; display: flex; gap: 10px; align-items: center; }
-    .author-tier { background: #262626; color: #ccc; border-radius: 10px; padding: 1px 8px; font-size: 11px; }
-    .crew-badge { display: inline-flex; align-items: center; gap: 3px; background: #26264a; color: #b7b7e8; border-radius: 10px; padding: 1px 7px; font-size: 11px; }
-    .crew-badge img { width: 12px; height: 12px; border-radius: 3px; object-fit: cover; }
-    .post-content { font-size: 14px; line-height: 1.6; margin-bottom: 14px; word-break: break-word; }
+    .post-box { background: #fff; border: 1px solid #eceef1; border-radius: 12px; padding: 18px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(22,24,28,0.05); }
+    .post-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #1c2024; }
+    .post-meta { font-size: 12px; color: #8a8e96; margin-bottom: 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .post-content { font-size: 14px; line-height: 1.65; margin-bottom: 14px; word-break: break-word; color: #2b2f36; }
     .post-content p { margin-bottom: 8px; }
     .post-content img, .post-content video { max-width: 100%; border-radius: 8px; display: block; margin: 8px 0; }
-    .post-content a { color: #64b5f6; word-break: break-all; }
-    .attached-record { background: #0f0f0f; border: 1px solid #333; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 13px; color: #ccc; }
-    .attached-record .attached-record-heading { font-size: 11px; color: #888; margin-bottom: 4px; }
-    .vote-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .vote-btn {
-      background: #0f0f0f; border: 1px solid #333; color: #ccc; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;
-    }
-    .vote-btn.active-up { background: #e53935; color: #fff; border-color: #e53935; }
-    .vote-btn.active-down { background: #3949ab; color: #fff; border-color: #3949ab; }
-    .translate-btn { background: none; border: 1px solid #333; color: #888; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
-    .score-text { font-size: 14px; font-weight: 700; }
-    .edit-link { margin-left: auto; color: #888; font-size: 12px; cursor: pointer; }
-    .delete-link { margin-left: 10px; color: #888; font-size: 12px; cursor: pointer; }
+    .post-content a { color: #2f6fd6; word-break: break-all; }
+    .attached-record { background: #f6f7f9; border: 1px solid #eceef1; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 13px; color: #4a4e56; }
+    .attached-record .attached-record-heading { font-size: 11px; color: #8a8e96; margin-bottom: 4px; }
 
-    #post-edit-box input, #post-edit-box select {
-      width: 100%; background: #0f0f0f; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 14px;
-    }
-    #post-edit-box label { display: block; font-size: 12px; color: #888; margin-bottom: 6px; }
+    .vote-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .vote-btn { background: #fff; border: 1px solid #d7dade; color: #4a4e56; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+    .vote-btn.active-up { background: #e5342f; color: #fff; border-color: #e5342f; }
+    .vote-btn.active-down { background: #3949ab; color: #fff; border-color: #3949ab; }
+    .translate-btn { background: none; border: 1px solid #d7dade; color: #8a8e96; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+    .score-text { font-size: 14px; font-weight: 700; }
+    .edit-link { margin-left: auto; color: #8a8e96; font-size: 12px; cursor: pointer; }
+    .delete-link { margin-left: 10px; color: #8a8e96; font-size: 12px; cursor: pointer; }
+
+    #post-edit-box input, #post-edit-box select { margin-bottom: 10px; }
+    #post-edit-box label { display: block; font-size: 12px; color: #8a8e96; margin-bottom: 6px; }
     #post-edit-box .actions { display: flex; justify-content: flex-end; gap: 8px; }
-    #post-edit-box .actions button { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; }
-    #post-edit-box button.save { background: #e53935; color: #fff; }
-    #post-edit-box button.cancel { background: #333; color: #ccc; }
+    #post-edit-box .actions button { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+    #post-edit-box button.save { background: #e5342f; color: #fff; }
+    #post-edit-box button.cancel { background: #eceef1; color: #4a4e56; }
 
     .editor-toolbar { display: flex; gap: 6px; margin-bottom: 6px; }
     .editor-toolbar button {
-      background: #0f0f0f; border: 1px solid #333; color: #ccc; width: 32px; height: 32px;
+      background: #f4f5f7; border: 1px solid #d7dade; color: #4a4e56; width: 32px; height: 32px;
       border-radius: 6px; cursor: pointer; font-size: 14px; padding: 0;
     }
-    .editor-toolbar button:hover { background: #262626; }
+    .editor-toolbar button:hover { background: #e9ebee; }
     .editor-content {
       width: 100%; min-height: 120px; max-height: 320px; overflow-y: auto;
-      background: #0f0f0f; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px;
+      background: #fff; border: 1px solid #d7dade; color: #1c2024; padding: 10px; border-radius: 8px;
       margin-bottom: 10px; font-size: 14px; line-height: 1.5;
     }
-    .editor-content.is-empty:before { content: attr(data-placeholder); color: #666; }
+    .editor-content.is-empty:before { content: attr(data-placeholder); color: #9aa0a8; }
     .editor-content img, .editor-content video { max-width: 100%; border-radius: 6px; display: block; margin: 6px 0; }
-    .editor-content a { color: #64b5f6; }
-    .media-placeholder { display: inline-block; background: #262626; color: #9aa5e8; border-radius: 10px; padding: 2px 8px; font-size: 12px; }
-    .media-placeholder.rejected { color: #ff8a80; }
+    .editor-content a { color: #2f6fd6; }
+    .media-placeholder { display: inline-block; background: #eef0f3; color: #4a52c4; border-radius: 10px; padding: 2px 8px; font-size: 12px; }
+    .media-placeholder.rejected { color: #c0392b; }
 
     .comments-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
     .comment-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
-    .comment-form textarea {
-      background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px; font-size: 13px; min-height: 60px; resize: vertical;
-    }
-    .comment-form button { align-self: flex-end; background: #e53935; color: #fff; border: none; padding: 6px 16px; border-radius: 16px; cursor: pointer; font-size: 13px; }
+    .comment-form textarea { min-height: 60px; }
+    .comment-form button { align-self: flex-end; background: #e5342f; color: #fff; border: none; padding: 6px 16px; border-radius: 16px; cursor: pointer; font-size: 13px; font-weight: 600; }
 
-    .comment-item { background: #1a1a1a; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
-    .comment-meta { font-size: 12px; color: #888; margin-bottom: 4px; display: flex; gap: 8px; }
-    .comment-content { font-size: 13px; margin-bottom: 8px; white-space: pre-wrap; }
+    .comment-item { background: #fff; border: 1px solid #eceef1; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+    .comment-meta { font-size: 12px; color: #8a8e96; margin-bottom: 4px; display: flex; gap: 8px; }
+    .comment-content { font-size: 13px; margin-bottom: 8px; white-space: pre-wrap; color: #2b2f36; }
     .comment-actions { display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap; }
-    .comment-actions button { background: none; border: 1px solid #333; color: #ccc; border-radius: 6px; padding: 3px 8px; cursor: pointer; font-size: 12px; }
-    .comment-actions button.active-up { background: #e53935; color: #fff; border-color: #e53935; }
+    .comment-actions button { background: #fff; border: 1px solid #d7dade; color: #4a4e56; border-radius: 6px; padding: 3px 8px; cursor: pointer; font-size: 12px; }
+    .comment-actions button.active-up { background: #e5342f; color: #fff; border-color: #e5342f; }
     .comment-actions button.active-down { background: #3949ab; color: #fff; border-color: #3949ab; }
-    .comment-actions .reply-link, .comment-actions .delete-link, .comment-actions .translate-link { color: #888; cursor: pointer; }
+    .comment-actions .reply-link, .comment-actions .delete-link, .comment-actions .translate-link { color: #8a8e96; cursor: pointer; }
     .replies { margin-left: 20px; margin-top: 8px; }
     .reply-form { display: none; margin-top: 8px; gap: 6px; flex-direction: column; }
-    .reply-form textarea { background: #0f0f0f; border: 1px solid #333; color: #fff; padding: 8px; border-radius: 6px; font-size: 12px; min-height: 40px; }
-    .reply-form button { align-self: flex-end; background: #e53935; color: #fff; border: none; padding: 4px 12px; border-radius: 12px; cursor: pointer; font-size: 12px; }
-    .empty { text-align: center; color: #666; padding: 20px; }
+    .reply-form textarea { min-height: 40px; font-size: 12px; background: #f6f7f9; }
+    .reply-form button { align-self: flex-end; background: #e5342f; color: #fff; border: none; padding: 4px 12px; border-radius: 12px; cursor: pointer; font-size: 12px; }
+    .empty { text-align: center; color: #9aa0a8; padding: 20px; }
   </style>
 </head>
 <body>
@@ -108,18 +87,29 @@
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-K4Q3GDB8"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
-  <div class="wrap">
-    <a class="brand" href="/index.html">
-      <img class="site-logo" src="/img/logo.png" alt="Pace League">
-      <span class="site-name">PACELEAGUE</span>
-    </a>
-    <nav>
-      <a href="javascript:history.back()" id="back-link"></a>
-      <span>
-        <a href="/index.html" id="main-link"></a>
+
+  <div class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/index.html">
+        <span class="brand-mark"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4v2l-4 3 3 4 5-2"/><path d="M4 17l3-1 2 3"/><path d="M9 20l3-2 3 2"/></svg></span>
+        <span class="brand-name">PACELEAGUE</span>
+      </a>
+      <nav class="header-nav">
+        <a href="/index.html" class="navlink active" data-navkey="navCommunity">커뮤니티</a>
+        <a href="/territory.html" class="navlink" data-navkey="navLandit">랜드잇</a>
+        <a href="/crew.html" class="navlink" data-navkey="navCrew">크루</a>
+      </nav>
+      <div class="header-actions">
         <select id="lang-select"></select>
-      </span>
-    </nav>
+      </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="post-nav">
+      <a href="javascript:history.back()" id="back-link"></a>
+      <a href="/index.html" id="main-link"></a>
+    </div>
 
     <div class="post-box" id="post-box"></div>
 
@@ -136,7 +126,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <input type="file" id="edit-media-file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime" style="display:none">
       <label id="edit-record-label" for="edit-record"></label>
       <select id="edit-record"></select>
-      <div class="error" id="edit-error" style="color:#ff6b6b;font-size:13px;margin-bottom:8px;"></div>
+      <div class="error" id="edit-error" style="color:#d02b22;font-size:13px;margin-bottom:8px;"></div>
       <div class="actions">
         <button class="cancel" id="edit-cancel"></button>
         <button class="save" id="edit-save"></button>
@@ -151,10 +141,33 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div id="comment-list"></div>
   </div>
 
+  <nav class="bottom-nav">
+    <a href="/index.html" class="bnav active" data-navkey="navCommunity">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="bnav-label">커뮤니티</span>
+    </a>
+    <a href="/territory.html" class="bnav" data-navkey="navLandit">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.7-6-10a6 6 0 0 1 12 0c0 4.3-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg>
+      <span class="bnav-label">랜드잇</span>
+    </a>
+    <a href="/crew.html" class="bnav" data-navkey="navCrew">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="bnav-label">크루</span>
+    </a>
+  </nav>
+
   <script src="/js/app.js?v=20260828f"></script>
   <script src="/js/i18n.js?v=20260828f"></script>
   <script>
     renderLangSelect(document.getElementById('lang-select'));
+    document.querySelectorAll('.navlink[data-navkey], .bnav[data-navkey]').forEach(function (el) {
+      var key = el.getAttribute('data-navkey');
+      var v = t(key);
+      if (v && v !== key) {
+        var label = el.querySelector('.bnav-label');
+        (label || el).textContent = v;
+      }
+    });
     document.getElementById('back-link').textContent = t('backToList');
     document.getElementById('main-link').textContent = t('mainLink');
     document.getElementById('comments-title').textContent = t('commentsTitle');
@@ -219,7 +232,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         '<div class="post-title" id="post-title">' + escapeHtml(post.title) + '</div>' +
         '<div class="post-meta">' +
           '<span>' + escapeHtml(post.nickname) + '</span>' +
-          '<span class="author-tier">' + escapeHtml(post.authorTierLabel || post.authorTier) + '</span>' +
+          '<span class="author-tier tier-' + escapeHtml(post.authorTier || '') + '">' + escapeHtml(post.authorTierLabel || post.authorTier) + '</span>' +
           (post.authorCrewName ? '<span class="crew-badge">' + (post.authorCrewIconUrl ? '<img src="' + escapeHtml(post.authorCrewIconUrl) + '" alt="">' : '') + escapeHtml(post.authorCrewName) + '</span>' : '') +
           '<span>' + t('viewCountLabel') + ' ' + post.viewCount + '</span>' +
           '<span>' + escapeHtml(formatLocalTime(post.createAt)) + '</span>' +

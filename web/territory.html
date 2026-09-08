@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>랜드잇 - Pace League</title>
   <link rel="icon" type="image/png" href="/img/favicon.png">
+  <link rel="stylesheet" href="/css/app.css?v=20260908">
   <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
   new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -13,66 +14,38 @@
   })(window,document,'script','dataLayer','GTM-K4Q3GDB8');</script>
   <!-- End Google Tag Manager -->
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    /* 공용 스타일은 /css/app.css. 아래는 랜드잇 지도 전용. */
     html, body { height: 100%; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0f0f0f; color: #fff;
-      display: flex; flex-direction: column;
-    }
-    header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 16px; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid #1f1f1f;
-      flex-shrink: 0;
-    }
-    header h1 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-    header h1 a { color: #fff; text-decoration: none; display: flex; align-items: center; gap: 8px; }
-    .site-logo { height: 24px; width: auto; display: block; }
-    .site-name { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
-    .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .btn {
-      background: #e53935; color: #fff; text-decoration: none; border: none;
-      padding: 7px 16px; border-radius: 18px; font-size: 13px; font-weight: 600; cursor: pointer;
-    }
-    .btn:hover { background: #c62828; }
-    .btn.ghost { background: none; color: #ccc; border: 1px solid #333; }
-    #lang-select {
-      background: #1a1a1a; color: #ccc; border: 1px solid #333; border-radius: 16px;
-      padding: 6px 10px; font-size: 13px; cursor: pointer;
-    }
-    .main-nav { display: flex; gap: 8px; padding: 10px 16px; flex-shrink: 0; border-bottom: 1px solid #1f1f1f; }
-    .main-nav a { background: #1a1a1a; color: #ccc; padding: 8px 18px; border-radius: 16px; font-size: 14px; font-weight: 700; text-decoration: none; }
-    .main-nav a:hover { background: #262626; }
-    .main-nav a.active { background: #e53935; color: #fff; }
+    body { display: flex; flex-direction: column; }
     .map-wrap { position: relative; flex: 1; min-height: 0; }
-    #map { width: 100%; height: 100%; background: #1a1a1a; }
+    #map { width: 100%; height: 100%; background: #e4e6ea; }
     #status, #zoom-hint {
       position: absolute; left: 50%; transform: translateX(-50%);
-      background: rgba(20,20,20,0.92); color: #eee; font-size: 13px;
-      padding: 10px 16px; border-radius: 20px; border: 1px solid #333;
+      background: rgba(255,255,255,0.96); color: #1c2024; font-size: 13px;
+      padding: 10px 16px; border-radius: 20px; border: 1px solid #e3e5e9; box-shadow: 0 2px 10px rgba(0,0,0,0.08);
       z-index: 5; max-width: 90%; text-align: center; pointer-events: none;
     }
     #status { top: 12px; }
     #zoom-hint { bottom: 24px; }
-    .hidden { display: none !important; }
     .rank-toggle { position: absolute; top: 12px; right: 12px; z-index: 6; }
     .rank-panel {
       position: absolute; top: 54px; right: 12px; z-index: 6;
       width: 300px; max-width: calc(100% - 24px); max-height: 72%;
-      overflow-y: auto; background: rgba(18,18,18,0.97); border: 1px solid #333;
-      border-radius: 14px; padding: 14px;
+      overflow-y: auto; background: #fff; border: 1px solid #e3e5e9;
+      border-radius: 14px; padding: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.15);
     }
     .rank-panel h2 { font-size: 14px; margin-bottom: 8px; }
-    .rank-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #222; font-size: 13px; }
+    .rank-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #f0f1f3; font-size: 13px; }
     .rank-row:first-of-type { border-top: none; }
-    .rank-row .rk { width: 22px; font-weight: 700; color: #e53935; text-align: center; flex-shrink: 0; }
+    .rank-row .rk { width: 22px; font-weight: 700; color: #e5342f; text-align: center; flex-shrink: 0; }
     .rank-row .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .rank-row .ar { color: #bbb; font-variant-numeric: tabular-nums; flex-shrink: 0; }
-    .rank-row.mine { background: rgba(229,57,53,0.12); border-radius: 8px; }
-    .rank-empty { color: #999; font-size: 13px; padding: 8px 0; }
+    .rank-row .ar { color: #6a6f78; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    .rank-row.mine { background: #fdeceb; border-radius: 8px; }
+    .rank-empty { color: #9aa0a8; font-size: 13px; padding: 8px 0; }
     .iw { color: #111; font-size: 13px; line-height: 1.5; }
     .iw b { font-size: 14px; }
     .iw .iw-mine { color: #c62828; font-weight: 700; }
+    @media (max-width: 760px) { .bottom-nav { position: static; } }
   </style>
 </head>
 <body>
@@ -81,19 +54,23 @@
   height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- End Google Tag Manager (noscript) -->
 
-  <header>
-    <h1><a href="/index.html"><img class="site-logo" src="/img/logo.png" alt="Pace League"><span class="site-name">PACELEAGUE</span></a></h1>
-    <div class="header-actions">
-      <select id="lang-select" aria-label="language"></select>
-      <span id="auth-actions"></span>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/index.html">
+        <span class="brand-mark"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4v2l-4 3 3 4 5-2"/><path d="M4 17l3-1 2 3"/><path d="M9 20l3-2 3 2"/></svg></span>
+        <span class="brand-name">PACELEAGUE</span>
+      </a>
+      <nav class="header-nav">
+        <a href="/index.html" class="navlink" data-navkey="navCommunity">커뮤니티</a>
+        <a href="/territory.html" class="navlink active" data-navkey="navLandit">랜드잇</a>
+        <a href="/crew.html" class="navlink" data-navkey="navCrew">크루</a>
+      </nav>
+      <div class="header-actions">
+        <select id="lang-select" aria-label="language"></select>
+        <span id="auth-actions"></span>
+      </div>
     </div>
-  </header>
-
-  <nav class="main-nav">
-    <a href="/index.html" id="nav-community">커뮤니티</a>
-    <a href="/territory.html" class="active" id="nav-landit">랜드잇</a>
-    <a href="/crew.html" id="nav-crew">크루</a>
-  </nav>
+  </div>
 
   <div class="map-wrap">
     <div id="map"></div>
@@ -106,8 +83,23 @@
     </div>
   </div>
 
-  <script src="/js/app.js?v=20260907a"></script>
-  <script src="/js/i18n.js?v=20260907a"></script>
+  <nav class="bottom-nav">
+    <a href="/index.html" class="bnav" data-navkey="navCommunity">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="bnav-label">커뮤니티</span>
+    </a>
+    <a href="/territory.html" class="bnav active" data-navkey="navLandit">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.7-6-10a6 6 0 0 1 12 0c0 4.3-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg>
+      <span class="bnav-label">랜드잇</span>
+    </a>
+    <a href="/crew.html" class="bnav" data-navkey="navCrew">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="bnav-label">크루</span>
+    </a>
+  </nav>
+
+  <script src="/js/app.js?v=20260828f"></script>
+  <script src="/js/i18n.js?v=20260828f"></script>
   <script>
     // ── Google Maps API 키 ──────────────────────────────────────────────────────
     // "Maps JavaScript API" 전용, HTTP 리퍼러 제한(paceleague.co.kr / www / localhost) 걸린 키.
@@ -129,10 +121,13 @@
     var zoomHintEl = document.getElementById('zoom-hint');
 
     document.title = '랜드잇 - Pace League';
-    ['nav-community:navCommunity', 'nav-landit:navLandit', 'nav-crew:navCrew'].forEach(function (pair) {
-      var id = pair.split(':')[0], key = pair.split(':')[1];
-      var el = document.getElementById(id), v = t(key);
-      if (el && v && v !== key) el.textContent = v;
+    document.querySelectorAll('[data-navkey]').forEach(function (el) {
+      var key = el.getAttribute('data-navkey');
+      var v = t(key);
+      if (v && v !== key) {
+        var label = el.querySelector('.bnav-label');
+        (label || el).textContent = v;
+      }
     });
     renderLangSelect(document.getElementById('lang-select'));
     renderAuthActions();
@@ -173,7 +168,7 @@
           return '<div class="rank-row' + (e.mine ? ' mine' : '') + '">'
             + '<span class="rk">' + e.rank + '</span>'
             + '<span class="nm">' + escapeHtml(e.nickname || '-')
-            + (tier ? ' <span style="color:#888">(' + escapeHtml(tier) + ')</span>' : '') + '</span>'
+            + (tier ? ' <span style="color:#8a8e96">(' + escapeHtml(tier) + ')</span>' : '') + '</span>'
             + '<span class="ar">' + formatArea(e.totalAreaSqm) + '</span>'
             + '</div>';
         }).join('');
@@ -186,7 +181,7 @@
       var el = document.getElementById('auth-actions');
       if (isLoggedIn()) {
         var nick = localStorage.getItem('pl_nickname') || '';
-        el.innerHTML = '<span style="color:#ccc;font-size:13px;margin-right:8px;">' + escapeHtml(nick) + '</span>'
+        el.innerHTML = '<span class="header-nick">' + escapeHtml(nick) + '</span>'
           + '<button class="btn ghost" id="logout-btn">' + t('logout') + '</button>';
         document.getElementById('logout-btn').addEventListener('click', logout);
       } else {

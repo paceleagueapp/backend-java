@@ -9,10 +9,13 @@
 
   renderAuthActions();
   renderLangSelect(document.getElementById('lang-select'));
-  ['nav-community:navCommunity', 'nav-landit:navLandit', 'nav-crew:navCrew'].forEach(function (p) {
-    var id = p.split(':')[0], key = p.split(':')[1];
-    var el = document.getElementById(id), v = t(key);
-    if (el && v && v !== key) el.textContent = v;
+  document.querySelectorAll('[data-navkey]').forEach(function (el) {
+    var key = el.getAttribute('data-navkey');
+    var v = t(key);
+    if (v && v !== key) {
+      var label = el.querySelector('.bnav-label');
+      (label || el).textContent = v;
+    }
   });
 
   loadMyCrew();
@@ -21,7 +24,7 @@
   function renderAuthActions() {
     var el = document.getElementById('auth-actions');
     var nick = localStorage.getItem('pl_nickname') || '';
-    el.innerHTML = '<span style="color:#ccc;font-size:13px;margin-right:8px;">' + escapeHtml(nick) + '</span>'
+    el.innerHTML = '<span class="header-nick">' + escapeHtml(nick) + '</span>'
       + '<button class="btn ghost sm" id="logout-btn">' + t('logout') + '</button>';
     document.getElementById('logout-btn').addEventListener('click', logout);
   }
@@ -200,7 +203,7 @@
         var isLeader = m.role === 'LEADER';
         var canKick = crew.viewerIsLeader && !isLeader;
         return '<li><div class="grow"><span class="nick">' + escapeHtml(m.nickname) + '</span> ' +
-          '<span class="tier-badge">' + escapeHtml(m.tierLabel || m.tier || '') + '</span>' +
+          '<span class="tier-badge tier-' + escapeHtml(m.tier || '') + '">' + escapeHtml(m.tierLabel || m.tier || '') + '</span>' +
           (isLeader ? ' <span class="leader-badge">' + t('crewLeaderBadge') + '</span>' : '') + '</div>' +
           (canKick ? '<button class="btn ghost sm" data-kick="' + m.memberSno + '">' + t('crewKick') + '</button> ' +
                      '<button class="btn ghost sm" data-transfer="' + m.memberSno + '">' + t('crewTransfer') + '</button>' : '') +
@@ -246,9 +249,9 @@
       var items = (json && json.data) || [];
       if (!items.length) { el.innerHTML = '<p class="muted">-</p>'; return; }
       el.innerHTML = '<ul class="list">' + items.map(function (r) {
-        return '<li><span class="top10-rank" style="width:20px;color:#e53935;font-weight:700;flex-shrink:0;">' + r.rank + '</span>' +
+        return '<li><span class="top10-rank rank-' + r.rank + '">' + r.rank + '</span>' +
           '<div class="grow"><span class="nick">' + escapeHtml(r.nickname) + '</span> ' +
-          '<span class="tier-badge">' + escapeHtml(r.tierLabel || r.tier || '') + '</span>' +
+          '<span class="tier-badge tier-' + escapeHtml(r.tier || '') + '">' + escapeHtml(r.tierLabel || r.tier || '') + '</span>' +
           (r.isLeader ? ' <span class="leader-badge">' + t('crewLeaderBadge') + '</span>' : '') + '</div>' +
           '<span style="font-weight:600;flex-shrink:0;">' + r.totalScore + '</span></li>';
       }).join('') + '</ul>';
@@ -269,7 +272,7 @@
       '<div class="row" style="margin-bottom:8px;"><input type="file" id="e-icon" accept="image/*"><span class="muted" id="e-icon-msg"></span></div>' +
       '<button class="btn" id="e-save">' + t('saveLabel') + '</button>' +
       '<div class="msg" id="e-msg"></div>' +
-      '<hr style="border-color:#262626;margin:16px 0;">' +
+      '<hr style="border:none;border-top:1px solid #eceef1;margin:16px 0;">' +
       '<button class="btn ghost" id="disband-btn">' + t('crewDisband') + '</button></div>';
   }
 

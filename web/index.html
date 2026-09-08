@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pace League</title>
   <link rel="icon" type="image/png" href="/img/favicon.png">
+  <link rel="stylesheet" href="/css/app.css?v=20260908">
   <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
   new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -13,39 +14,11 @@
   })(window,document,'script','dataLayer','GTM-K4Q3GDB8');</script>
   <!-- End Google Tag Manager -->
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
-      background: #eef0f3;
-      color: #1c2024;
-      min-height: 100vh;
-    }
-    .post-vote-num, .top10-rank, .top10-score { font-variant-numeric: tabular-nums; }
-
-    /* ── 상단 다크 헤더 (로고 — 메뉴 — 로그인/글쓰기 한 줄) ── */
-    .topbar { background: #14161a; position: sticky; top: 0; z-index: 50; }
-    .topbar-inner { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; gap: 22px; padding: 12px 20px; }
-    .brand { display: flex; align-items: center; gap: 9px; text-decoration: none; flex-shrink: 0; }
-    .brand-mark { width: 28px; height: 28px; border-radius: 7px; background: #e5342f; display: flex; align-items: center; justify-content: center; }
-    .brand-name { font-size: 17px; font-weight: 700; letter-spacing: 0.4px; color: #fff; }
-    .header-nav { display: flex; gap: 4px; }
-    .navlink { font-size: 14px; font-weight: 600; color: #c8cbd0; text-decoration: none; border-radius: 8px; padding: 8px 16px; white-space: nowrap; }
-    .navlink:hover { background: #23262b; }
-    .navlink.active { color: #14161a; background: #fff; font-weight: 700; }
-    .header-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-    .btn {
-      background: #e5342f; color: #fff; text-decoration: none; border: none;
-      padding: 8px 16px; border-radius: 18px; font-size: 13px; font-weight: 700; cursor: pointer;
-    }
-    .btn:hover { background: #c62828; }
-    .btn.ghost { background: transparent; color: #e6e7e9; border: 1px solid #3a3f46; font-weight: 600; }
-    #lang-select {
-      background: #1e2126; color: #c8cbd0; border: 1px solid #33373d; border-radius: 8px;
-      padding: 6px 9px; font-size: 12px; cursor: pointer;
-    }
+    /* 공용 스타일은 /css/app.css. 아래는 커뮤니티 홈 전용. */
+    .post-vote-num, .top10-score { font-variant-numeric: tabular-nums; }
 
     /* ── 본문 2단 (피드 + 우측 랭킹) ── */
-    .page { max-width: 1180px; margin: 0 auto; padding: 20px; display: flex; align-items: flex-start; gap: 24px; }
+    .page { display: flex; align-items: flex-start; gap: 24px; }
     .main-col { flex: 1; min-width: 0; }
     .side-col { width: 300px; flex-shrink: 0; position: sticky; top: 72px; display: flex; flex-direction: column; gap: 14px; }
 
@@ -55,13 +28,6 @@
     .rank-list { list-style: none; }
     .rank-list li { display: flex; align-items: center; gap: 9px; padding: 7px 0; font-size: 12px; border-bottom: 1px solid #f2f3f5; }
     .rank-list li:last-child { border-bottom: none; }
-    .top10-rank {
-      width: 19px; height: 19px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
-      border-radius: 6px; font-weight: 700; color: #9aa0a8;
-    }
-    .top10-rank.rank-1 { background: linear-gradient(180deg,#ffe08a,#efb63a); color: #7a5600; }
-    .top10-rank.rank-2 { background: #dcdfe4; color: #5b616a; }
-    .top10-rank.rank-3 { background: #ecd3ad; color: #7a4a12; }
     .top10-crew { width: 14px; height: 14px; border-radius: 3px; object-fit: cover; flex-shrink: 0; }
     .top10-nickname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .top10-tier { color: #9aa0a8; font-size: 10px; flex-shrink: 0; }
@@ -104,16 +70,6 @@
     .post-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 11.5px; color: #868c95; }
     .post-meta svg { display: block; }
     .post-author { font-weight: 600; color: #3b4048; }
-    .author-tier { border-radius: 9px; padding: 1px 7px; font-size: 11px; font-weight: 700; background: #e9ebee; color: #5b616a; }
-    .tier-BRONZE { background: #efe0d2; color: #7a4a12; }
-    .tier-SILVER { background: #e6e8ec; color: #5b616a; }
-    .tier-GOLD { background: linear-gradient(180deg,#ffe08a,#efb63a); color: #7a5600; }
-    .tier-PLATINUM { background: #dbe6ef; color: #3f5b73; }
-    .tier-DIAMOND { background: #d6ecf2; color: #1f6b7d; }
-    .tier-MASTER { background: #e7ddf5; color: #5b3ba0; }
-    .tier-CHALLENGER { background: #ffe0e0; color: #b3261e; }
-    .crew-badge { display: inline-flex; align-items: center; gap: 3px; background: #edefff; color: #4a52c4; border-radius: 9px; padding: 1px 7px; font-size: 11px; font-weight: 600; }
-    .crew-badge img { width: 12px; height: 12px; border-radius: 3px; object-fit: cover; }
     .record-badge { display: inline-flex; align-items: center; color: #e5342f; }
     .post-thumb { width: 100px; height: 100px; flex-shrink: 0; border-radius: 10px; overflow: hidden; background: #f0f1f3; cursor: pointer; }
     .post-thumb img, .post-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -123,27 +79,8 @@
     .pager button { background: #fff; border: 1px solid #e3e5e9; color: #4a4e56; padding: 7px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; }
     .pager button:disabled { opacity: 0.4; cursor: default; }
 
-    /* ── 모바일 하단 탭바 (앱 스타일, 데스크톱에서는 숨김) ── */
-    .bottom-nav {
-      display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
-      background: #fff; border-top: 1px solid #e3e5e9; padding: 7px 0 10px;
-    }
-    .bnav { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; text-decoration: none; color: #9aa0a8; }
-    .bnav svg { color: currentColor; }
-    .bnav-label { font-size: 10.5px; font-weight: 600; }
-    .bnav.active { color: #e5342f; }
-    .bnav.active .bnav-label { font-weight: 700; }
-
     @media (max-width: 760px) {
-      .header-nav { display: none; }
-      .bottom-nav { display: flex; }
-      body { padding-bottom: 62px; }
-      .topbar-inner { gap: 8px; padding: 10px 12px; }
-      .brand-name { font-size: 14px; }
-      .header-actions { gap: 6px; flex-wrap: nowrap; }
-      .btn { padding: 6px 10px; font-size: 11px; border-radius: 14px; }
-      #lang-select { width: 54px; padding: 5px 4px; font-size: 11px; }
-      .page { flex-direction: column; padding: 14px; gap: 14px; }
+      .page { flex-direction: column; padding: 14px 14px 62px; gap: 14px; }
       .main-col { max-width: 100%; }
       .side-col { position: static; width: 100%; top: auto; }
       .post-thumb { width: 68px; height: 68px; }
