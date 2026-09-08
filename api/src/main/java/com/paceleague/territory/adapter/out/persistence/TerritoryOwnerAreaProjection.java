@@ -7,4 +7,6 @@ public interface TerritoryOwnerAreaProjection {
     Double getTotalAreaSqm();
 
     Long getTerritoryCount();
+
+    Long getTotalHexCount();
 }

@@ -4,6 +4,7 @@ package com.paceleague.territory.application.dto;
 public record TerritoryOwnerArea(
         Long ownerMemberSno,
         double totalAreaSqm,
-        long territoryCount
+        long territoryCount,
+        long totalHexCount
 ) {
 }

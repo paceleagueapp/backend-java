@@ -11,6 +11,7 @@ public record TerritoryRankingEntryResponse(
         String ownerTierLabel,
         double totalAreaSqm,
         long territoryCount,
+        long totalHexCount,
         boolean mine
 ) {
 }

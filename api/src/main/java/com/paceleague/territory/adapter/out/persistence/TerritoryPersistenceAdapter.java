@@ -44,7 +44,8 @@ public class TerritoryPersistenceAdapter implements TerritoryRepositoryPort {
                 .map(p -> new TerritoryOwnerArea(
                         p.getOwnerMemberSno(),
                         p.getTotalAreaSqm() == null ? 0.0 : p.getTotalAreaSqm(),
-                        p.getTerritoryCount() == null ? 0L : p.getTerritoryCount()))
+                        p.getTerritoryCount() == null ? 0L : p.getTerritoryCount(),
+                        p.getTotalHexCount() == null ? 0L : p.getTotalHexCount()))
                 .toList();
     }
 

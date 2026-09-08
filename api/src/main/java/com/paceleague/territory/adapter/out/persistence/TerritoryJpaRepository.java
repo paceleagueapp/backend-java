@@ -33,9 +33,10 @@ public interface TerritoryJpaRepository extends JpaRepository<Territory, Long> {
 
     // 소유자별 총 점령 면적 랭킹(면적 큰 순).
     @Query(value = """
-            select owner_member_sno as ownerMemberSno,
-                   sum(area_sqm)     as totalAreaSqm,
-                   count(*)          as territoryCount
+            select owner_member_sno    as ownerMemberSno,
+                   sum(area_sqm)        as totalAreaSqm,
+                   count(*)             as territoryCount,
+                   coalesce(sum(hex_count), 0) as totalHexCount
             from territory
             where status = 'ACTIVE'
             group by owner_member_sno

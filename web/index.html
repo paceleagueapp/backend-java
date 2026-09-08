@@ -290,7 +290,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               '<span class="top10-rank rank-' + item.rank + '">' + item.rank + '</span>' +
               '<span class="top10-nickname">' + escapeHtml(item.nickname || '-') + '</span>' +
               '<span class="top10-tier">' + escapeHtml(item.ownerTierLabel || item.ownerTier || '') + '</span>' +
-              '<span class="top10-score">' + formatArea(item.totalAreaSqm) + '</span>' +
+              '<span class="top10-score">⬡' + Number(item.totalHexCount || 0).toLocaleString() + ' · ' + formatArea(item.totalAreaSqm) + '</span>' +
               '</li>';
           }).join('');
         })

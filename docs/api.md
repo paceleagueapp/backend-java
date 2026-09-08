@@ -465,7 +465,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 { "entries": [
     { "rank": 1, "memberSno": 42, "nickname": "달리는곰",
       "ownerTier": "GOLD", "ownerTierLabel": "골드",
-      "totalAreaSqm": 152340.5, "territoryCount": 4, "mine": false }
+      "totalAreaSqm": 152340.5, "territoryCount": 4, "totalHexCount": 318, "mine": false }
   ] }
 ```
 
@@ -474,6 +474,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 | rank | 1부터. `totalAreaSqm` 내림차순 |
 | totalAreaSqm | 해당 소유자가 가진 ACTIVE 땅들의 면적 합(m²) |
 | territoryCount | 보유 중인 ACTIVE 땅 개수 |
+| totalHexCount | 보유 중인 ACTIVE 땅들의 육각형 칸 수 합(`territory.hex_count` SUM, 헥사그리드 이전 "고스트 땅"은 0). 웹 랭킹 UI가 `⬡ N`으로 표시 |
 | mine | 호출자 본인 항목 여부. 비로그인이면 항상 `false` |
 
 **마이그레이션**(운영은 배포 전 직접 실행): [2026-08-27_territory_feature.sql](./migrations/2026-08-27_territory_feature.sql) (`record_track.territory_mode` 컬럼 + `territory`/`territory_contribution` 테이블) → [2026-09-05_territory_hex_grid.sql](./migrations/2026-09-05_territory_hex_grid.sql) (`territory_hex` 테이블 + `territory.hex_count`) → [2026-09-05_territory_remove_hp.sql](./migrations/2026-09-05_territory_remove_hp.sql) (`territory.hp`/`max_hp` + `territory_contribution` 테이블 삭제). `map`의 `hexes`/`emptyHexes`, `ranking` 모두 이 스키마만 조회하므로 추가 마이그레이션 없음.

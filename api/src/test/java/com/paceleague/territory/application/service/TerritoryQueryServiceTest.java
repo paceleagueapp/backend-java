@@ -149,8 +149,8 @@ class TerritoryQueryServiceTest {
     @Test
     void 면적_내림차순으로_순위가_매겨지고_본인_항목에_mine이_표시된다() {
         when(territoryRepositoryPort.findTopOwnersByArea(anyInt())).thenReturn(List.of(
-                new TerritoryOwnerArea(1L, 50_000.0, 3),
-                new TerritoryOwnerArea(2L, 20_000.0, 1)));
+                new TerritoryOwnerArea(1L, 50_000.0, 3, 120),
+                new TerritoryOwnerArea(2L, 20_000.0, 1, 45)));
 
         TerritoryRankingResponse res = service.getRanking(new TerritoryRankingQuery("ko", 2L));
 
@@ -159,6 +159,7 @@ class TerritoryQueryServiceTest {
         assertThat(res.entries().get(0).nickname()).isEqualTo("일등");
         assertThat(res.entries().get(0).totalAreaSqm()).isEqualTo(50_000.0);
         assertThat(res.entries().get(0).territoryCount()).isEqualTo(3);
+        assertThat(res.entries().get(0).totalHexCount()).isEqualTo(120);
         assertThat(res.entries().get(0).mine()).isFalse();
         assertThat(res.entries().get(1).rank()).isEqualTo(2);
         assertThat(res.entries().get(1).mine()).isTrue();

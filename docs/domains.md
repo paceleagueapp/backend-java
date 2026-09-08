@@ -135,7 +135,7 @@ totalScore = baseScore + scaledScore + addScore
 
 ### 면적 랭킹 (`GET /api/territory/ranking`)
 
-공개(인증 불필요). `owner_member_sno`별 `SUM(area_sqm)`(ACTIVE만) 내림차순 랭킹. 네이티브 집계 쿼리(`TerritoryJpaRepository.findTopOwnersByArea`) → `TerritoryOwnerArea` → `TerritoryQueryService.getRanking`이 소유자별 닉네임/티어를 붙여 `TerritoryRankingResponse`로 반환. 최대 `ranking-max-results`(100)명. 로그인 상태면 본인 항목에 `mine: true`. `web/territory.html` 지도 우상단 "랭킹" 패널이 사용. 지도 조회와 같은 서비스(`TerritoryQueryService`)가 `GetTerritoryRankingUseCase`도 구현한다.
+공개(인증 불필요). `owner_member_sno`별 `SUM(area_sqm)`(ACTIVE만) 내림차순 랭킹. 네이티브 집계 쿼리(`TerritoryJpaRepository.findTopOwnersByArea` — `SUM(area_sqm)`·`COUNT(*)`·`COALESCE(SUM(hex_count),0)` 한 번에) → `TerritoryOwnerArea` → `TerritoryQueryService.getRanking`이 소유자별 닉네임/티어를 붙여 `TerritoryRankingResponse`로 반환. `totalHexCount`(육각형 칸 수 합)도 응답에 포함 — 웹 랭킹 UI가 면적과 함께 `⬡ N`으로 표시. 최대 `ranking-max-results`(100)명. 로그인 상태면 본인 항목에 `mine: true`. `web/territory.html` 지도 우상단 "랭킹" 패널이 사용. 지도 조회와 같은 서비스(`TerritoryQueryService`)가 `GetTerritoryRankingUseCase`도 구현한다.
 
 ### 설정 (`paceleague.territory.*`, `TerritoryProperties`)
 

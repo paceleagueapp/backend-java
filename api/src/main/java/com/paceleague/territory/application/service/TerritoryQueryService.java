@@ -163,6 +163,7 @@ public class TerritoryQueryService implements GetTerritoryMapUseCase, GetTerrito
                     RankTierLabelPolicy.label(tier, lang),
                     owner.totalAreaSqm(),
                     owner.territoryCount(),
+                    owner.totalHexCount(),
                     query.memberSno() != null && query.memberSno().equals(memberSno)
             ));
         }

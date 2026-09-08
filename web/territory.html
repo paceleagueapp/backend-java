@@ -165,11 +165,12 @@
         }
         listEl.innerHTML = entries.map(function (e) {
           var tier = e.ownerTierLabel || e.ownerTier || '';
+          var hexes = Number(e.totalHexCount || 0).toLocaleString();
           return '<div class="rank-row' + (e.mine ? ' mine' : '') + '">'
             + '<span class="rk">' + e.rank + '</span>'
             + '<span class="nm">' + escapeHtml(e.nickname || '-')
             + (tier ? ' <span style="color:#8a8e96">(' + escapeHtml(tier) + ')</span>' : '') + '</span>'
-            + '<span class="ar">' + formatArea(e.totalAreaSqm) + '</span>'
+            + '<span class="ar">⬡ ' + hexes + ' · ' + formatArea(e.totalAreaSqm) + '</span>'
             + '</div>';
         }).join('');
       }).catch(function () {
