@@ -161,6 +161,7 @@ public class TerritoryQueryService implements GetTerritoryMapUseCase, GetTerrito
                     getMemberNicknamePort.getNickname(memberSno),
                     tier,
                     RankTierLabelPolicy.label(tier, lang),
+                    owner.totalAreaSqm() / 1_000_000.0,
                     owner.totalAreaSqm(),
                     owner.territoryCount(),
                     owner.totalHexCount(),

@@ -147,10 +147,8 @@
       });
     })();
 
-    function formatArea(sqm) {
-      var n = Number(sqm) || 0;
-      if (n >= 1000000) return (n / 1000000).toFixed(2) + ' km²';
-      return Math.round(n).toLocaleString() + ' m²';
+    function formatAreaKm(sqkm) {
+      return (Number(sqkm) || 0).toFixed(2) + ' km²';
     }
 
     function loadRanking() {
@@ -170,7 +168,7 @@
             + '<span class="rk">' + e.rank + '</span>'
             + '<span class="nm">' + escapeHtml(e.nickname || '-')
             + (tier ? ' <span style="color:#8a8e96">(' + escapeHtml(tier) + ')</span>' : '') + '</span>'
-            + '<span class="ar">⬡ ' + hexes + ' · ' + formatArea(e.totalAreaSqm) + '</span>'
+            + '<span class="ar">⬡ ' + hexes + ' · ' + formatAreaKm(e.totalAreaSqkm) + '</span>'
             + '</div>';
         }).join('');
       }).catch(function () {

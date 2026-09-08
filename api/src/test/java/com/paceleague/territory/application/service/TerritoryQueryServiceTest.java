@@ -158,6 +158,7 @@ class TerritoryQueryServiceTest {
         assertThat(res.entries().get(0).rank()).isEqualTo(1);
         assertThat(res.entries().get(0).nickname()).isEqualTo("일등");
         assertThat(res.entries().get(0).totalAreaSqm()).isEqualTo(50_000.0);
+        assertThat(res.entries().get(0).totalAreaSqkm()).isEqualTo(0.05);
         assertThat(res.entries().get(0).territoryCount()).isEqualTo(3);
         assertThat(res.entries().get(0).totalHexCount()).isEqualTo(120);
         assertThat(res.entries().get(0).mine()).isFalse();

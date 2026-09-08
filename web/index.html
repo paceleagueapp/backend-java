@@ -265,11 +265,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         });
     }
 
-    function formatArea(sqm) {
-      var n = Number(sqm) || 0;
-      if (n >= 1000000) return (n / 1000000).toFixed(1) + ' km²';
-      if (n >= 1000) return Math.round(n / 1000) + 'k m²';
-      return Math.round(n) + ' m²';
+    function formatAreaKm(sqkm) {
+      return (Number(sqkm) || 0).toFixed(2) + ' km²';
     }
 
     function renderLanditRanking() {
@@ -290,7 +287,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               '<span class="top10-rank rank-' + item.rank + '">' + item.rank + '</span>' +
               '<span class="top10-nickname">' + escapeHtml(item.nickname || '-') + '</span>' +
               '<span class="top10-tier">' + escapeHtml(item.ownerTierLabel || item.ownerTier || '') + '</span>' +
-              '<span class="top10-score">⬡' + Number(item.totalHexCount || 0).toLocaleString() + ' · ' + formatArea(item.totalAreaSqm) + '</span>' +
+              '<span class="top10-score">⬡' + Number(item.totalHexCount || 0).toLocaleString() + ' · ' + formatAreaKm(item.totalAreaSqkm) + '</span>' +
               '</li>';
           }).join('');
         })

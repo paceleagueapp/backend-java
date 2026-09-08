@@ -465,14 +465,16 @@ join/login/reissue가 공통으로 반환하는 구조:
 { "entries": [
     { "rank": 1, "memberSno": 42, "nickname": "달리는곰",
       "ownerTier": "GOLD", "ownerTierLabel": "골드",
-      "totalAreaSqm": 152340.5, "territoryCount": 4, "totalHexCount": 318, "mine": false }
+      "totalAreaSqkm": 0.1523405, "totalAreaSqm": 152340.5,
+      "territoryCount": 4, "totalHexCount": 318, "mine": false }
   ] }
 ```
 
 | 필드 | 설명 |
 |---|---|
-| rank | 1부터. `totalAreaSqm` 내림차순 |
-| totalAreaSqm | 해당 소유자가 가진 ACTIVE 땅들의 면적 합(m²) |
+| rank | 1부터. 면적 내림차순 |
+| totalAreaSqkm | 해당 소유자가 가진 ACTIVE 땅들의 면적 합(**km²**, `totalAreaSqm / 1_000_000`). 웹 랭킹 UI가 `km²` 단위로 표시 |
+| totalAreaSqm | 같은 값의 m² 표기. 이전 클라이언트 호환용으로 유지 |
 | territoryCount | 보유 중인 ACTIVE 땅 개수 |
 | totalHexCount | 보유 중인 ACTIVE 땅들의 육각형 칸 수 합(`territory.hex_count` SUM, 헥사그리드 이전 "고스트 땅"은 0). 웹 랭킹 UI가 `⬡ N`으로 표시 |
 | mine | 호출자 본인 항목 여부. 비로그인이면 항상 `false` |
