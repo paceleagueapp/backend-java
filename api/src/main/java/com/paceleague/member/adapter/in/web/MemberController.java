@@ -4,6 +4,7 @@ import com.paceleague.common.response.ResponseApi;
 import com.paceleague.common.web.MemberSno;
 import com.paceleague.member.application.dto.*;
 import com.paceleague.member.application.port.in.MemberAuthUseCase;
+import com.paceleague.member.application.port.in.MemberBlockUseCase;
 import com.paceleague.member.application.port.in.MemberWithdrawUseCase;
 import com.paceleague.member.application.port.in.SearchMembersPort;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +16,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,12 +32,14 @@ public class MemberController {
     private final MemberAuthUseCase authService;
     private final SearchMembersPort searchMembersPort;
     private final MemberWithdrawUseCase withdrawService;
+    private final MemberBlockUseCase blockService;
 
     public MemberController(MemberAuthUseCase authService, SearchMembersPort searchMembersPort,
-                           MemberWithdrawUseCase withdrawService) {
+                           MemberWithdrawUseCase withdrawService, MemberBlockUseCase blockService) {
         this.authService = authService;
         this.searchMembersPort = searchMembersPort;
         this.withdrawService = withdrawService;
+        this.blockService = blockService;
     }
 
     @Operation(summary = "회원 검색", description = "아이디(접두 일치) 또는 닉네임(부분 일치)으로 회원을 찾습니다. 크루 초대 대상 선택 등에 사용. 로그인 필요.")
@@ -103,6 +107,32 @@ public class MemberController {
     public ResponseApi<String> withdraw(@MemberSno Long memberSno, @RequestBody WithdrawRequest req) {
         withdrawService.withdraw(memberSno, req.password());
         return ResponseApi.success("탈퇴가 완료되었습니다.");
+    }
+
+    @Operation(summary = "회원 차단", description = "차단한 회원의 게시글/댓글이 내 피드에서 보이지 않습니다(단방향). 중복 요청은 멱등. 로그인 필요.")
+    @ApiResponse(responseCode = "200", description = "차단 완료")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/blocks")
+    public ResponseApi<String> block(@MemberSno Long memberSno, @RequestBody BlockRequest req) {
+        blockService.block(memberSno, req.blockedMemberSno());
+        return ResponseApi.success("차단했습니다.");
+    }
+
+    @Operation(summary = "회원 차단 해제", description = "로그인 필요.")
+    @ApiResponse(responseCode = "200", description = "해제 완료")
+    @SecurityRequirement(name = "bearerAuth")
+    @DeleteMapping("/blocks/{blockedMemberSno}")
+    public ResponseApi<String> unblock(@MemberSno Long memberSno, @PathVariable Long blockedMemberSno) {
+        blockService.unblock(memberSno, blockedMemberSno);
+        return ResponseApi.success("차단을 해제했습니다.");
+    }
+
+    @Operation(summary = "내 차단 목록", description = "로그인 필요.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/blocks")
+    public ResponseApi<List<BlockedMemberResponse>> blocks(@MemberSno Long memberSno) {
+        return ResponseApi.success(blockService.list(memberSno));
     }
 
     private TokenResponse toTokenResponse(AuthTokenInfo result) {

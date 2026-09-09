@@ -3,6 +3,7 @@ package com.paceleague.member.application.service;
 import com.paceleague.board.application.port.in.shared.PurgeMemberBoardPort;
 import com.paceleague.crew.application.port.in.shared.LeaveCrewOnWithdrawPort;
 import com.paceleague.media.application.port.in.shared.PurgeMemberMediaPort;
+import com.paceleague.member.application.port.out.MemberBlockRepositoryPort;
 import com.paceleague.member.application.port.out.MemberRepositoryPort;
 import com.paceleague.member.domain.entity.Member;
 import com.paceleague.rank.application.port.in.shared.PurgeMemberRankPort;
@@ -33,6 +34,7 @@ import static org.mockito.Mockito.when;
 class MemberWithdrawServiceTest {
 
     @Mock MemberRepositoryPort memberRepositoryPort;
+    @Mock MemberBlockRepositoryPort memberBlockRepositoryPort;
     @Mock PasswordEncoder passwordEncoder;
     @Mock LeaveCrewOnWithdrawPort leaveCrewOnWithdrawPort;
     @Mock PurgeMemberRecordsPort purgeMemberRecordsPort;
@@ -46,8 +48,8 @@ class MemberWithdrawServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new MemberWithdrawService(memberRepositoryPort, passwordEncoder, leaveCrewOnWithdrawPort,
-                purgeMemberRecordsPort, purgeMemberRankPort, purgeMemberTerritoryPort,
+        service = new MemberWithdrawService(memberRepositoryPort, memberBlockRepositoryPort, passwordEncoder,
+                leaveCrewOnWithdrawPort, purgeMemberRecordsPort, purgeMemberRankPort, purgeMemberTerritoryPort,
                 purgeMemberMediaPort, purgeMemberBoardPort);
         member = Member.create("runner1", "HASH", "달리는곰", "a@b.com");
         ReflectionTestUtils.setField(member, "sno", 42);

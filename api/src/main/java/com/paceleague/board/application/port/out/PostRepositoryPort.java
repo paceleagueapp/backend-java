@@ -15,6 +15,9 @@ public interface PostRepositoryPort {
 
     Page<Post> findByBoardSno(Long boardSno, Pageable pageable);
 
+    // 목록용 — 숨김 글 + 차단한 작성자(blockedSnos) 글 제외.
+    Page<Post> findVisibleByBoardSno(Long boardSno, java.util.Collection<Long> blockedSnos, Pageable pageable);
+
     Optional<Post> findBySnoAndMemberSno(Long sno, Long memberSno);
 
     // @Lock(PESSIMISTIC_WRITE) — 어댑터 구현에서 그대로 보존

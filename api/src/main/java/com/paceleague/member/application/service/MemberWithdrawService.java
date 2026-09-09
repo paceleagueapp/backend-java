@@ -4,6 +4,7 @@ import com.paceleague.board.application.port.in.shared.PurgeMemberBoardPort;
 import com.paceleague.crew.application.port.in.shared.LeaveCrewOnWithdrawPort;
 import com.paceleague.media.application.port.in.shared.PurgeMemberMediaPort;
 import com.paceleague.member.application.port.in.MemberWithdrawUseCase;
+import com.paceleague.member.application.port.out.MemberBlockRepositoryPort;
 import com.paceleague.member.application.port.out.MemberRepositoryPort;
 import com.paceleague.member.domain.entity.Member;
 import com.paceleague.rank.application.port.in.shared.PurgeMemberRankPort;
@@ -23,6 +24,7 @@ public class MemberWithdrawService implements MemberWithdrawUseCase {
     private static final Logger log = LoggerFactory.getLogger(MemberWithdrawService.class);
 
     private final MemberRepositoryPort memberRepositoryPort;
+    private final MemberBlockRepositoryPort memberBlockRepositoryPort;
     private final PasswordEncoder passwordEncoder;
     private final LeaveCrewOnWithdrawPort leaveCrewOnWithdrawPort;
     private final PurgeMemberRecordsPort purgeMemberRecordsPort;
@@ -52,6 +54,7 @@ public class MemberWithdrawService implements MemberWithdrawUseCase {
         purgeMemberTerritoryPort.purge(memberSno);
         purgeMemberMediaPort.purge(memberSno);
         purgeMemberBoardPort.purge(memberSno);
+        memberBlockRepositoryPort.deleteAllByMember(memberSno);
 
         member.withdraw();
         memberRepositoryPort.save(member);

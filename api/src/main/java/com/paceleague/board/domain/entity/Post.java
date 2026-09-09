@@ -38,6 +38,13 @@ public class Post {
     @Column(nullable = false)
     private int score;
 
+    // 신고 누적으로 자동 숨김된 상태. 목록·상세에서 제외된다.
+    @Column(name = "hidden", nullable = false)
+    private boolean hidden;
+
+    @Column(name = "hidden_at")
+    private LocalDateTime hiddenAt;
+
     @Column(name = "create_at")
     private LocalDateTime createAt;
 
@@ -70,6 +77,11 @@ public class Post {
         this.content = content;
         this.recordSno = recordSno;
         this.updateAt = LocalDateTime.now(ZoneOffset.UTC);
+    }
+
+    public void hide() {
+        this.hidden = true;
+        this.hiddenAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     @PreUpdate

@@ -2,12 +2,15 @@
 
 > 두 기능이 `member`·`board` 도메인과 인증/조회 경로를 공유해 한 문서로 묶음.
 
-> **진행 상황** (2026-09-09):
-> - **Part A 회원 탈퇴 구현 완료(로컬 커밋, 미푸시)** — `DELETE /api/member/me`, `MemberWithdrawService`,
->   6개 도메인 `PurgeMember*Port`, `crew.LeaveCrewOnWithdrawPort`, login/reissue 가드,
->   `GetMemberNicknamePort` 익명화, 마이그레이션 `2026-09-09_member_withdraw.sql`, 유닛 테스트 2종.
-> - **Part B 신고/차단: 미구현.**
-> - **배포 전**: `member` 테이블 마이그레이션을 운영 MySQL 에 먼저 실행.
+> **진행 상황** (2026-09-09): **Part A · B 모두 구현 완료(로컬 커밋, 미푸시).**
+> - Part A 회원 탈퇴 — `DELETE /api/member/me`, `MemberWithdrawService`, 6개 도메인 `PurgeMember*Port`,
+>   `crew.LeaveCrewOnWithdrawPort`, login/reissue 가드, `GetMemberNicknamePort` 익명화.
+> - Part B 신고 — `board_report` + `post`/`comment.hidden`, `POST /api/board/{posts|comments}/{sno}/reports`,
+>   서로 다른 신고자 임계값(`paceleague.board.report.auto-hide-threshold`, 기본 3) 도달 시 자동 숨김.
+> - Part B 차단 — `member_block`, `POST/DELETE/GET /api/member/blocks`, `member.GetBlockedMemberSnosPort`,
+>   `BoardQueryUseCase.listPosts` 에 viewer 전파, 목록/댓글에서 차단 작성자 제외.
+> - 마이그레이션 2개: `2026-09-09_member_withdraw.sql`, `2026-09-09_board_moderation.sql`. 유닛 테스트 4종.
+> - **웹 UI(post.html 신고/차단 버튼)는 별도. 배포 전 두 마이그레이션을 운영 MySQL 에 먼저 실행.**
 
 ## 결정사항 (2026-09-09, 사용자 확인)
 

@@ -4,20 +4,25 @@ import com.paceleague.board.application.dto.CommentCreateRequest;
 import com.paceleague.board.application.dto.PostCreateRequest;
 import com.paceleague.board.application.dto.VoteResponse;
 import com.paceleague.board.application.port.in.BoardUseCase;
+import com.paceleague.board.application.port.out.BoardReportRepositoryPort;
 import com.paceleague.board.application.port.out.BoardRepositoryPort;
 import com.paceleague.board.application.port.out.CommentRepositoryPort;
 import com.paceleague.board.application.port.out.CommentVoteRepositoryPort;
 import com.paceleague.board.application.port.out.PostRepositoryPort;
 import com.paceleague.board.application.port.out.PostVoteRepositoryPort;
+import com.paceleague.board.domain.entity.BoardReport;
 import com.paceleague.board.domain.entity.Comment;
 import com.paceleague.board.domain.entity.CommentVote;
 import com.paceleague.board.domain.entity.Post;
 import com.paceleague.board.domain.entity.PostVote;
+import com.paceleague.board.domain.enums.ReportReason;
+import com.paceleague.board.domain.enums.ReportTargetType;
 import com.paceleague.board.domain.enums.VoteType;
 import com.paceleague.board.domain.policy.PostContentSanitizer;
 import com.paceleague.media.application.port.in.MediaUseCase;
 import com.paceleague.record.application.port.in.RecordQueryUseCase;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,8 +46,13 @@ public class BoardService implements BoardUseCase {
     private final CommentRepositoryPort commentRepositoryPort;
     private final PostVoteRepositoryPort postVoteRepositoryPort;
     private final CommentVoteRepositoryPort commentVoteRepositoryPort;
+    private final BoardReportRepositoryPort boardReportRepositoryPort;
     private final RecordQueryUseCase recordQueryUseCase;
     private final MediaUseCase mediaUseCase;
+
+    // 서로 다른 신고자가 이 수에 도달하면 대상 글/댓글을 자동 숨김한다.
+    @Value("${paceleague.board.report.auto-hide-threshold:3}")
+    private int reportAutoHideThreshold;
 
     @Transactional
     public Long createPost(Long memberSno, Long boardSno, PostCreateRequest req) {
@@ -211,6 +221,50 @@ public class BoardService implements BoardUseCase {
         commentVoteRepositoryPort.save(vote);
         comment.applyVoteDelta(voteType.getValue() - oldValue);
         return voteType.getValue();
+    }
+
+    @Transactional
+    public void reportPost(Long memberSno, Long postSno, String reason, String detail) {
+        Post post = postRepositoryPort.findBySnoForUpdate(postSno)
+                .orElseThrow(() -> new IllegalArgumentException("post not found"));
+        if (post.getMemberSno().equals(memberSno)) {
+            throw new IllegalArgumentException("본인 게시글은 신고할 수 없습니다.");
+        }
+        recordReport(memberSno, ReportTargetType.POST, postSno, reason, detail);
+        if (!post.isHidden()
+                && boardReportRepositoryPort.countDistinctReporters(ReportTargetType.POST, postSno) >= reportAutoHideThreshold) {
+            post.hide();
+            postRepositoryPort.save(post);
+        }
+    }
+
+    @Transactional
+    public void reportComment(Long memberSno, Long commentSno, String reason, String detail) {
+        Comment comment = commentRepositoryPort.findBySnoForUpdate(commentSno)
+                .orElseThrow(() -> new IllegalArgumentException("comment not found"));
+        if (comment.getMemberSno().equals(memberSno)) {
+            throw new IllegalArgumentException("본인 댓글은 신고할 수 없습니다.");
+        }
+        recordReport(memberSno, ReportTargetType.COMMENT, commentSno, reason, detail);
+        if (!comment.isHidden()
+                && boardReportRepositoryPort.countDistinctReporters(ReportTargetType.COMMENT, commentSno) >= reportAutoHideThreshold) {
+            comment.hide();
+            commentRepositoryPort.save(comment);
+        }
+    }
+
+    private void recordReport(Long memberSno, ReportTargetType type, Long targetSno, String reasonStr, String detail) {
+        if (boardReportRepositoryPort.exists(memberSno, type, targetSno)) {
+            return; // 이미 신고함 — 멱등
+        }
+        ReportReason reason;
+        try {
+            reason = ReportReason.valueOf(reasonStr == null ? "" : reasonStr.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("유효하지 않은 신고 사유입니다: " + reasonStr);
+        }
+        String trimmedDetail = detail == null ? null : detail.substring(0, Math.min(detail.length(), 500));
+        boardReportRepositoryPort.save(BoardReport.create(memberSno, type, targetSno, reason, trimmedDetail));
     }
 
     private void requireNonBlank(String value, String fieldName, int maxLength) {

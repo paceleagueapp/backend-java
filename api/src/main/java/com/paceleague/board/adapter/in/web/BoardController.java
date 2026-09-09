@@ -47,6 +47,7 @@ public class BoardController {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{boardSno}/posts")
     public ResponseApi<Page<PostSummaryResponse>> listPosts(
+            @MemberSno(required = false) Long memberSno,
             @PathVariable Long boardSno,
             @Parameter(description = "페이지 번호(0-base)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
@@ -54,7 +55,7 @@ public class BoardController {
             @Parameter(description = "작성자 티어뱃지 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang,
             @Parameter(description = "ISO 3166-1 alpha-2 국가코드(예: KR). 주어지면 lang 대신 이 국가에 맞는 언어로 응답") @RequestParam(required = false) String country
     ) {
-        return ResponseApi.success(boardQueryUseCase.listPosts(boardSno, page, size, sort, resolveLang(lang, country)));
+        return ResponseApi.success(boardQueryUseCase.listPosts(memberSno, boardSno, page, size, sort, resolveLang(lang, country)));
     }
 
     @Operation(summary = "게시글 작성")
@@ -179,6 +180,28 @@ public class BoardController {
             @RequestBody VoteRequest req
     ) {
         return ResponseApi.success(boardUseCase.voteComment(memberSno, commentSno, req.voteValue()));
+    }
+
+    @Operation(summary = "게시글 신고", description = "reason: SPAM/ABUSE/SEXUAL/ETC. 본인 글은 신고 불가, 중복 신고은 멱등. 서로 다른 신고자가 임계값에 도달하면 자동 숨김됩니다. 로그인 필요.")
+    @ApiResponse(responseCode = "200", description = "신고 접수")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/posts/{postSno}/reports")
+    public ResponseApi<String> reportPost(
+            @MemberSno Long memberSno, @PathVariable Long postSno, @RequestBody ReportRequest req
+    ) {
+        boardUseCase.reportPost(memberSno, postSno, req.reason(), req.detail());
+        return ResponseApi.success("신고가 접수되었습니다.");
+    }
+
+    @Operation(summary = "댓글 신고", description = "reason: SPAM/ABUSE/SEXUAL/ETC. 로그인 필요.")
+    @ApiResponse(responseCode = "200", description = "신고 접수")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/comments/{commentSno}/reports")
+    public ResponseApi<String> reportComment(
+            @MemberSno Long memberSno, @PathVariable Long commentSno, @RequestBody ReportRequest req
+    ) {
+        boardUseCase.reportComment(memberSno, commentSno, req.reason(), req.detail());
+        return ResponseApi.success("신고가 접수되었습니다.");
     }
 
     private String resolveLang(String lang, String country) {

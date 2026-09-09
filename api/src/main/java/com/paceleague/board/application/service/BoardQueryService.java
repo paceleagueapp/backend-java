@@ -19,6 +19,7 @@ import com.paceleague.crew.application.port.in.shared.GetMemberCrewBadgePort;
 import com.paceleague.crew.application.port.in.shared.GetMemberCrewBadgePort.CrewBadge;
 import com.paceleague.media.application.dto.MediaAttachmentResponse;
 import com.paceleague.media.application.port.in.shared.GetPostAttachmentsPort;
+import com.paceleague.member.application.port.in.shared.GetBlockedMemberSnosPort;
 import com.paceleague.member.application.port.in.shared.GetMemberNicknamePort;
 import com.paceleague.rank.application.port.in.shared.GetMemberTierPort;
 import com.paceleague.rank.domain.enums.RankTier;
@@ -32,8 +33,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -51,6 +54,7 @@ public class BoardQueryService implements BoardQueryUseCase {
     private final GetRecordSummaryPort getRecordSummaryPort;
     private final GetPostAttachmentsPort getPostAttachmentsPort;
     private final GetMemberCrewBadgePort getMemberCrewBadgePort;
+    private final GetBlockedMemberSnosPort getBlockedMemberSnosPort;
 
     public List<BoardResponse> listBoards(String lang) {
         Language language = Language.fromCode(lang);
@@ -58,7 +62,7 @@ public class BoardQueryService implements BoardQueryUseCase {
                 .stream().map(board -> BoardResponse.from(board, language)).toList();
     }
 
-    public Page<PostSummaryResponse> listPosts(Long boardSno, int page, int size, String sort, String lang) {
+    public Page<PostSummaryResponse> listPosts(Long viewerMemberSno, Long boardSno, int page, int size, String sort, String lang) {
         Language language = Language.fromCode(lang);
 
         boardRepositoryPort.findById(boardSno)
@@ -71,7 +75,10 @@ public class BoardQueryService implements BoardQueryUseCase {
 
         var pageable = PageRequest.of(Math.max(page, 0), pageSize, sortOrder);
 
-        Page<Post> posts = postRepositoryPort.findByBoardSno(boardSno, pageable);
+        // 숨김(신고 누적) 글 + 내가 차단한 작성자의 글을 제외. JPQL `not in ()` 이 빈 컬렉션을 못 받아 sentinel(-1) 을 넣는다.
+        Set<Long> blocked = getBlockedMemberSnosPort.getBlockedBy(viewerMemberSno);
+        Collection<Long> blockedParam = blocked.isEmpty() ? List.of(-1L) : blocked;
+        Page<Post> posts = postRepositoryPort.findVisibleByBoardSno(boardSno, blockedParam, pageable);
         Map<Long, CrewBadge> crewBadges = getMemberCrewBadgePort.getBadges(
                 posts.stream().map(Post::getMemberSno).distinct().toList());
 
@@ -88,6 +95,10 @@ public class BoardQueryService implements BoardQueryUseCase {
 
         Post post = postRepositoryPort.findById(postSno)
                 .orElseThrow(() -> new IllegalArgumentException("post not found"));
+
+        if (post.isHidden()) {
+            throw new IllegalArgumentException("삭제되었거나 숨겨진 게시글입니다.");
+        }
 
         postRepositoryPort.incrementViewCount(postSno);
 
@@ -121,7 +132,11 @@ public class BoardQueryService implements BoardQueryUseCase {
             throw new IllegalArgumentException("post not found");
         }
 
-        List<Comment> all = commentRepositoryPort.findByPostSnoOrderByCreateAtAsc(postSno);
+        // 숨김(신고 누적) 댓글 + 내가 차단한 작성자의 댓글은 제외한다(부모가 빠지면 그 대댓글도 함께 사라짐 — MVP).
+        Set<Long> blocked = getBlockedMemberSnosPort.getBlockedBy(memberSno);
+        List<Comment> all = commentRepositoryPort.findByPostSnoOrderByCreateAtAsc(postSno).stream()
+                .filter(c -> !c.isHidden() && !blocked.contains(c.getMemberSno()))
+                .toList();
 
         Map<Long, List<Comment>> repliesByParent = all.stream()
                 .filter(Comment::isReply)

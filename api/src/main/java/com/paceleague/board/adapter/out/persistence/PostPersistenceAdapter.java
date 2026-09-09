@@ -27,6 +27,10 @@ public class PostPersistenceAdapter implements PostRepositoryPort {
         return postJpaRepository.existsById(sno);
     }
 
+    public Page<Post> findVisibleByBoardSno(Long boardSno, java.util.Collection<Long> blockedSnos, Pageable pageable) {
+        return postJpaRepository.findVisibleByBoardSno(boardSno, blockedSnos, pageable);
+    }
+
     public Page<Post> findByBoardSno(Long boardSno, Pageable pageable) {
         return postJpaRepository.findByBoardSno(boardSno, pageable);
     }

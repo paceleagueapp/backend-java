@@ -294,3 +294,33 @@ totalScore = baseScore + scaledScore + addScore
 - **복구 불가.** `login`·`reissue` 는 `member.isActive()` 검사로 탈퇴 계정을 막는다(refresh token 은 회원별 인덱스가 없어 즉시 폐기 불가 — access token 5분 만료 + 이 가드로 대응).
 - **글/댓글은 유지** — `member_sno` 그대로. `MemberQueryService.getNickname` 한 곳이 `WITHDRAWN` 이면 "탈퇴한 사용자" 를 반환해 board·territory·ranking 표시가 자동 익명화된다. 회원 검색(`SearchMembersPort`)은 탈퇴 회원 제외.
 - 스키마: [migrations/2026-09-09_member_withdraw.sql](./migrations/2026-09-09_member_withdraw.sql) (`member.status`/`withdrawn_at`). 배포 전 운영 MySQL 에 직접 실행(`ddl-auto: validate`).
+
+## 게시판 신고 / 차단
+
+### 신고 (`board_report`)
+
+`POST /api/board/posts/{sno}/reports` · `POST /api/board/comments/{sno}/reports` (로그인 필요, body `{ reason, detail? }`).
+`reason` = `SPAM`/`ABUSE`/`SEXUAL`/`ETC`(`ReportReason`), 라벨은 클라이언트가 담당.
+
+- 본인 글/댓글은 신고 불가(400). `(reporter, target_type, target_sno)` UNIQUE → **1인 1신고, 중복은 멱등**.
+- `BoardService.reportPost/reportComment` — 대상을 `PESSIMISTIC_WRITE` 락으로 잡고, 신고 저장 후
+  `SELECT count(distinct reporter_member_sno) ... status='OPEN'` 이 `paceleague.board.report.auto-hide-threshold`(기본 3)
+  이상이면 대상의 `hidden=1`, `hidden_at`.
+- 숨김 효과: `listPosts` 는 `hidden=false` 만(`findVisibleByBoardSno`), `getPost` 는 `hidden` 이면 400
+  ("삭제되었거나 숨겨진 게시글입니다"), `listComments` 는 `hidden` 댓글 제외(부모가 빠지면 대댓글도 함께).
+- **복구·처리는 운영자가 DB 에서 수동** (`board_report.status` 를 `RESOLVED`/`DISMISSED`, 대상 `hidden=0`). 관리자 UI 없음.
+
+### 차단 (`member_block`, member 도메인)
+
+`POST /api/member/blocks` `{ blockedMemberSno }` · `DELETE /api/member/blocks/{sno}` · `GET /api/member/blocks` (전부 로그인).
+
+- **단방향**: A 가 B 를 차단해도 B 에게는 A 글이 그대로 보인다. 자기 자신 차단 불가. 중복은 멱등.
+- `member.GetBlockedMemberSnosPort.getBlockedBy(viewerMemberSno)` (board→member, 비로그인이면 빈 집합).
+- `BoardQueryUseCase.listPosts` 시그니처에 `viewerMemberSno` 추가 — `BoardController.listPosts` 가
+  `@MemberSno(required=false)` 로 받아 넘긴다. 차단 작성자 글은 목록/댓글에서 제외
+  (JPQL `not in ()` 이 빈 컬렉션을 못 받아 sentinel `-1L` 사용). `getPost` 상세는 **필터 안 함**(MVP).
+- 회원 탈퇴 시 `member_block`(내가 차단/나를 차단) + 내가 낸 `board_report` 전부 삭제. `PostSummaryResponse`/
+  `PostDetailResponse`/`CommentResponse` 에 `authorMemberSno` 노출(차단 버튼용).
+
+스키마: [migrations/2026-09-09_board_moderation.sql](./migrations/2026-09-09_board_moderation.sql)
+(`board_report`, `post`/`comment.hidden`·`hidden_at`, `member_block`). 배포 전 운영 MySQL 직접 실행.

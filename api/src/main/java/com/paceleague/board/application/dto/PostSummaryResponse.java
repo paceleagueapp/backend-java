@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public record PostSummaryResponse(
         Long sno,
         String title,
+        Long authorMemberSno,
         String nickname,
         RankTier authorTier,
         String authorTierLabel,
@@ -36,6 +37,7 @@ public record PostSummaryResponse(
         return new PostSummaryResponse(
                 post.getSno(),
                 post.getTitle(),
+                post.getMemberSno(),
                 nickname,
                 authorTier,
                 RankTierLabelPolicy.label(authorTier, lang),
