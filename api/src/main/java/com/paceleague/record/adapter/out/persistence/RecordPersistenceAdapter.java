@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -60,4 +61,7 @@ public class RecordPersistenceAdapter implements RecordRepositoryPort {
     public List<Record> findByUnoAndStartTimeBetween(Long uno, LocalDateTime from, LocalDateTime to) {
         return recordJpaRepository.findByUnoAndStartTimeBetween(uno, from, to);
     }
+
+    @Transactional
+    public void deleteAllByUno(Long uno) { recordJpaRepository.deleteAllByUno(uno); }
 }

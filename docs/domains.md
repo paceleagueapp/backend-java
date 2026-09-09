@@ -280,3 +280,17 @@ totalScore = baseScore + scaledScore + addScore
 
 앱이 Firebase 프로젝트 등록 + FCM SDK + `all` 토픽 구독 + 알림 권한을 배포해야 실제 도달된다.
 그때까지 `daily-digest.enabled=false` 로 둔다. 개인 알림(토큰 대상)은 phase 2 — `member_device_token` 테이블 필요.
+
+## 회원 탈퇴 (member)
+
+`DELETE /api/member/me` (로그인 필요, body `{ "password" }`). `MemberWithdrawService` — 한 트랜잭션:
+
+1. 비밀번호 재확인(틀리면 400). 이미 `WITHDRAWN` 이면 멱등하게 200.
+2. `crew.LeaveCrewOnWithdrawPort.onMemberWithdraw` — **크루장이면 400**("먼저 위임/해체"), 크루원이면 자동 탈퇴 + 그 회원의 초대/가입신청 삭제.
+3. 러닝·건강·랭킹·땅·미디어·추천 데이터 삭제 — 각 도메인이 `application/port/in/shared/PurgeMember*Port` 하나씩 노출:
+   `record`(record + record_track by uno), `rank`(score_rank + member_score), `territory`(territory_hex → territory by owner), `media`(media 행; S3 는 후순위), `board`(post_vote + comment_vote; 신고 이력은 Part B 에서).
+4. `member` 행 마스킹(DELETE 안 함): `status=WITHDRAWN`, `withdrawn_at`, `member_id='withdrawn_<sno>'`(원래 아이디 재사용 가능), `nickname/email=NULL`, `password_hash=''`.
+
+- **복구 불가.** `login`·`reissue` 는 `member.isActive()` 검사로 탈퇴 계정을 막는다(refresh token 은 회원별 인덱스가 없어 즉시 폐기 불가 — access token 5분 만료 + 이 가드로 대응).
+- **글/댓글은 유지** — `member_sno` 그대로. `MemberQueryService.getNickname` 한 곳이 `WITHDRAWN` 이면 "탈퇴한 사용자" 를 반환해 board·territory·ranking 표시가 자동 익명화된다. 회원 검색(`SearchMembersPort`)은 탈퇴 회원 제외.
+- 스키마: [migrations/2026-09-09_member_withdraw.sql](./migrations/2026-09-09_member_withdraw.sql) (`member.status`/`withdrawn_at`). 배포 전 운영 MySQL 에 직접 실행(`ddl-auto: validate`).

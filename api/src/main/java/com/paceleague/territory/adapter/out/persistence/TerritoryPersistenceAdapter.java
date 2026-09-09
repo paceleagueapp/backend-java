@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -65,4 +66,7 @@ public class TerritoryPersistenceAdapter implements TerritoryRepositoryPort {
     public void deleteAll() {
         territoryJpaRepository.deleteAllInBatch();
     }
+
+    @Transactional
+    public void deleteAllByOwnerMemberSno(Long memberSno) { territoryJpaRepository.deleteAllByOwnerMemberSno(memberSno); }
 }

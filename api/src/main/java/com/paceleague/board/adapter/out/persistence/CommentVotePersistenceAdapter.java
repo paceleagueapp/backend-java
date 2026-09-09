@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -29,4 +30,7 @@ public class CommentVotePersistenceAdapter implements CommentVoteRepositoryPort 
     public void delete(CommentVote vote) {
         commentVoteJpaRepository.delete(vote);
     }
+
+    @Transactional
+    public void deleteAllByMemberSno(Long memberSno) { commentVoteJpaRepository.deleteAllByMemberSno(memberSno); }
 }

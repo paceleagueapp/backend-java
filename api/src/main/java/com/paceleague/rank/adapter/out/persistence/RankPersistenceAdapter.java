@@ -4,6 +4,7 @@ import com.paceleague.rank.application.port.out.RankRepositoryPort;
 import com.paceleague.rank.domain.entity.Rank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -14,4 +15,7 @@ public class RankPersistenceAdapter implements RankRepositoryPort {
     public Rank save(Rank rank) {
         return rankJpaRepository.save(rank);
     }
+
+    @Transactional
+    public void deleteAllByUno(Long uno) { rankJpaRepository.deleteAllByUno(uno); }
 }

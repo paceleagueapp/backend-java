@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -39,4 +40,7 @@ public class RecordTrackPersistenceAdapter implements RecordTrackRepositoryPort 
     public List<Long> findFinishedTerritoryModeSnosOrderByEndedAt() {
         return recordTrackJpaRepository.findFinishedTerritoryModeSnosOrderByEndedAt();
     }
+
+    @Transactional
+    public void deleteAllByUno(Long uno) { recordTrackJpaRepository.deleteAllByUno(uno); }
 }

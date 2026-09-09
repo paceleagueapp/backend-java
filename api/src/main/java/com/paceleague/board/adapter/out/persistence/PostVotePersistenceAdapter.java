@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -28,4 +29,7 @@ public class PostVotePersistenceAdapter implements PostVoteRepositoryPort {
     public void delete(PostVote vote) {
         postVoteJpaRepository.delete(vote);
     }
+
+    @Transactional
+    public void deleteAllByMemberSno(Long memberSno) { postVoteJpaRepository.deleteAllByMemberSno(memberSno); }
 }

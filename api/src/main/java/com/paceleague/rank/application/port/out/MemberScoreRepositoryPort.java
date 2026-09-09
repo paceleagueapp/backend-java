@@ -15,4 +15,7 @@ public interface MemberScoreRepositoryPort {
     List<MemberScore> findByMemberSnosAndSeasonSno(Collection<Long> memberSnos, Long seasonSno);
 
     MemberScore save(MemberScore memberScore);
+
+    // 회원 탈퇴 시 시즌 누적 점수 삭제.
+    void deleteAllByMemberSno(Long memberSno);
 }

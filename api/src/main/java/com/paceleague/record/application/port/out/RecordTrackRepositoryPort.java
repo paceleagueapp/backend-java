@@ -22,4 +22,7 @@ public interface RecordTrackRepositoryPort {
     // 실제 러닝이 끝난 시각(ended_at) 오름차순으로. 하나씩 findBySno로 다시 불러와 처리한다
     // (points_json이 러닝당 최대 ~9MB라 전부 한 번에 메모리에 올리지 않기 위함, idle-session 스윕과 동일한 이유).
     List<Long> findFinishedTerritoryModeSnosOrderByEndedAt();
+
+    // 회원 탈퇴 시 GPS 트랙 일괄 삭제.
+    void deleteAllByUno(Long uno);
 }

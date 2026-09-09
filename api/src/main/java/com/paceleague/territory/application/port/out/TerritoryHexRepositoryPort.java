@@ -22,4 +22,7 @@ public interface TerritoryHexRepositoryPort {
     // territory 재생(historical replay, 2026-09-07) 전용 — 기존 헥사곤 매핑 전부를 지운다.
     // TerritoryHistoricalReplayService 외에는 호출하지 않는다.
     void deleteAll();
+
+    // 회원 탈퇴 시 그 회원 소유 땅의 헥사곤 매핑 삭제. Territory 삭제보다 먼저.
+    void deleteAllByOwnerMemberSno(Long memberSno);
 }

@@ -12,4 +12,6 @@ public interface PostVoteRepositoryPort {
     void deleteByPostSno(Long postSno);
 
     void delete(PostVote vote);
+
+    void deleteAllByMemberSno(Long memberSno);
 }

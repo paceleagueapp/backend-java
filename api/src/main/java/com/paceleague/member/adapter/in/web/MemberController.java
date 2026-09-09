@@ -4,6 +4,7 @@ import com.paceleague.common.response.ResponseApi;
 import com.paceleague.common.web.MemberSno;
 import com.paceleague.member.application.dto.*;
 import com.paceleague.member.application.port.in.MemberAuthUseCase;
+import com.paceleague.member.application.port.in.MemberWithdrawUseCase;
 import com.paceleague.member.application.port.in.SearchMembersPort;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -12,6 +13,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,10 +29,13 @@ import java.util.List;
 public class MemberController {
     private final MemberAuthUseCase authService;
     private final SearchMembersPort searchMembersPort;
+    private final MemberWithdrawUseCase withdrawService;
 
-    public MemberController(MemberAuthUseCase authService, SearchMembersPort searchMembersPort) {
+    public MemberController(MemberAuthUseCase authService, SearchMembersPort searchMembersPort,
+                           MemberWithdrawUseCase withdrawService) {
         this.authService = authService;
         this.searchMembersPort = searchMembersPort;
+        this.withdrawService = withdrawService;
     }
 
     @Operation(summary = "회원 검색", description = "아이디(접두 일치) 또는 닉네임(부분 일치)으로 회원을 찾습니다. 크루 초대 대상 선택 등에 사용. 로그인 필요.")
@@ -89,6 +94,15 @@ public class MemberController {
     public ResponseEntity<ResponseApi<String>> logout(@RequestBody LogoutRequest req) {
         authService.logout(req.refreshToken());
         return ResponseEntity.ok(ResponseApi.success("로그아웃이 완료되었습니다."));
+    }
+
+    @Operation(summary = "회원 탈퇴", description = "비밀번호 재확인 후 즉시 처리됩니다. 러닝·건강·랭킹·땅 데이터는 삭제되고, 작성한 글/댓글은 '탈퇴한 사용자'로 익명화되어 남습니다. **복구 불가.** 크루장은 먼저 위임/해체해야 합니다. 로그인 필요.")
+    @ApiResponse(responseCode = "200", description = "탈퇴 성공")
+    @SecurityRequirement(name = "bearerAuth")
+    @DeleteMapping("/me")
+    public ResponseApi<String> withdraw(@MemberSno Long memberSno, @RequestBody WithdrawRequest req) {
+        withdrawService.withdraw(memberSno, req.password());
+        return ResponseApi.success("탈퇴가 완료되었습니다.");
     }
 
     private TokenResponse toTokenResponse(AuthTokenInfo result) {

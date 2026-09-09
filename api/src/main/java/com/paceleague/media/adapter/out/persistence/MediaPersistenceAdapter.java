@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -33,4 +34,7 @@ public class MediaPersistenceAdapter implements MediaRepositoryPort {
     public long countByPostSno(Long postSno) {
         return mediaJpaRepository.countByPostSno(postSno);
     }
+
+    @Transactional
+    public void deleteAllByMemberSno(Long memberSno) { mediaJpaRepository.deleteAllByMemberSno(memberSno); }
 }

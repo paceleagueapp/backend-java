@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -42,4 +43,7 @@ public class TerritoryHexPersistenceAdapter implements TerritoryHexRepositoryPor
     public void deleteAll() {
         territoryHexJpaRepository.deleteAllInBatch();
     }
+
+    @Transactional
+    public void deleteAllByOwnerMemberSno(Long memberSno) { territoryHexJpaRepository.deleteAllByOwnerMemberSno(memberSno); }
 }

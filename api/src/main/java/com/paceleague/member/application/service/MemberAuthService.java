@@ -72,6 +72,9 @@ public class MemberAuthService implements MemberAuthUseCase {
             recordLoginFailure(failKey);
             throw new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
         }
+        if (!member.isActive()) {
+            throw new IllegalArgumentException("탈퇴 처리된 계정입니다.");
+        }
 
         redis.delete(failKey);
         return issueTokens(member);
@@ -94,6 +97,10 @@ public class MemberAuthService implements MemberAuthUseCase {
 
         Member member = memberRepositoryPort.findBySno(memberSno)
                 .orElseThrow(() -> new IllegalArgumentException("member not found"));
+
+        if (!member.isActive()) {
+            throw new IllegalArgumentException("탈퇴 처리된 계정입니다.");
+        }
 
         return issueTokens(member);
     }

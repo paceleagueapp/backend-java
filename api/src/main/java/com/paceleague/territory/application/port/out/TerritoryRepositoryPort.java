@@ -39,4 +39,7 @@ public interface TerritoryRepositoryPort {
     // territory 재생(historical replay, 2026-09-07) 전용 — 기존 territory 전부를 지우고 처음부터
     // 다시 만든다. TerritoryHistoricalReplayService 외에는 호출하지 않는다.
     void deleteAll();
+
+    // 회원 탈퇴 시 그 회원 소유 땅 삭제(헥사곤은 TerritoryHexRepositoryPort 에서 먼저).
+    void deleteAllByOwnerMemberSno(Long memberSno);
 }

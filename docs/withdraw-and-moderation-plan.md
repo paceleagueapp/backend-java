@@ -1,7 +1,13 @@
 # 회원 탈퇴 + 게시판 신고/차단 설계
 
 > 두 기능이 `member`·`board` 도메인과 인증/조회 경로를 공유해 한 문서로 묶음.
-> 상태: **설계만.** 구현은 별도.
+
+> **진행 상황** (2026-09-09):
+> - **Part A 회원 탈퇴 구현 완료(로컬 커밋, 미푸시)** — `DELETE /api/member/me`, `MemberWithdrawService`,
+>   6개 도메인 `PurgeMember*Port`, `crew.LeaveCrewOnWithdrawPort`, login/reissue 가드,
+>   `GetMemberNicknamePort` 익명화, 마이그레이션 `2026-09-09_member_withdraw.sql`, 유닛 테스트 2종.
+> - **Part B 신고/차단: 미구현.**
+> - **배포 전**: `member` 테이블 마이그레이션을 운영 MySQL 에 먼저 실행.
 
 ## 결정사항 (2026-09-09, 사용자 확인)
 

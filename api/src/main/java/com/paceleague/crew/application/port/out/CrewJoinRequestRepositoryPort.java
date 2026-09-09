@@ -17,4 +17,7 @@ public interface CrewJoinRequestRepositoryPort {
     boolean existsPendingByCrewSnoAndMemberSno(Long crewSno, Long memberSno);
 
     void deleteByCrewSno(Long crewSno);
+
+    // 회원 탈퇴 시 그 회원의 가입신청 전부 삭제.
+    void deleteAllByMemberSno(Long memberSno);
 }

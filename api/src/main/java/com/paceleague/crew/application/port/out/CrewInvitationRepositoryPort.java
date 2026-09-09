@@ -17,4 +17,7 @@ public interface CrewInvitationRepositoryPort {
     boolean existsPendingByCrewSnoAndInvitee(Long crewSno, Long inviteeMemberSno);
 
     void deleteByCrewSno(Long crewSno);
+
+    // 회원 탈퇴 시 그 회원이 보내거나 받은 초대 전부 삭제.
+    void deleteAllByMember(Long memberSno);
 }

@@ -13,4 +13,6 @@ public interface CommentVoteRepositoryPort {
     void deleteByCommentSnoIn(List<Long> commentSnos);
 
     void delete(CommentVote vote);
+
+    void deleteAllByMemberSno(Long memberSno);
 }

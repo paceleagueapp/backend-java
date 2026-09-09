@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.jpa.repository.Modifying;
 
 public interface TerritoryJpaRepository extends JpaRepository<Territory, Long> {
 
@@ -66,4 +67,9 @@ public interface TerritoryJpaRepository extends JpaRepository<Territory, Long> {
             """, nativeQuery = true)
     TerritoryCaptureCountProjection countCapturesBetween(@Param("from") LocalDateTime from,
                                                         @Param("to") LocalDateTime to);
+
+    // 회원 탈퇴 시 그 회원이 소유한 땅 삭제 (territory_hex 는 아래에서 별도로).
+    @Modifying
+    @Query("delete from Territory t where t.ownerMemberSno = :memberSno")
+    int deleteAllByOwnerMemberSno(@Param("memberSno") Long memberSno);
 }

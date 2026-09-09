@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -33,4 +34,7 @@ public class MemberScorePersistenceAdapter implements MemberScoreRepositoryPort 
     public MemberScore save(MemberScore memberScore) {
         return memberScoreJpaRepository.save(memberScore);
     }
+
+    @Transactional
+    public void deleteAllByMemberSno(Long memberSno) { memberScoreJpaRepository.deleteAllByMemberSno(memberSno); }
 }

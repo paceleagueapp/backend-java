@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -35,4 +36,7 @@ public class CrewInvitationPersistenceAdapter implements CrewInvitationRepositor
     public void deleteByCrewSno(Long crewSno) {
         crewInvitationJpaRepository.deleteByCrewSno(crewSno);
     }
+
+    @Transactional
+    public void deleteAllByMember(Long memberSno) { crewInvitationJpaRepository.deleteAllByMember(memberSno); }
 }

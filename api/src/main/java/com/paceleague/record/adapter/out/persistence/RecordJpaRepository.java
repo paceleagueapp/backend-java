@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.Modifying;
 
 public interface RecordJpaRepository extends JpaRepository<Record, Long> {
     // 1개 조회(본인 것만)
@@ -65,4 +66,9 @@ public interface RecordJpaRepository extends JpaRepository<Record, Long> {
             LocalDateTime from,
             LocalDateTime to
     );
+
+    // 회원 탈퇴 시 러닝 기록 일괄 삭제.
+    @Modifying
+    @Query("delete from Record r where r.uno = :uno")
+    int deleteAllByUno(@Param("uno") Long uno);
 }

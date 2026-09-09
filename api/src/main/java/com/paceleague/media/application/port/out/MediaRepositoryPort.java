@@ -15,4 +15,7 @@ public interface MediaRepositoryPort {
     List<Media> findByPostSno(Long postSno);
 
     long countByPostSno(Long postSno);
+
+    // 회원 탈퇴 시 업로드 미디어 행 삭제.
+    void deleteAllByMemberSno(Long memberSno);
 }

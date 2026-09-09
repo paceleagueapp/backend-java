@@ -43,4 +43,7 @@ public interface RecordRepositoryPort {
             LocalDateTime from,
             LocalDateTime to
     );
+
+    // 회원 탈퇴 시 러닝 기록 일괄 삭제.
+    void deleteAllByUno(Long uno);
 }
