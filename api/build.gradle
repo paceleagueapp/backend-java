@@ -52,6 +52,9 @@ dependencies {
     // 바이너리를 내장한다(linux-x64 등, Apache 2.0). 버전은 Maven Central 확인(4.5.0, 2026-09-05 기준 최신).
     implementation 'com.uber:h3:4.5.0'
 
+    // FCM 푸시(notification 도메인) — Firebase Admin SDK. 버전은 Maven Central 확인(9.10.0, 2026-07 기준 최신).
+    implementation 'com.google.firebase:firebase-admin:9.10.0'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     runtimeOnly 'com.mysql:mysql-connector-j'

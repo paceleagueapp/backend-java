@@ -1,5 +1,6 @@
 package com.paceleague.territory.adapter.out.persistence;
 
+import com.paceleague.territory.application.dto.TerritoryCaptureCount;
 import com.paceleague.territory.application.dto.TerritoryOwnerArea;
 import com.paceleague.territory.application.port.out.TerritoryRepositoryPort;
 import com.paceleague.territory.domain.entity.Territory;
@@ -8,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,6 +53,13 @@ public class TerritoryPersistenceAdapter implements TerritoryRepositoryPort {
 
     public List<Territory> findActiveMissingHex() {
         return territoryJpaRepository.findActiveMissingHex();
+    }
+
+    public TerritoryCaptureCount countCapturesBetween(LocalDateTime fromInclusive, LocalDateTime toExclusive) {
+        TerritoryCaptureCountProjection p = territoryJpaRepository.countCapturesBetween(fromInclusive, toExclusive);
+        long captured = p == null || p.getCapturedTerritories() == null ? 0L : p.getCapturedTerritories();
+        long owners = p == null || p.getDistinctOwners() == null ? 0L : p.getDistinctOwners();
+        return new TerritoryCaptureCount(captured, owners);
     }
 
     public void deleteAll() {

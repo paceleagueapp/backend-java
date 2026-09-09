@@ -23,6 +23,17 @@ app:
   media:
     bucket: paceleague-media
 
+# FCM 푸시(notification 도메인).
+# 서비스 계정 키는 여기(yml/git)에 두지 않는다 — 운영 env `PACELEAGUE_FCM_SERVICE_ACCOUNT_JSON`
+# (JSON 문자열 또는 EC2 파일 경로)으로만 주입. 미설정이면 FirebaseConfig 비활성 + 발송은 no-op.
+paceleague:
+  fcm:
+    topic: all
+    daily-digest:
+      enabled: ${FCM_DAILY_DIGEST_ENABLED:false}   # 앱이 FCM 토픽 구독을 배포한 뒤 env 로 켠다
+      cron: "0 0 9 * * *"                          # 매일 09:00 (스케줄러가 Asia/Seoul 로 발화)
+      send-when-zero: false
+
 logging:
   level:
     org.springframework.security: DEBUG

@@ -238,3 +238,45 @@ totalScore = baseScore + scaledScore + addScore
 - **번역 소스 언어는 자동 감지**(`SourceLanguageCode: "auto"`) — 게시글/댓글에 작성 언어를 저장하는 컬럼이 없기 때문.
 - `Post.content` 최대 길이를 10,000자로 제한(`BoardService.CONTENT_MAX_LENGTH`) — 원래는 무제한이었으나, 번역 비용이 글자 수에 비례하므로 이번에 추가.
 - **사전 조건**: 운영 EC2의 IAM role(`paceleague-s3-read`)에 `translate:TranslateText` 권한(예: `TranslateReadOnly` 관리형 정책)이 연결되어 있어야 함. 앱은 AWS SDK 기본 자격증명 체인(인스턴스 메타데이터)을 그대로 쓰며, 별도 액세스 키를 설정에 넣지 않음(`common.config.AwsTranslateConfig`). 권한이 없으면 번역 엔드포인트만 500으로 실패하고 나머지 API는 영향받지 않음.
+
+## 알림(Notification) 도메인 — FCM 푸시
+
+`notification` 패키지 (2026-09-09 신규). 컨트롤러 없음. 전체 설계는 [daily-territory-push-plan.md](./daily-territory-push-plan.md).
+
+### 매일 아침 땅따먹기 요약 푸시
+
+`DailyTerritoryDigestScheduler`(`adapter/in/scheduler`) — `@Scheduled(cron="0 0 9 * * *", zone="Asia/Seoul")`.
+`GpsSessionSweeper` 와 함께 이 코드베이스의 두 개뿐인 스케줄 잡. **기본 OFF** —
+`paceleague.fcm.daily-digest.enabled=true`(env `FCM_DAILY_DIGEST_ENABLED`) 일 때만 빈이 생성된다.
+
+`DailyTerritoryDigestService.sendForYesterday()`:
+
+1. `DailyDigestWindow.yesterdayKst()` = KST 기준 어제. `push_send_log` 에 `(DAILY_TERRITORY_DIGEST, targetDate)`
+   를 `tryReserve` (`REQUIRES_NEW` 트랜잭션) — 이미 SENT/SKIPPED/RESERVED 행이 있으면 스킵, FAILED 면 재시도.
+   `(kind, target_date)` UNIQUE 가 재시작·다중 인스턴스 중복 발송 가드(스케일아웃 시엔 ShedLock 필요).
+2. `CountTerritoryCapturesPort.countBetween(from, to)` — `territory.create_at` 이 어제 구간인 행의
+   `COUNT(*)`(점령된 땅 수) + `COUNT(DISTINCT owner_member_sno)`(점령한 유저 수). `status` 조건 없음
+   (뺏겨 삭제됐어도 "어제 발생한 점령 이벤트" 로 셈). `territory` 도메인의 `TerritoryCaptureCountService` 가 구현.
+   - **타임존**: `Territory.createAt = LocalDateTime.now()` = 서버 시스템 TZ(컨테이너=UTC 가정).
+     `DailyDigestWindow.forDate(date, ZoneId.systemDefault())` 가 "KST 어제 00:00~24:00" 을 그 순간(instant)으로
+     잡아 `systemDefault` 로 다시 표현해 쿼리 파라미터로 넘긴다. **운영 배포 전 실제 `create_at` 저장 TZ 확인 권장**.
+3. 0건 + `send-when-zero=false`(기본) → 발송 안 하고 로그만 (`SKIPPED`).
+4. 문구: `"어제 %d명이 %d개의 땅을 점령했어요 🏴"`. `SendPushPort.sendToAll` → FCM 토픽(`paceleague.fcm.topic`, 기본 `all`) 브로드캐스트.
+5. 결과를 `push_send_log` 에 `SENT`(+ messageId) / `SKIPPED` / `FAILED` 로 기록. 예외는 삼켜 다음 날 재시도 가능.
+
+### FCM 설정 (`FcmProperties`, `paceleague.fcm.*`)
+
+- `service-account-json`: Firebase 서비스 계정 키. `{` 로 시작하면 JSON 문자열, 아니면 파일 경로. **yml/git 금지**,
+  운영 env `PACELEAGUE_FCM_SERVICE_ACCOUNT_JSON` 로만. **미설정이면** `FirebaseConfig` 비활성 +
+  `PushConfig` 가 `NoopPushAdapter`(발송 스킵)를 `SendPushPort` 로 등록 → 로컬/CI/앱 미배포 단계에서 무해.
+- `topic`(기본 `all`), `daily-digest.enabled`/`cron`/`send-when-zero`.
+
+### 스키마
+
+`push_send_log` — 마이그레이션 [2026-09-09_push_send_log.sql](./migrations/2026-09-09_push_send_log.sql).
+운영은 `ddl-auto: validate` 라 **배포 전 이 테이블을 만들지 않으면 앱이 뜨지 않는다**(PushSendLog 엔티티 매핑 검증 실패).
+
+### 앱 의존성 (미완)
+
+앱이 Firebase 프로젝트 등록 + FCM SDK + `all` 토픽 구독 + 알림 권한을 배포해야 실제 도달된다.
+그때까지 `daily-digest.enabled=false` 로 둔다. 개인 알림(토큰 대상)은 phase 2 — `member_device_token` 테이블 필요.

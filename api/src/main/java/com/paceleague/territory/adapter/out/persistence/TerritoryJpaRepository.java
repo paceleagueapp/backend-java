@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface TerritoryJpaRepository extends JpaRepository<Territory, Long> {
@@ -54,4 +55,15 @@ public interface TerritoryJpaRepository extends JpaRepository<Territory, Long> {
             order by t.createAt asc
             """)
     List<Territory> findActiveMissingHex();
+
+    // 일간 요약 푸시용 — create_at 이 [from, to) 구간에 든 territory 행의 개수와 서로 다른 소유자 수.
+    // status 조건은 두지 않는다: "어제 발생한 점령 이벤트" 를 세는 것이 목적(그 뒤 뺏겨 삭제됐어도 이벤트는 있었음).
+    @Query(value = """
+            select count(*)                         as capturedTerritories,
+                   count(distinct owner_member_sno) as distinctOwners
+            from territory
+            where create_at >= :from and create_at < :to
+            """, nativeQuery = true)
+    TerritoryCaptureCountProjection countCapturesBetween(@Param("from") LocalDateTime from,
+                                                        @Param("to") LocalDateTime to);
 }

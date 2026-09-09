@@ -4,6 +4,14 @@
 > 이 문서는 **서버(api/) 부분만** 다룬다. 앱(FCM SDK 연동, 토큰/토픽 구독, 알림 권한, 딥링크)과
 > Firebase 프로젝트 준비는 별도.
 
+> **진행 상황** (2026-09-09):
+> - **서버 v1(토픽 방식) 구현 완료** — `notification` 도메인(`FcmPushAdapter`/`NoopPushAdapter`,
+>   `DailyTerritoryDigestService`, `DailyTerritoryDigestScheduler`), `push_send_log` 테이블,
+>   `territory.CountTerritoryCapturesPort`, 마이그레이션 `2026-09-09_push_send_log.sql`. 기본 OFF.
+>   유닛 테스트(`DailyDigestWindowTest`, `DailyTerritoryDigestServiceTest`).
+> - **미완**: Firebase 프로젝트/서비스계정 키, 앱측(FCM SDK·`all` 토픽 구독·알림 권한), phase 2(토큰 테이블).
+> - **배포 전**: `push_send_log` 테이블을 운영 MySQL에 먼저 만들어야 함(`ddl-auto: validate`) + `territory.create_at` 저장 TZ 확인(§5).
+
 현재 코드베이스에는 **FCM·푸시·디바이스 토큰 관련 코드가 전혀 없다.** 인프라부터 신규 구축한다.
 
 ---

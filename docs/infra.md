@@ -152,3 +152,25 @@ add_header Cache-Control "no-cache" always;
 ```
 
 이 정책이 붙기 전까지는 EC2에서 실행 중인 앱이 S3 업로드 완료 처리(`/api/media/{id}/complete`)나 Rekognition 모더레이션 호출 시 `AccessDenied`로 실패합니다 — 코드 배포 자체는 문제없이 되지만 미디어 첨부 기능만 이 정책이 붙을 때까지 동작하지 않습니다. Rekognition 리전 지원 여부는 `ap-northeast-2`로 확인됨(읽기 전용 API 호출 시 `AccessDeniedException`이 떴을 뿐 엔드포인트 자체는 인식됨 — 리전 미지원이었다면 다른 종류의 에러가 났을 것).
+
+## FCM 푸시 (notification 도메인) — 2026-09-09 추가, 미프로비저닝
+
+`notification` 도메인이 매일 09:00(KST) "어제 땅따먹기 요약" 을 FCM 토픽(`all`)으로 브로드캐스트한다.
+설계·흐름: [daily-territory-push-plan.md](./daily-territory-push-plan.md), [domains.md](./domains.md#알림notification-도메인--fcm-푸시).
+
+**아직 아무것도 프로비저닝 안 됨. 코드는 기본 OFF 라 배포해도 무해.**
+
+켜려면 앱 서버(`paceleague`)의 `/opt/paceleague/.env`(컨테이너가 `--env-file` 로 읽음)에:
+
+| env | 값 | 설명 |
+|---|---|---|
+| `PACELEAGUE_FCM_SERVICE_ACCOUNT_JSON` | Firebase 서비스 계정 키 | `{` 로 시작하는 JSON 문자열이거나, 컨테이너에 마운트한 파일 경로. 미설정이면 `FirebaseConfig` 비활성 + 발송 no-op |
+| `PACELEAGUE_FCM_PROJECT_ID` | (선택) Firebase 프로젝트 ID | 키에 이미 들어 있으면 생략 가능 |
+| `FCM_DAILY_DIGEST_ENABLED` | `true` | 스케줄 잡 활성화. 앱이 `all` 토픽 구독을 배포한 뒤에 켤 것 |
+
+- 키를 JSON 통째로 env 에 넣으면 관리가 번거로우니, EC2 에 `/etc/paceleague/fcm-sa.json`(권한 `600`, owner root) 로 두고
+  `.github/ssm-commands.json` 의 `docker run` 에 `-v /etc/paceleague/fcm-sa.json:/etc/paceleague/fcm-sa.json:ro` 를 추가한 뒤
+  `PACELEAGUE_FCM_SERVICE_ACCOUNT_JSON=/etc/paceleague/fcm-sa.json` 로 경로만 넘기는 방식을 권장.
+- **배포 전 필수**: `push_send_log` 테이블을 `paceleague-db` EC2 의 MySQL(`paceleague` DB)에 직접 생성
+  ([2026-09-09_push_send_log.sql](./migrations/2026-09-09_push_send_log.sql)). `ddl-auto: validate` 라 테이블이 없으면 앱이 안 뜬다.
+- FCM 발송 자체는 무료. gRPC/protobuf 등 전이 의존성으로 배포 jar 가 ~140MB → ~147MB 로 커졌다.
