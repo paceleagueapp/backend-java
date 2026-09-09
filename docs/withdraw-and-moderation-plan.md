@@ -10,7 +10,8 @@
 > - Part B 차단 — `member_block`, `POST/DELETE/GET /api/member/blocks`, `member.GetBlockedMemberSnosPort`,
 >   `BoardQueryUseCase.listPosts` 에 viewer 전파, 목록/댓글에서 차단 작성자 제외.
 > - 마이그레이션 2개: `2026-09-09_member_withdraw.sql`, `2026-09-09_board_moderation.sql`. 유닛 테스트 4종.
-> - **웹 UI(post.html 신고/차단 버튼)는 별도. 배포 전 두 마이그레이션을 운영 MySQL 에 먼저 실행.**
+> - **웹 UI 완료**(post.html 글/댓글 신고·차단 버튼 + 신고 사유 `<dialog>`, `web/js/app.js` 헬퍼, `web/js/i18n.js` MODERATION_STRINGS, account-deletion·privacy 문구 갱신). `docs/api.md`·`database.md`·`CLAUDE.md` 갱신.
+> - **배포 전 두 마이그레이션을 운영 MySQL 에 먼저 실행.** 아직 미푸시.
 
 ## 결정사항 (2026-09-09, 사용자 확인)
 

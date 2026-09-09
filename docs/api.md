@@ -184,6 +184,52 @@ join/login/reissue가 공통으로 반환하는 구조:
 [ { "memberSno": 42, "memberId": "runner01", "nickname": "달리는곰" } ]
 ```
 
+탈퇴(`status = WITHDRAWN`) 회원은 결과에서 제외됩니다.
+
+---
+
+### DELETE `/api/member/me` — 회원 탈퇴 (인증 필요)
+
+즉시(동기) 소프트삭제. `member` 행은 남기되 `member_id`를 `withdrawn_<sno>`로 치환하고 닉네임·이메일·비밀번호를 NULL/공백으로 마스킹, 러닝·건강·랭킹·땅따먹기·미디어·크루·차단 데이터를 같은 트랜잭션에서 삭제합니다. **복구 불가, 30일 유예 없음.** 게시글·댓글은 `member_sno`를 유지한 채 "탈퇴한 사용자"로 익명 표시됩니다.
+
+| Body | 설명 |
+|---|---|
+| password | 본인 확인용 현재 비밀번호. **필수** (틀리면 400) |
+
+- 크루장이면 400 — 먼저 위임하거나 해체해야 함. 크루원이면 자동으로 크루에서 빠짐.
+- 이미 탈퇴한 계정이면 멱등하게 `200`.
+- 탈퇴 후 해당 계정의 `login`/`reissue`는 400 "탈퇴 처리된 계정입니다.". access token은 만료(5분)까지 유효.
+
+**Response** `200 OK` — `data`: `"탈퇴가 완료되었습니다."`
+
+---
+
+### POST `/api/member/blocks` — 회원 차단 (인증 필요)
+
+단방향 차단. 차단한 사용자의 게시글은 목록(`GET /api/board/{boardSno}/posts`)에서 제외되고, 댓글은 숨겨집니다. 게시글 상세 직접 링크는 필터링하지 않습니다(MVP).
+
+| Body | 설명 |
+|---|---|
+| blockedMemberSno | 차단할 회원 sno. 자기 자신이면 400. 이미 차단했으면 멱등 |
+
+**Response** `200 OK` — `data`: `"차단했습니다."`
+
+---
+
+### DELETE `/api/member/blocks/{blockedMemberSno}` — 차단 해제 (인증 필요)
+
+**Response** `200 OK` — `data`: `"차단을 해제했습니다."`
+
+---
+
+### GET `/api/member/blocks` — 내 차단 목록 (인증 필요)
+
+**Response** `200 OK` — `data`: `BlockedMemberResponse[]`
+
+```json
+[ { "memberSno": 77, "nickname": "차단된유저" } ]
+```
+
 ---
 
 ## Record API (`/api/record`) — 인증 필요
@@ -789,7 +835,11 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 | lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | `authorTierLabel` 표시 언어. 미지원 값은 `ko`로 처리 |
 | country | string (ISO 3166-1 alpha-2, 예: `KR`) | - | 주어지면 `lang` 대신 이 국가에 맞는 언어로 응답 |
 
-**Response** `200 OK` — `data`: Spring `Page<PostSummaryResponse>` (`sno`, `title`, `nickname`, `authorTier`, `authorTierLabel`, `recordSno`, `contentSnippet`, `thumbnailUrl`, `thumbnailType`, `viewCount`, `score`, `commentCount`, `createAt`)
+이 엔드포인트는 공개지만 `@MemberSno(required = false)`로 로그인 사용자를 함께 받습니다 — 로그인 상태면 그 사용자가 **차단한 회원의 게시글은 목록에서 제외**됩니다(비로그인이면 필터 없음). 신고 누적으로 자동 숨김(`hidden = 1`)된 게시글도 목록에서 빠집니다.
+
+**Response** `200 OK` — `data`: Spring `Page<PostSummaryResponse>` (`sno`, `title`, `authorMemberSno`, `nickname`, `authorTier`, `authorTierLabel`, `recordSno`, `contentSnippet`, `thumbnailUrl`, `thumbnailType`, `viewCount`, `score`, `commentCount`, `createAt`)
+
+- `authorMemberSno`: 작성자 회원 sno(차단 버튼용). 회원 검색 API로 이미 노출되는 값이라 프라이버시 영향은 미미.
 
 - `authorTier`: 작성자의 현재 시즌 티어(`RankTier` enum, `rank.GetMemberTierPort`로 조회, 이번 시즌 기록이 없으면 기본값 `SILVER`) — 언어와 무관한 원본 코드
 - `authorTierLabel`: `authorTier`를 `lang`에 맞게 번역한 화면 표시용 문자열(`rank.domain.policy.RankTierLabelPolicy`)
@@ -869,7 +919,7 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 - `attachedRecord`: 첨부한 기록이 없으면 `null`. 첨부된 기록이 이후 삭제된 경우에도 `null`로 응답(참조 무결성을 강제하지 않음)
 - `attachments`: `attachmentMediaIds`로 명시적으로 연결된 첨부 목록(없으면 빈 배열) — **웹 클라이언트는 더 이상 이 필드를 화면에 쓰지 않습니다**(이미지/동영상이 이미 `content` 안에 인라인으로 포함돼 있어서 별도로 그리면 중복 표시됨). 다른 클라이언트를 위해 API에는 계속 남아 있음 — [Media API](#media-api-apimedia--인증-필요) 참고
 
-**실패**: 존재하지 않는 `postSno` → 400
+**실패**: 존재하지 않는 `postSno` → 400, 신고 누적으로 숨김(`hidden = 1`) 처리된 게시글 → 400 "삭제되었거나 숨겨진 게시글입니다."(작성자 본인도 볼 수 없음)
 
 ### DELETE `/api/board/posts/{postSno}` — 게시글 삭제 (인증 필요)
 
@@ -889,7 +939,7 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 
 ### GET `/api/board/posts/{postSno}/comments` — 댓글 목록 조회 (공개)
 
-최상위 댓글과 그 답글(1단계)만 포함, 페이징 없음.
+최상위 댓글과 그 답글(1단계)만 포함, 페이징 없음. 로그인 사용자면(`@MemberSno(required = false)`) 신고 누적으로 숨김된 댓글과 **차단한 회원의 댓글은 응답에서 제외**됩니다.
 
 **Response** `200 OK` — `data`: `CommentResponse[]`
 
@@ -942,3 +992,22 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 ### POST `/api/board/comments/{commentSno}/translate` — 댓글 번역 (인증 필요)
 
 게시글 번역과 동일한 방식(캐싱/지원 언어/인증 이유 동일). `data`: `{ "content": "..." }`
+
+### POST `/api/board/posts/{postSno}/reports` — 게시글 신고 (인증 필요)
+
+```json
+{ "reason": "SPAM", "detail": "광고 도배입니다" }
+```
+
+- `reason`: `SPAM`(스팸/광고) \| `ABUSE`(욕설/비방) \| `SEXUAL`(음란물) \| `ETC`(기타). 대소문자 무시, 그 외 값이면 400.
+- `detail`: 선택, 최대 500자(초과분은 잘림).
+- 본인 게시글 신고 → 400. 같은 사용자가 같은 대상을 다시 신고 → 멱등(`200`, 아무 일 없음).
+- 서로 다른 신고자 수가 `paceleague.board.report.auto-hide-threshold`(기본 3) 이상이 되면 그 게시글을 자동 숨김(`hidden = 1`) 처리 → 이후 목록/상세에서 사라짐. 신고 이력은 `board_report`에 계속 누적되며 복구는 운영자가 DB에서 처리.
+
+**Response** `200 OK` — `data`: `"신고가 접수되었습니다."`
+
+### POST `/api/board/comments/{commentSno}/reports` — 댓글 신고 (인증 필요)
+
+게시글 신고와 동일한 body/규칙. 임계값 도달 시 해당 댓글이 조회 목록에서 제외됩니다.
+
+**Response** `200 OK` — `data`: `"신고가 접수되었습니다."`

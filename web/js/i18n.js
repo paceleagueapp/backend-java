@@ -299,6 +299,33 @@ Object.keys(CREW_STRINGS).forEach(function (code) {
   if (TRANSLATIONS[code]) { Object.assign(TRANSLATIONS[code], CREW_STRINGS[code]); }
 });
 
+// 신고/차단 문자열. ko/en 만 채우고 나머지 언어는 t()의 ko 폴백.
+var MODERATION_STRINGS = {
+  ko: {
+    reportLabel: '신고', blockLabel: '차단', unblockLabel: '차단 해제',
+    reportDialogTitle: '신고 사유', reportReasonSPAM: '스팸/광고', reportReasonABUSE: '욕설/비방',
+    reportReasonSEXUAL: '음란물/선정성', reportReasonETC: '기타',
+    reportDetailPlaceholder: '상세 내용 (선택)', reportSubmit: '신고하기',
+    reportSubmitted: '신고가 접수되었습니다.', reportFailed: '신고에 실패했습니다.',
+    confirmBlock: '이 사용자를 차단할까요? 이 사용자의 글/댓글이 목록에서 보이지 않게 됩니다.',
+    blocked: '차단했습니다.', blockFailed: '차단에 실패했습니다.',
+    hiddenComment: '신고 누적으로 숨겨진 댓글입니다.'
+  },
+  en: {
+    reportLabel: 'Report', blockLabel: 'Block', unblockLabel: 'Unblock',
+    reportDialogTitle: 'Report reason', reportReasonSPAM: 'Spam / ads', reportReasonABUSE: 'Abuse / harassment',
+    reportReasonSEXUAL: 'Sexual content', reportReasonETC: 'Other',
+    reportDetailPlaceholder: 'Details (optional)', reportSubmit: 'Submit report',
+    reportSubmitted: 'Your report has been submitted.', reportFailed: 'Failed to submit report.',
+    confirmBlock: "Block this user? You won't see their posts and comments in lists.",
+    blocked: 'Blocked.', blockFailed: 'Failed to block.',
+    hiddenComment: 'This comment is hidden due to reports.'
+  }
+};
+Object.keys(MODERATION_STRINGS).forEach(function (code) {
+  if (TRANSLATIONS[code]) { Object.assign(TRANSLATIONS[code], MODERATION_STRINGS[code]); }
+});
+
 function getLang() {
   var stored = localStorage.getItem('pl_lang');
   if (stored && TRANSLATIONS[stored]) return stored;

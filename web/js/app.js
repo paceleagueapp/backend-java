@@ -434,3 +434,16 @@ function redirectToLoginIfNeeded() {
   }
   return false;
 }
+
+// 신고: kind = 'posts' | 'comments'. reason = SPAM/ABUSE/SEXUAL/ETC.
+function reportBoardTarget(kind, sno, reason, detail) {
+  return apiFetch('/api/board/' + kind + '/' + sno + '/reports', {
+    method: 'POST',
+    body: { reason: reason, detail: detail || null }
+  });
+}
+
+// 회원 차단(단방향). 성공 시 목록에서 그 사용자의 글/댓글이 사라진다.
+function blockMember(memberSno) {
+  return apiFetch('/api/member/blocks', { method: 'POST', body: { blockedMemberSno: memberSno } });
+}

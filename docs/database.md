@@ -27,18 +27,24 @@ MySQL, Spring Data JPA(Hibernate) 사용. 로컬은 `ddl-auto: update`, 운영�
 | `crew_member` | `CrewMember` | 크루-회원 소속 (한 회원 = 한 크루, `member_sno` 전역 UNIQUE) |
 | `crew_invitation` | `CrewInvitation` | 크루장 → 회원 초대 |
 | `crew_join_request` | `CrewJoinRequest` | 회원 → 크루 가입신청 |
+| `board_report` | `BoardReport` | 게시글/댓글 신고 누적 (신고자×대상 UNIQUE) |
+| `member_block` | `MemberBlock` | 회원 차단 (단방향, 차단자×피차단자 UNIQUE) |
 
 ## `member`
 
 | 컬럼 | 타입(Java) | 제약 |
 |---|---|---|
 | sno | Integer (PK, IDENTITY) | |
-| member_id | String | not null, unique, max 50 |
-| password_hash | String | not null, max 255 (BCrypt 해시) |
-| nickname | String | max 50, nullable |
-| email | String | max 50, nullable |
+| member_id | String | not null, unique, max 50. 탈퇴 시 `withdrawn_<sno>`로 치환(원래 아이디 재사용 가능) |
+| password_hash | String | not null, max 255 (BCrypt 해시). 탈퇴 시 `''`(빈 문자열 — `matches()` 항상 실패) |
+| nickname | String | max 50, nullable. 탈퇴 시 `NULL` |
+| email | String | max 50, nullable. 탈퇴 시 `NULL` |
+| status | String(20) | not null, 기본 `ACTIVE`. `ACTIVE` / `WITHDRAWN`. `idx_member_status` |
+| withdrawn_at | LocalDateTime | nullable. 탈퇴 시각 기록(통계·문의 대응용, 유예 기간에는 안 쓰임) |
 | created_at | Instant | not null |
 | updated_at | Instant | not null, `@PreUpdate`로 자동 갱신 |
+
+회원 탈퇴는 **즉시 동기 소프트삭제**(30일 유예·스케줄러 없음, 복구 불가) — `member` 행은 위처럼 마스킹만 하고, 러닝(`record`/`record_track`)·랭킹(`score_rank`/`member_score`)·땅따먹기(`territory`/`territory_hex`)·미디어(`media`, S3는 best-effort)·크루·`member_block`·`board_report`(신고자 기준) 데이터는 같은 트랜잭션에서 DELETE. `post`/`comment`/`post_vote`/`comment_vote`는 `member_sno`를 유지(마스킹으로 "탈퇴한 사용자" 표시). 마이그레이션: [migrations/2026-09-09_member_withdraw.sql](./migrations/2026-09-09_member_withdraw.sql).
 
 ## `record`
 
@@ -196,6 +202,8 @@ DDL로 시딩만 하고(자유게시판/질문/인증 3개), 생성/수정 API�
 | content | String (TEXT) | |
 | view_count | int | 조회할 때마다 원자적 `UPDATE ... SET view_count = view_count + 1`로 증가, 중복 방지 없음 |
 | score | int | 추천(+1)/비추천(-1) 합계, 투표 시점에 `PESSIMISTIC_WRITE` 락으로 갱신 |
+| hidden | boolean, not null (기본 0) | 서로 다른 신고자 N명(`paceleague.board.report.auto-hide-threshold`, 기본 3) 도달 시 1. 1이면 목록·상세에서 제외(작성자 본인도 못 봄). 복구는 운영자가 DB에서 0으로 |
+| hidden_at | LocalDateTime, nullable | 숨김 처리 시각 |
 | create_at / update_at | LocalDateTime | |
 
 ## `comment`
@@ -208,6 +216,8 @@ DDL로 시딩만 하고(자유게시판/질문/인증 3개), 생성/수정 API�
 | parent_comment_sno | Long, nullable | `NULL`이면 최상위 댓글, 값이 있으면 답글. **1단계 중첩만 허용** — 답글이 가리키는 부모는 항상 최상위 댓글이어야 함(서비스 레이어에서 검증) |
 | content | String(1000) | |
 | score | int | |
+| hidden | boolean, not null (기본 0) | `post.hidden`과 동일 규칙. 1이면 댓글 목록 조회에서 제외(스레드에서 사라짐) |
+| hidden_at | LocalDateTime, nullable | |
 | create_at / update_at | LocalDateTime | |
 
 ## `post_vote` / `comment_vote`
@@ -223,6 +233,39 @@ DDL로 시딩만 하고(자유게시판/질문/인증 3개), 생성/수정 API�
 | create_at / update_at | LocalDateTime | |
 
 **`(member_sno, post_sno)` / `(member_sno, comment_sno)`에 실제 DB `UNIQUE` 제약을 걸어둡니다.** 위 `member_score`가 "DB 유니크 제약 없이 앱 로직만으로 보장"하는 것과 다른 예외적 선택인데, 추천 중복 저장은 점수 조작으로 바로 이어지는 버그라 신규 테이블 도입 시점에 제약을 거는 비용이 나중에 정리하는 비용보다 훨씬 적기 때문입니다.
+
+## `board_report`
+
+게시글/댓글 신고 누적. 마이그레이션: [migrations/2026-09-09_board_moderation.sql](./migrations/2026-09-09_board_moderation.sql). 관리자 UI는 없고 운영자가 DB로 검토.
+
+| 컬럼 | 타입(Java) | 설명 |
+|---|---|---|
+| sno | Long (PK, IDENTITY) | |
+| reporter_member_sno | Long, not null | 신고한 회원 `member.sno` |
+| target_type | String(10) enum(`POST`/`COMMENT`) | `@Enumerated(STRING)` |
+| target_sno | Long, not null | 신고 대상 `post.sno` / `comment.sno` |
+| reason | String(20) enum(`SPAM`/`ABUSE`/`SEXUAL`/`ETC`) | |
+| detail | String(500), nullable | 신고자 자유 입력(초과분 잘림) |
+| status | String(20) | `OPEN`(기본) / `RESOLVED` / `DISMISSED`. 자동 숨김 임계값 계산은 `OPEN`만 집계 |
+| created_at | LocalDateTime | |
+
+- `(reporter_member_sno, target_type, target_sno)` **UNIQUE** — 같은 사람이 같은 대상을 두 번 신고 못 함(멱등).
+- `idx_report_target (target_type, target_sno, status)` — `count(distinct reporter_member_sno) ... where target = X and status = 'OPEN'` 조회용.
+
+## `member_block`
+
+회원 차단(단방향 — A가 B를 차단해도 B에게 A 글은 그대로 보임). 마이그레이션: [migrations/2026-09-09_board_moderation.sql](./migrations/2026-09-09_board_moderation.sql).
+
+| 컬럼 | 타입(Java) | 설명 |
+|---|---|---|
+| sno | Long (PK, IDENTITY) | |
+| blocker_member_sno | Long, not null | 차단한 회원 `member.sno` |
+| blocked_member_sno | Long, not null | 차단당한 회원 `member.sno` |
+| created_at | LocalDateTime | |
+
+- `(blocker_member_sno, blocked_member_sno)` **UNIQUE**(멱등), `idx_block_blocker (blocker_member_sno)` — 피드 조회 시 내 차단 목록 조회용.
+- 차단된 회원의 게시글은 `GET /api/board/{boardSno}/posts` 목록에서, 댓글은 `GET /api/board/posts/{postSno}/comments`에서 제외. 게시글 상세 직접 링크는 필터링 안 함(MVP).
+- 회원 탈퇴 시 `blocker` 또는 `blocked`가 그 회원인 행은 모두 DELETE.
 
 ## `media`
 
