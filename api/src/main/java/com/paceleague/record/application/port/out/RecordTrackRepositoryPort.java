@@ -15,6 +15,10 @@ public interface RecordTrackRepositoryPort {
 
     Optional<RecordTrack> findByRecordSno(Long recordSno);
 
+    // 이 회원의 트랙 중 record 로 확정된(record_sno IS NOT NULL) 것들의 record_sno 목록.
+    // 러닝 목록에서 "이 러닝은 GPS 트랙이 있음" 표시를 채우기 위한 배치 조회(points_json 은 로드하지 않음).
+    List<Long> findRecordSnosByUno(Long uno);
+
     // status=ACTIVE 이면서 마지막 갱신(update_at)이 idleBefore 이전인 세션들의 sno를, 오래된 순으로 최대 limit개.
     List<Long> findIdleActiveSessionSnos(LocalDateTime idleBefore, int limit);
 

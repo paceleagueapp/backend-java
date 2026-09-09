@@ -16,6 +16,9 @@ public interface RecordTrackJpaRepository extends JpaRepository<RecordTrack, Lon
 
     Optional<RecordTrack> findByRecordSno(Long recordSno);
 
+    @Query("select t.recordSno from RecordTrack t where t.uno = :uno and t.recordSno is not null")
+    List<Long> findRecordSnosByUno(@Param("uno") Long uno);
+
     @Query("""
             select t.sno from RecordTrack t
             where t.status = 'ACTIVE' and t.updateAt < :idleBefore

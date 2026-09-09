@@ -35,6 +35,10 @@ public class RecordPersistenceAdapter implements RecordRepositoryPort {
         return recordJpaRepository.findByUnoOrderByStartTimeDesc(uno, pageable);
     }
 
+    public List<Record> findByUnoOrderByStartTimeDesc(Long uno) {
+        return recordJpaRepository.findByUnoOrderByStartTimeDesc(uno);
+    }
+
     public List<Record> findByUnoAndStartTimeGreaterThanEqualAndStartTimeLessThanOrderByStartTimeAsc(
             Long uno, LocalDateTime fromInclusive, LocalDateTime toExclusive) {
         return recordJpaRepository.findByUnoAndStartTimeGreaterThanEqualAndStartTimeLessThanOrderByStartTimeAsc(uno, fromInclusive, toExclusive);

@@ -18,6 +18,8 @@ public interface RecordRepositoryPort {
 
     Page<Record> findByUnoOrderByStartTimeDesc(Long uno, Pageable pageable);
 
+    List<Record> findByUnoOrderByStartTimeDesc(Long uno);
+
     List<Record> findByUnoAndStartTimeGreaterThanEqualAndStartTimeLessThanOrderByStartTimeAsc(
             Long uno,
             LocalDateTime fromInclusive,

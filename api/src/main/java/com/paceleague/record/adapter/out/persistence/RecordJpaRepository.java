@@ -20,6 +20,9 @@ public interface RecordJpaRepository extends JpaRepository<Record, Long> {
     // 페이징(본인 것만, 최신순)
     Page<Record> findByUnoOrderByStartTimeDesc(Long uno, Pageable pageable);
 
+    // 전체(본인 것만, 최신순)
+    List<Record> findByUnoOrderByStartTimeDesc(Long uno);
+
     // 한달치 전체 조회(본인 것만)
     List<Record> findByUnoAndStartTimeGreaterThanEqualAndStartTimeLessThanOrderByStartTimeAsc(
             Long uno,

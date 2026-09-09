@@ -372,6 +372,55 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 > **CORS**: 게시글 작성 화면에서 "내 러닝기록 첨부" 선택 목록으로 쓰기 위해, `/api/record`의 다른 엔드포인트와 달리 이 경로만 예외적으로 `paceleague.co.kr`/`www.paceleague.co.kr` 오리진에서 브라우저 호출을 허용합니다(`CorsConfig`, GET + `Authorization` 헤더만).
 
+### GET `/api/record/list` — 내 러닝 기록 전체 목록
+
+로그인한 회원 본인의 **모든** 러닝 기록을 `startTime` 내림차순(최신순)으로 반환합니다. 페이징 없음. 모바일 앱 전용(CORS 없음).
+
+**Response** `200 OK` — `data`: `RecordListItemResponse[]`
+
+```json
+[
+  {
+    "recordSno": 123,
+    "distanceMeters": 10230.5,
+    "startTime": "2026-09-08T06:30:00",
+    "endTime": "2026-09-08T07:05:00",
+    "createAt": "2026-09-08T07:05:10",
+    "hasGpsTrack": true
+  }
+]
+```
+
+- `hasGpsTrack`: 이 러닝에 `record_track`(GPS 경로)이 연결돼 있으면 `true`. `true`인 러닝만 아래 `/api/record/{recordSno}/gps`에서 좌표를 받을 수 있습니다(`POST /api/record/save`·`/bulk`로 수동 저장한 러닝은 `false`).
+
+### GET `/api/record/{recordSno}/gps` — 러닝 1건의 GPS 트랙 조회
+
+**본인 소유** 러닝 1건을 `recordSno`로 지정해, 그 러닝의 GPS 좌표 배열 전체(`record_track.points_json` 파싱 결과)와 트랙 메타를 반환합니다. 모바일 앱 전용(CORS 없음).
+
+**Response** `200 OK` — `data`: `RecordGpsTrackResponse`
+
+```json
+{
+  "recordSno": 123,
+  "trackSno": 55,
+  "status": "FINISHED",
+  "territoryMode": true,
+  "startedAt": "2026-09-07T21:30:00",
+  "endedAt": "2026-09-07T22:05:00",
+  "distanceMeters": 10230.5,
+  "pointCount": 412,
+  "points": [
+    { "sequence": 1, "recordedAt": "2026-09-07T21:30:00Z", "latitude": 37.1234, "longitude": 127.5678,
+      "altitudeMeters": 42.0, "accuracyMeters": 4.5, "rawLatitude": 37.1234, "rawLongitude": 127.5678 }
+  ]
+}
+```
+
+- `startedAt`/`endedAt`/`recordedAt`은 UTC(`record_track`은 UTC wall-clock 저장). `status`는 `FINISHED`(정상 완주) 또는 `ABANDONED`(스위퍼가 자동 폐기).
+- `points`의 각 원소는 앱이 `POST /api/record/gps`로 올린 좌표 형태 그대로입니다.
+
+**실패**: `recordSno`가 없거나 다른 회원 소유 → 400 `"record not found"`. GPS 없이 수동 저장된 러닝(트랙 없음) → 400 `"이 러닝에는 GPS 트랙이 없습니다."`
+
 ### POST `/api/record/gps` — GPS 청크 수신 (러닝 중 5분마다)
 
 앱이 러닝 중 **5분마다** 그 사이 수집한 GPS 좌표 청크를 보냅니다. 서버는 `clientRunId`로 같은 러닝을 묶어 `record_track` 한 행에 누적하고, 거리는 좌표에서 직접 계산(haversine)합니다. **마지막 청크에 `finished: true`** 가 실리면 그때 **딱 한 번** 러닝 기록(`record`) 1건을 생성하고 점수를 산정합니다. 회원 식별은 access token(`Authorization: Bearer ...`)으로만 합니다. 모바일 앱 전용이라 CORS는 열지 않습니다.
