@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>랭킹관리 - Pace League Admin</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <link rel="stylesheet" href="/css/app.css?v=20260908">
+  <link rel="stylesheet" href="/css/admin.css?v=20260910">
+</head>
+<body>
+  <div id="admin-header"></div>
+  <div class="admin-layout">
+    <div id="admin-sidebar"></div>
+    <main class="admin-content" id="admin-content" hidden>
+      <h1>랭킹관리</h1>
+      <div class="admin-placeholder">상세 화면은 추후 구현 예정입니다.</div>
+    </main>
+  </div>
+
+  <script src="/js/admin.js?v=20260910"></script>
+  <script>
+    requireAdminSession(function () {
+      renderAdminLayout('ranking');
+      document.getElementById('admin-content').hidden = false;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+/* PaceLeague 관리자 페이지 공용 레이아웃 — /css/app.css(topbar/brand/btn 등 공용 디자인시스템) 다음에 로드. */
+
+body { background: #eef0f3; }
+
+.admin-layout {
+  display: flex;
+  min-height: calc(100vh - 53px);
+}
+
+.admin-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  padding: 16px 0;
+}
+
+.admin-menu-link {
+  display: block;
+  padding: 12px 24px;
+  color: #4a4e56;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-menu-link:hover {
+  background: #f2f3f5;
+}
+
+.admin-menu-link.active {
+  background: #fdeceb;
+  color: #e5342f;
+  border-right: 3px solid #e5342f;
+}
+
+.admin-content {
+  flex: 1;
+  padding: 28px 32px;
+  min-width: 0;
+}
+
+.admin-content h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1c2024;
+  margin-bottom: 16px;
+}
+
+.admin-placeholder {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 40px 24px;
+  text-align: center;
+  color: #8a8e96;
+  font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  .admin-layout { flex-direction: column; }
+  .admin-sidebar {
+    width: 100%;
+    display: flex;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 8px 0;
+  }
+  .admin-menu-link {
+    padding: 10px 16px;
+    white-space: nowrap;
+  }
+  .admin-menu-link.active {
+    border-right: none;
+    border-bottom: 3px solid #e5342f;
+  }
+  .admin-content { padding: 20px 16px; }
+}

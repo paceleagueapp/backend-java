@@ -65,6 +65,23 @@ class CorsConfigTest {
     }
 
     @Test
+    void 관리자_API는_XAdminSession_헤더와_쓰기_메서드를_허용한다() {
+        CorsConfiguration config = configFor("OPTIONS", "/api/admin/login");
+
+        assertThat(config).isNotNull();
+        assertThat(config.checkOrigin("https://paceleague.co.kr")).isEqualTo("https://paceleague.co.kr");
+        assertThat(config.checkHttpMethod(HttpMethod.POST)).isNotNull();
+        assertThat(config.checkHeaders(List.of("x-admin-session"))).contains("x-admin-session");
+    }
+
+    @Test
+    void 관리자_API는_Authorization_헤더는_허용하지_않는다() {
+        CorsConfiguration config = configFor("OPTIONS", "/api/admin/me");
+
+        assertThat(config.checkHeaders(List.of("authorization"))).isNull();
+    }
+
+    @Test
     void 최근30일_기록조회는_기존과_동일하게_GET과_Authorization만_허용한다() {
         CorsConfiguration config = configFor("OPTIONS", "/api/record/recent-30-days");
 

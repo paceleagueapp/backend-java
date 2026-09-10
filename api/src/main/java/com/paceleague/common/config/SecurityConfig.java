@@ -1,9 +1,11 @@
 package com.paceleague.common.config;
 
+import com.paceleague.common.security.AdminSessionFilter;
 import com.paceleague.common.security.JwtAuthenticationFilter;
 import com.paceleague.common.security.jwt.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -21,7 +23,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtTokenProvider jwtTokenProvider) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtTokenProvider jwtTokenProvider,
+                                            StringRedisTemplate redis) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .httpBasic(httpBasic -> httpBasic.disable())
@@ -34,6 +37,9 @@ public class SecurityConfig {
                                 "/api/member/login",
                                 "/api/member/reissue",
                                 "/api/member/logout",
+                                // 관리자 로그인 자체는 공개(로그인 화면 진입) — /api/admin/** 나머지는 전부
+                                // AdminSessionFilter가 세운 Authentication이 없으면 anyRequest().authenticated()에 막혀 401.
+                                "/api/admin/login",
                                 // Swagger/OpenAPI 경로 — 운영(prod)에서는 springdoc 자체를 꺼서 404이므로 실질적으로 로컬 전용.
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
@@ -73,6 +79,7 @@ public class SecurityConfig {
                         })
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new AdminSessionFilter(redis), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 }

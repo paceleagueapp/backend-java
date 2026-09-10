@@ -1,5 +1,6 @@
 package com.paceleague.common.config;
 
+import com.paceleague.common.web.AdminSnoArgumentResolver;
 import com.paceleague.common.web.MemberSnoArgumentResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
@@ -13,9 +14,11 @@ import java.util.List;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final MemberSnoArgumentResolver memberSnoArgumentResolver;
+    private final AdminSnoArgumentResolver adminSnoArgumentResolver;
 
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
         resolvers.add(memberSnoArgumentResolver);
+        resolvers.add(adminSnoArgumentResolver);
     }
 }

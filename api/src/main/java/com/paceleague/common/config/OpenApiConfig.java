@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
     private static final String SECURITY_SCHEME_NAME = "bearerAuth";
+    private static final String ADMIN_SECURITY_SCHEME_NAME = "adminSession";
 
     @Bean
     public OpenAPI paceleagueOpenAPI() {
@@ -33,6 +34,12 @@ public class OpenApiConfig {
                                         .type(SecurityScheme.Type.HTTP)
                                         .scheme("bearer")
                                         .bearerFormat("JWT")
+                        )
+                        .addSecuritySchemes(ADMIN_SECURITY_SCHEME_NAME,
+                                new SecurityScheme()
+                                        .name("X-Admin-Session")
+                                        .type(SecurityScheme.Type.APIKEY)
+                                        .in(SecurityScheme.In.HEADER)
                         )
                 )
                 .externalDocs(new ExternalDocumentation()

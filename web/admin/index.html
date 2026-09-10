@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 로그인 - Pace League</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <link rel="stylesheet" href="/css/app.css?v=20260908">
+  <style>
+    body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
+    .brand { margin-bottom: 18px; }
+    .brand-name { color: #1c2024; }
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #1c2024; }
+    form { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 10px; }
+    form input { padding: 12px 14px; border-radius: 10px; font-size: 15px; }
+    form button {
+      background: #e5342f; color: #fff; border: none; padding: 12px; border-radius: 24px;
+      font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px;
+    }
+    form button:hover { background: #c62828; }
+    .error { color: #d02b22; font-size: 13px; min-height: 18px; }
+  </style>
+</head>
+<body>
+  <a class="brand" href="/admin/">
+    <img class="brand-mark" src="/img/favicon.png" alt="PACELEAGUE">
+    <span class="brand-name">PACELEAGUE ADMIN</span>
+  </a>
+  <h1>관리자 로그인</h1>
+  <form id="admin-login-form">
+    <input type="text" id="adminId" placeholder="관리자 아이디" autocomplete="username" required>
+    <input type="password" id="adminPassword" placeholder="비밀번호" autocomplete="current-password" required>
+    <div class="error" id="error"></div>
+    <button type="submit">로그인</button>
+  </form>
+
+  <script src="/js/admin.js?v=20260910"></script>
+  <script>
+    // 이미 유효한 세션이면 바로 관리자 화면으로 — /api/admin/me로 실제 유효성까지 확인한다.
+    if (getAdminSession()) {
+      adminApiFetch('/api/admin/me').then(function (result) {
+        if (result.ok && result.json.success) {
+          window.location.href = '/admin/members.html';
+        } else {
+          clearAdminSession();
+        }
+      }).catch(function () { clearAdminSession(); });
+    }
+
+    document.getElementById('admin-login-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var errorEl = document.getElementById('error');
+      errorEl.textContent = '';
+
+      var adminId = document.getElementById('adminId').value.trim();
+      var password = document.getElementById('adminPassword').value;
+
+      adminLogin(adminId, password)
+        .then(function (data) {
+          setAdminSession(data.sessionToken);
+          window.location.href = '/admin/members.html';
+        })
+        .catch(function (err) {
+          errorEl.textContent = (err && err.message) || '로그인에 실패했습니다.';
+        });
+    });
+  </script>
+</body>
+</html>
