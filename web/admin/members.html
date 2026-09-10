@@ -8,6 +8,31 @@
   <link rel="icon" type="image/png" href="/img/favicon.png">
   <link rel="stylesheet" href="/css/app.css?v=20260908">
   <link rel="stylesheet" href="/css/admin.css?v=20260910">
+  <style>
+    .search-row { display: flex; gap: 8px; margin-bottom: 16px; max-width: 420px; }
+    .search-row input { flex: 1; padding: 10px 12px; border: 1px solid #d7dade; border-radius: 8px; font-size: 14px; }
+    .search-row button {
+      background: #e5342f; color: #fff; border: none; padding: 10px 18px; border-radius: 8px;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .search-row button:hover { background: #c62828; }
+    table.member-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+    table.member-table th, table.member-table td { padding: 10px 14px; text-align: left; font-size: 13.5px; border-bottom: 1px solid #f0f1f3; }
+    table.member-table th { background: #f7f8fa; color: #4a4e56; font-weight: 700; }
+    table.member-table tbody tr { cursor: pointer; }
+    table.member-table tbody tr:hover { background: #f7f8fa; }
+    .status-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 700; }
+    .status-ACTIVE { background: #e6f4ea; color: #1c8a4a; }
+    .status-WITHDRAWN { background: #f2f3f5; color: #8a8e96; }
+    .pagination { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+    .pagination button {
+      background: #fff; border: 1px solid #d7dade; padding: 6px 14px; border-radius: 8px;
+      font-size: 13px; cursor: pointer;
+    }
+    .pagination button:disabled { opacity: 0.4; cursor: default; }
+    .pagination span { font-size: 13px; color: #4a4e56; }
+    .empty-row td { text-align: center; color: #8a8e96; padding: 30px; }
+  </style>
 </head>
 <body>
   <div id="admin-header"></div>
@@ -15,15 +40,118 @@
     <div id="admin-sidebar"></div>
     <main class="admin-content" id="admin-content" hidden>
       <h1>회원관리</h1>
-      <div class="admin-placeholder">상세 화면은 추후 구현 예정입니다.</div>
+
+      <div class="search-row">
+        <input type="text" id="search-input" placeholder="아이디 또는 닉네임 검색">
+        <button id="search-btn">검색</button>
+      </div>
+
+      <table class="member-table">
+        <thead>
+          <tr>
+            <th>번호</th>
+            <th>아이디</th>
+            <th>닉네임</th>
+            <th>이메일</th>
+            <th>상태</th>
+            <th>가입일</th>
+          </tr>
+        </thead>
+        <tbody id="member-tbody"></tbody>
+      </table>
+
+      <div class="pagination">
+        <button id="prev-btn">이전</button>
+        <span id="page-info"></span>
+        <button id="next-btn">다음</button>
+      </div>
     </main>
   </div>
 
   <script src="/js/admin.js?v=20260910"></script>
   <script>
+    var currentPage = 0;
+    var currentQuery = '';
+    var PAGE_SIZE = 20;
+
+    function statusLabel(status) {
+      return status === 'WITHDRAWN' ? '탈퇴' : '활성';
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      return String(iso).slice(0, 10);
+    }
+
+    function loadMembers() {
+      var tbody = document.getElementById('member-tbody');
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">불러오는 중...</td></tr>';
+
+      var qs = 'page=' + currentPage + '&size=' + PAGE_SIZE + (currentQuery ? '&q=' + encodeURIComponent(currentQuery) : '');
+
+      adminApiFetch('/api/admin/members?' + qs).then(function (result) {
+        if (!result.ok || !result.json.success) {
+          tbody.innerHTML = '<tr class="empty-row"><td colspan="6">목록을 불러오지 못했습니다.</td></tr>';
+          return;
+        }
+        var pageData = result.json.data;
+        var members = pageData.content || [];
+
+        if (members.length === 0) {
+          tbody.innerHTML = '<tr class="empty-row"><td colspan="6">회원이 없습니다.</td></tr>';
+        } else {
+          tbody.innerHTML = members.map(function (m) {
+            return '<tr data-sno="' + m.sno + '">' +
+              '<td>' + m.sno + '</td>' +
+              '<td>' + escapeHtmlAdmin(m.memberId) + '</td>' +
+              '<td>' + escapeHtmlAdmin(m.nickname || '-') + '</td>' +
+              '<td>' + escapeHtmlAdmin(m.email || '-') + '</td>' +
+              '<td><span class="status-pill status-' + m.status + '">' + statusLabel(m.status) + '</span></td>' +
+              '<td>' + formatDate(m.createdAt) + '</td>' +
+            '</tr>';
+          }).join('');
+
+          Array.prototype.forEach.call(tbody.querySelectorAll('tr[data-sno]'), function (tr) {
+            tr.addEventListener('click', function () {
+              window.location.href = '/admin/member-detail.html?sno=' + tr.getAttribute('data-sno');
+            });
+          });
+        }
+
+        document.getElementById('page-info').textContent =
+          (pageData.totalElements === 0 ? 0 : currentPage + 1) + ' / ' + Math.max(pageData.totalPages, 1) + ' 페이지 (총 ' + pageData.totalElements + '명)';
+        document.getElementById('prev-btn').disabled = currentPage <= 0;
+        document.getElementById('next-btn').disabled = currentPage >= pageData.totalPages - 1;
+      }).catch(function () {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="6">목록을 불러오지 못했습니다.</td></tr>';
+      });
+    }
+
+    function escapeHtmlAdmin(str) {
+      return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    document.getElementById('search-btn').addEventListener('click', function () {
+      currentQuery = document.getElementById('search-input').value.trim();
+      currentPage = 0;
+      loadMembers();
+    });
+    document.getElementById('search-input').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') document.getElementById('search-btn').click();
+    });
+    document.getElementById('prev-btn').addEventListener('click', function () {
+      if (currentPage > 0) { currentPage--; loadMembers(); }
+    });
+    document.getElementById('next-btn').addEventListener('click', function () {
+      currentPage++; loadMembers();
+    });
+
     requireAdminSession(function () {
       renderAdminLayout('members');
       document.getElementById('admin-content').hidden = false;
+      loadMembers();
     });
   </script>
 </body>

@@ -2,6 +2,7 @@ package com.paceleague.record.application.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.paceleague.member.application.port.in.shared.GetMemberNicknamePort;
 import com.paceleague.record.application.dto.RecordGpsTrackResponse;
 import com.paceleague.record.application.dto.RecordListItemResponse;
 import com.paceleague.record.application.port.out.RecordRepositoryPort;
@@ -31,9 +32,10 @@ class RecordQueryServiceTest {
 
     @Mock RecordRepositoryPort recordRepositoryPort;
     @Mock RecordTrackRepositoryPort recordTrackRepositoryPort;
+    @Mock GetMemberNicknamePort getMemberNicknamePort;
 
     RecordQueryService service() {
-        return new RecordQueryService(recordRepositoryPort, recordTrackRepositoryPort,
+        return new RecordQueryService(recordRepositoryPort, recordTrackRepositoryPort, getMemberNicknamePort,
                 new ObjectMapper().registerModule(new JavaTimeModule()));
     }
 
@@ -110,5 +112,20 @@ class RecordQueryServiceTest {
         assertThatThrownBy(() -> service().getGpsTrack(7L, 100L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("GPS 트랙이 없습니다");
+    }
+
+    @Test
+    void 관리자_러닝데이터_목록은_소유자_닉네임을_채워_반환한다() {
+        var pageable = org.springframework.data.domain.PageRequest.of(
+                0, 20, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "startTime"));
+        when(recordRepositoryPort.findAllForAdmin(pageable)).thenReturn(
+                new org.springframework.data.domain.PageImpl<>(List.of(record(10L, 7L)), pageable, 1));
+        when(getMemberNicknamePort.getNickname(7L)).thenReturn("달리는곰");
+
+        var result = service().listRecords(0, 20);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).memberNickname()).isEqualTo("달리는곰");
+        assertThat(result.getContent().get(0).recordSno()).isEqualTo(10L);
     }
 }

@@ -2,6 +2,7 @@ package com.paceleague.territory.adapter.out.persistence;
 
 import com.paceleague.territory.domain.entity.Territory;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -46,6 +47,28 @@ public interface TerritoryJpaRepository extends JpaRepository<Territory, Long> {
             limit :limit
             """, nativeQuery = true)
     List<TerritoryOwnerAreaProjection> findTopOwnersByArea(@Param("limit") int limit);
+
+    // 관리자 랭킹관리 화면(랜드잇랭킹 탭) — 위와 같은 집계를 top-N 캡 없이 페이지네이션.
+    @Query(value = """
+            select owner_member_sno    as ownerMemberSno,
+                   sum(area_sqm)        as totalAreaSqm,
+                   count(*)             as territoryCount,
+                   coalesce(sum(hex_count), 0) as totalHexCount
+            from territory
+            where status = 'ACTIVE'
+            group by owner_member_sno
+            order by totalAreaSqm desc
+            """,
+           countQuery = """
+            select count(*) from (
+                select owner_member_sno from territory where status = 'ACTIVE' group by owner_member_sno
+            ) grouped
+            """,
+           nativeQuery = true)
+    Page<TerritoryOwnerAreaProjection> findOwnersByAreaPaged(Pageable pageable);
+
+    // 관리자 랜드잇데이터관리 화면 — 전체 ACTIVE 땅 목록, 최신순.
+    Page<Territory> findByStatusOrderByCreateAtDesc(String status, Pageable pageable);
 
     // territory_hex 행이 하나도 없는 ACTIVE 땅 — TerritoryHex와 JPA 연관관계는 없지만 JPQL 서브쿼리는
     // 엔티티 간 연관관계 없이도 사용할 수 있다.

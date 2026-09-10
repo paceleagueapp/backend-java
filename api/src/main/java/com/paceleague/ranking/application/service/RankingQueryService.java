@@ -6,14 +6,19 @@ import com.paceleague.crew.application.port.in.shared.GetMemberCrewBadgePort.Cre
 import com.paceleague.rank.domain.entity.MemberScore;
 import com.paceleague.rank.domain.enums.RankTier;
 import com.paceleague.rank.domain.policy.RankTierLabelPolicy;
+import com.paceleague.ranking.application.dto.AdminRankingEntry;
 import com.paceleague.ranking.application.dto.RankingPageResponse;
 import com.paceleague.ranking.application.dto.RankingUserResponse;
 import com.paceleague.ranking.application.port.in.GetRankingUseCase;
+import com.paceleague.ranking.application.port.in.shared.AdminRankingQueryPort;
 import com.paceleague.ranking.application.port.out.RankingProjection;
 import com.paceleague.ranking.application.port.out.RankingRepositoryPort;
 import com.paceleague.season.application.port.in.shared.GetCurrentSeasonPort;
 import com.paceleague.season.domain.entity.Season;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +29,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class RankingQueryService implements GetRankingUseCase {
+public class RankingQueryService implements GetRankingUseCase, AdminRankingQueryPort {
 
     private static final int DEFAULT_SCORE = 1500;
     private static final int AROUND_LIMIT = 5;
@@ -69,6 +74,24 @@ public class RankingQueryService implements GetRankingUseCase {
                 toResponse(top3, memberSno, 1, language),
                 toResponse(aroundRanks, memberSno, offset + 1, language)
         );
+    }
+
+    @Override
+    public Page<AdminRankingEntry> getRankingPage(int page, int size) {
+        Season season = getCurrentSeasonPort.getCurrentSeason();
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        var pageable = PageRequest.of(Math.max(page, 0), safeSize);
+
+        Page<RankingProjection> result = rankingRepositoryPort.findAllBySeasonSno(season.getSno(), pageable);
+        int startRank = page * safeSize + 1;
+
+        List<AdminRankingEntry> entries = new ArrayList<>();
+        List<RankingProjection> content = result.getContent();
+        for (int i = 0; i < content.size(); i++) {
+            RankingProjection p = content.get(i);
+            entries.add(new AdminRankingEntry(startRank + i, p.getMemberSno(), p.getNickname(), p.getTotalScore(), p.getTier()));
+        }
+        return new PageImpl<>(entries, pageable, result.getTotalElements());
     }
 
     private int calculateMyRank(Long seasonSno, MemberScore myScore) {

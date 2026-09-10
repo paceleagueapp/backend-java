@@ -23,6 +23,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -173,5 +176,32 @@ class TerritoryQueryServiceTest {
         TerritoryRankingResponse res = service.getRanking(new TerritoryRankingQuery("ko", null));
 
         assertThat(res.entries()).isEmpty();
+    }
+
+    @Test
+    void 관리자_랜드잇랭킹은_페이지네이션되고_순위가_이어진다() {
+        var pageable = PageRequest.of(1, 2);
+        when(territoryRepositoryPort.findOwnersByAreaPaged(pageable)).thenReturn(new PageImpl<>(
+                List.of(new TerritoryOwnerArea(2L, 20_000.0, 1, 45)), pageable, 3));
+
+        var result = service.getRankingPage(1, 2);
+
+        assertThat(result.getTotalElements()).isEqualTo(3);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).rank()).isEqualTo(3);
+        assertThat(result.getContent().get(0).nickname()).isEqualTo("이등");
+        assertThat(result.getContent().get(0).totalAreaSqkm()).isEqualTo(0.02);
+    }
+
+    @Test
+    void 관리자_랜드잇_데이터목록은_소유자_닉네임을_채워_반환한다() {
+        Territory t = territoryWithSno(10L, 1L);
+        var pageable = PageRequest.of(0, 20);
+        when(territoryRepositoryPort.findAllActiveForAdmin(pageable))
+                .thenReturn(new PageImpl<>(List.of(t), pageable, 1));
+
+        Page<?> result = service.listTerritories(0, 20);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
     }
 }

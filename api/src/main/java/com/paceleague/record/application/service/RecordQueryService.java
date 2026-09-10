@@ -3,6 +3,8 @@ package com.paceleague.record.application.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paceleague.member.application.port.in.shared.GetMemberNicknamePort;
+import com.paceleague.record.application.dto.AdminRecordSummary;
 import com.paceleague.record.application.dto.GpsSessionRequest.GpsPoint;
 import com.paceleague.record.application.dto.RecordGpsTrackResponse;
 import com.paceleague.record.application.dto.RecordListItemResponse;
@@ -11,6 +13,7 @@ import com.paceleague.record.application.dto.RecordResponse;
 import com.paceleague.record.application.dto.RecordSummaryDto;
 import com.paceleague.record.application.dto.RecordSummaryProjection;
 import com.paceleague.record.application.dto.RunningRecordResponse;
+import com.paceleague.record.application.port.in.shared.AdminRecordQueryPort;
 import com.paceleague.record.application.port.in.shared.GetRecordSummaryPort;
 import com.paceleague.record.application.port.in.RecordQueryUseCase;
 import com.paceleague.record.application.port.out.RecordRepositoryPort;
@@ -34,16 +37,19 @@ import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
-public class RecordQueryService implements RecordQueryUseCase, GetRecordSummaryPort {
+public class RecordQueryService implements RecordQueryUseCase, GetRecordSummaryPort, AdminRecordQueryPort {
     private final RecordRepositoryPort recordRepositoryPort;
     private final RecordTrackRepositoryPort recordTrackRepositoryPort;
+    private final GetMemberNicknamePort getMemberNicknamePort;
     private final ObjectMapper objectMapper;
 
     public RecordQueryService(RecordRepositoryPort recordRepositoryPort,
                               RecordTrackRepositoryPort recordTrackRepositoryPort,
+                              GetMemberNicknamePort getMemberNicknamePort,
                               ObjectMapper objectMapper) {
         this.recordRepositoryPort = recordRepositoryPort;
         this.recordTrackRepositoryPort = recordTrackRepositoryPort;
+        this.getMemberNicknamePort = getMemberNicknamePort;
         this.objectMapper = objectMapper;
     }
 
@@ -141,6 +147,23 @@ public class RecordQueryService implements RecordQueryUseCase, GetRecordSummaryP
                 track.getPointCount() == null ? points.size() : track.getPointCount(),
                 points
         );
+    }
+
+    @Override
+    public Page<AdminRecordSummary> listRecords(int page, int size) {
+        int pageSize = Math.min(Math.max(size, 1), 100);
+        var pageable = PageRequest.of(Math.max(page, 0), pageSize, Sort.by(Sort.Direction.DESC, "startTime"));
+
+        return recordRepositoryPort.findAllForAdmin(pageable)
+                .map(r -> new AdminRecordSummary(
+                        r.getSno(),
+                        r.getUno(),
+                        getMemberNicknamePort.getNickname(r.getUno()),
+                        r.getDistanceRecord(),
+                        r.getStartTime(),
+                        r.getEndTime(),
+                        r.getCreateAt()
+                ));
     }
 
     private List<GpsPoint> parsePoints(RecordTrack track) {

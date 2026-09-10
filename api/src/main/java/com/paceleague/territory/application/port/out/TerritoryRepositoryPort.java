@@ -3,6 +3,8 @@ package com.paceleague.territory.application.port.out;
 import com.paceleague.territory.application.dto.TerritoryCaptureCount;
 import com.paceleague.territory.application.dto.TerritoryOwnerArea;
 import com.paceleague.territory.domain.entity.Territory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,6 +30,12 @@ public interface TerritoryRepositoryPort {
 
     // 면적 랭킹용 — 소유자별 총 점령 면적(ACTIVE) 내림차순, 최대 limit명.
     List<TerritoryOwnerArea> findTopOwnersByArea(int limit);
+
+    // 관리자 랭킹관리(랜드잇랭킹 탭) — 위와 같은 집계를 캡 없이 페이지네이션.
+    Page<TerritoryOwnerArea> findOwnersByAreaPaged(Pageable pageable);
+
+    // 관리자 랜드잇데이터관리 화면 — 전체 ACTIVE 땅 목록, 최신순 페이지네이션.
+    Page<Territory> findAllActiveForAdmin(Pageable pageable);
 
     // 일간 요약 푸시용 — create_at 이 [from, to) 인 territory 개수 / 서로 다른 소유자 수.
     TerritoryCaptureCount countCapturesBetween(LocalDateTime fromInclusive, LocalDateTime toExclusive);

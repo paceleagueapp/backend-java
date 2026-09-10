@@ -6,6 +6,7 @@ import com.paceleague.appversion.domain.enums.AppPlatform;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -16,5 +17,13 @@ public class AppVersionPolicyPersistenceAdapter implements AppVersionPolicyRepos
 
     public Optional<AppVersionPolicy> findByPlatform(AppPlatform platform) {
         return appVersionPolicyJpaRepository.findByPlatform(platform);
+    }
+
+    public List<AppVersionPolicy> findAll() {
+        return appVersionPolicyJpaRepository.findAll();
+    }
+
+    public AppVersionPolicy save(AppVersionPolicy policy) {
+        return appVersionPolicyJpaRepository.save(policy);
     }
 }

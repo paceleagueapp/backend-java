@@ -5,6 +5,8 @@ import com.paceleague.member.application.port.in.shared.GetMemberNicknamePort;
 import com.paceleague.rank.application.port.in.shared.GetMemberTierPort;
 import com.paceleague.rank.domain.enums.RankTier;
 import com.paceleague.rank.domain.policy.RankTierLabelPolicy;
+import com.paceleague.territory.application.dto.AdminTerritoryRankingEntry;
+import com.paceleague.territory.application.dto.AdminTerritorySummary;
 import com.paceleague.territory.application.dto.TerritoryMapQuery;
 import com.paceleague.territory.application.dto.TerritoryMapResponse;
 import com.paceleague.territory.application.dto.TerritoryOwnerArea;
@@ -14,6 +16,7 @@ import com.paceleague.territory.application.dto.TerritoryRankingResponse;
 import com.paceleague.territory.application.dto.TerritoryView;
 import com.paceleague.territory.application.port.in.GetTerritoryMapUseCase;
 import com.paceleague.territory.application.port.in.GetTerritoryRankingUseCase;
+import com.paceleague.territory.application.port.in.shared.AdminTerritoryQueryPort;
 import com.paceleague.territory.application.port.out.TerritoryHexRepositoryPort;
 import com.paceleague.territory.application.port.out.TerritoryRepositoryPort;
 import com.paceleague.territory.config.TerritoryProperties;
@@ -24,6 +27,9 @@ import com.paceleague.record.domain.policy.GeoDistanceCalculator;
 import com.uber.h3core.H3Core;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +44,7 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class TerritoryQueryService implements GetTerritoryMapUseCase, GetTerritoryRankingUseCase {
+public class TerritoryQueryService implements GetTerritoryMapUseCase, GetTerritoryRankingUseCase, AdminTerritoryQueryPort {
 
     private final TerritoryRepositoryPort territoryRepositoryPort;
     private final TerritoryHexRepositoryPort territoryHexRepositoryPort;
@@ -169,6 +175,47 @@ public class TerritoryQueryService implements GetTerritoryMapUseCase, GetTerrito
             ));
         }
         return new TerritoryRankingResponse(entries);
+    }
+
+    @Override
+    public Page<AdminTerritoryRankingEntry> getRankingPage(int page, int size) {
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        var pageable = PageRequest.of(Math.max(page, 0), safeSize);
+        int startRank = page * safeSize + 1;
+
+        Page<TerritoryOwnerArea> result = territoryRepositoryPort.findOwnersByAreaPaged(pageable);
+        List<TerritoryOwnerArea> content = result.getContent();
+
+        List<AdminTerritoryRankingEntry> entries = new ArrayList<>(content.size());
+        for (int i = 0; i < content.size(); i++) {
+            TerritoryOwnerArea owner = content.get(i);
+            entries.add(new AdminTerritoryRankingEntry(
+                    startRank + i,
+                    owner.ownerMemberSno(),
+                    getMemberNicknamePort.getNickname(owner.ownerMemberSno()),
+                    owner.totalAreaSqm() / 1_000_000.0,
+                    owner.territoryCount(),
+                    owner.totalHexCount()
+            ));
+        }
+        return new PageImpl<>(entries, pageable, result.getTotalElements());
+    }
+
+    @Override
+    public Page<AdminTerritorySummary> listTerritories(int page, int size) {
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        var pageable = PageRequest.of(Math.max(page, 0), safeSize);
+
+        return territoryRepositoryPort.findAllActiveForAdmin(pageable)
+                .map(t -> new AdminTerritorySummary(
+                        t.getSno(),
+                        t.getOwnerMemberSno(),
+                        getMemberNicknamePort.getNickname(t.getOwnerMemberSno()),
+                        doubleOrZero(t.getAreaSqm()),
+                        t.getHexCount(),
+                        t.getSeason(),
+                        t.getCreateAt()
+                ));
     }
 
     private double[][] parseRing(String polygonJson) {

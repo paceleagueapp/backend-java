@@ -8,6 +8,23 @@
   <link rel="icon" type="image/png" href="/img/favicon.png">
   <link rel="stylesheet" href="/css/app.css?v=20260908">
   <link rel="stylesheet" href="/css/admin.css?v=20260910">
+  <style>
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e5e7eb; }
+    .tab-btn {
+      padding: 10px 18px; border: none; background: none; font-size: 14px; font-weight: 700;
+      color: #8a8e96; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .tab-btn.active { color: #e5342f; border-bottom-color: #e5342f; }
+    table.data-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+    table.data-table th, table.data-table td { padding: 10px 14px; text-align: left; font-size: 13.5px; border-bottom: 1px solid #f0f1f3; }
+    table.data-table th { background: #f7f8fa; color: #4a4e56; font-weight: 700; }
+    .empty-row td { text-align: center; color: #8a8e96; padding: 30px; }
+    .pagination { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+    .pagination button { background: #fff; border: 1px solid #d7dade; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    .pagination button:disabled { opacity: 0.4; cursor: default; }
+    .pagination span { font-size: 13px; color: #4a4e56; }
+    .rank-badge { font-weight: 700; color: #1c2024; }
+  </style>
 </head>
 <body>
   <div id="admin-header"></div>
@@ -15,15 +32,147 @@
     <div id="admin-sidebar"></div>
     <main class="admin-content" id="admin-content" hidden>
       <h1>랭킹관리</h1>
-      <div class="admin-placeholder">상세 화면은 추후 구현 예정입니다.</div>
+
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-records">기록랭킹</button>
+        <button class="tab-btn" id="tab-territory">랜드잇랭킹</button>
+      </div>
+
+      <div id="records-panel">
+        <table class="data-table">
+          <thead><tr><th>순위</th><th>닉네임</th><th>점수</th><th>티어</th></tr></thead>
+          <tbody id="records-tbody"></tbody>
+        </table>
+        <div class="pagination">
+          <button id="records-prev">이전</button>
+          <span id="records-page-info"></span>
+          <button id="records-next">다음</button>
+        </div>
+      </div>
+
+      <div id="territory-panel" hidden>
+        <table class="data-table">
+          <thead><tr><th>순위</th><th>닉네임</th><th>총 면적(km²)</th><th>땅 개수</th><th>헥사곤 수</th></tr></thead>
+          <tbody id="territory-tbody"></tbody>
+        </table>
+        <div class="pagination">
+          <button id="territory-prev">이전</button>
+          <span id="territory-page-info"></span>
+          <button id="territory-next">다음</button>
+        </div>
+      </div>
     </main>
   </div>
 
   <script src="/js/admin.js?v=20260910"></script>
   <script>
+    var PAGE_SIZE = 20;
+    var state = {
+      records: { page: 0 },
+      territory: { page: 0 }
+    };
+
+    function escapeHtmlAdmin(str) {
+      return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function loadRecordsRanking() {
+      var tbody = document.getElementById('records-tbody');
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">불러오는 중...</td></tr>';
+
+      adminApiFetch('/api/admin/ranking/records?page=' + state.records.page + '&size=' + PAGE_SIZE).then(function (result) {
+        if (!result.ok || !result.json.success) {
+          tbody.innerHTML = '<tr class="empty-row"><td colspan="4">랭킹을 불러오지 못했습니다.</td></tr>';
+          return;
+        }
+        var pageData = result.json.data;
+        var rows = pageData.content || [];
+        tbody.innerHTML = rows.length === 0
+          ? '<tr class="empty-row"><td colspan="4">랭킹 데이터가 없습니다.</td></tr>'
+          : rows.map(function (r) {
+              return '<tr>' +
+                '<td class="rank-badge">' + r.rank + '</td>' +
+                '<td>' + escapeHtmlAdmin(r.nickname) + '</td>' +
+                '<td>' + r.totalScore + '</td>' +
+                '<td>' + escapeHtmlAdmin(r.tier) + '</td>' +
+              '</tr>';
+            }).join('');
+
+        document.getElementById('records-page-info').textContent =
+          (pageData.totalElements === 0 ? 0 : state.records.page + 1) + ' / ' + Math.max(pageData.totalPages, 1) + ' 페이지 (총 ' + pageData.totalElements + '명)';
+        document.getElementById('records-prev').disabled = state.records.page <= 0;
+        document.getElementById('records-next').disabled = state.records.page >= pageData.totalPages - 1;
+      }).catch(function () {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="4">랭킹을 불러오지 못했습니다.</td></tr>';
+      });
+    }
+
+    function loadTerritoryRanking() {
+      var tbody = document.getElementById('territory-tbody');
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">불러오는 중...</td></tr>';
+
+      adminApiFetch('/api/admin/ranking/territory?page=' + state.territory.page + '&size=' + PAGE_SIZE).then(function (result) {
+        if (!result.ok || !result.json.success) {
+          tbody.innerHTML = '<tr class="empty-row"><td colspan="5">랭킹을 불러오지 못했습니다.</td></tr>';
+          return;
+        }
+        var pageData = result.json.data;
+        var rows = pageData.content || [];
+        tbody.innerHTML = rows.length === 0
+          ? '<tr class="empty-row"><td colspan="5">랭킹 데이터가 없습니다.</td></tr>'
+          : rows.map(function (r) {
+              return '<tr>' +
+                '<td class="rank-badge">' + r.rank + '</td>' +
+                '<td>' + escapeHtmlAdmin(r.nickname) + '</td>' +
+                '<td>' + r.totalAreaSqkm.toFixed(3) + '</td>' +
+                '<td>' + r.territoryCount + '</td>' +
+                '<td>' + r.totalHexCount + '</td>' +
+              '</tr>';
+            }).join('');
+
+        document.getElementById('territory-page-info').textContent =
+          (pageData.totalElements === 0 ? 0 : state.territory.page + 1) + ' / ' + Math.max(pageData.totalPages, 1) + ' 페이지 (총 ' + pageData.totalElements + '명)';
+        document.getElementById('territory-prev').disabled = state.territory.page <= 0;
+        document.getElementById('territory-next').disabled = state.territory.page >= pageData.totalPages - 1;
+      }).catch(function () {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="5">랭킹을 불러오지 못했습니다.</td></tr>';
+      });
+    }
+
+    document.getElementById('tab-records').addEventListener('click', function () {
+      document.getElementById('tab-records').classList.add('active');
+      document.getElementById('tab-territory').classList.remove('active');
+      document.getElementById('records-panel').hidden = false;
+      document.getElementById('territory-panel').hidden = true;
+      loadRecordsRanking();
+    });
+    document.getElementById('tab-territory').addEventListener('click', function () {
+      document.getElementById('tab-territory').classList.add('active');
+      document.getElementById('tab-records').classList.remove('active');
+      document.getElementById('territory-panel').hidden = false;
+      document.getElementById('records-panel').hidden = true;
+      loadTerritoryRanking();
+    });
+
+    document.getElementById('records-prev').addEventListener('click', function () {
+      if (state.records.page > 0) { state.records.page--; loadRecordsRanking(); }
+    });
+    document.getElementById('records-next').addEventListener('click', function () {
+      state.records.page++; loadRecordsRanking();
+    });
+    document.getElementById('territory-prev').addEventListener('click', function () {
+      if (state.territory.page > 0) { state.territory.page--; loadTerritoryRanking(); }
+    });
+    document.getElementById('territory-next').addEventListener('click', function () {
+      state.territory.page++; loadTerritoryRanking();
+    });
+
     requireAdminSession(function () {
       renderAdminLayout('ranking');
       document.getElementById('admin-content').hidden = false;
+      loadRecordsRanking();
     });
   </script>
 </body>

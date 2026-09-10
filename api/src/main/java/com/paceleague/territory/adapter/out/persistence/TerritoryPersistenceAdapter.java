@@ -5,7 +5,9 @@ import com.paceleague.territory.application.dto.TerritoryOwnerArea;
 import com.paceleague.territory.application.port.out.TerritoryRepositoryPort;
 import com.paceleague.territory.domain.entity.Territory;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -50,6 +52,19 @@ public class TerritoryPersistenceAdapter implements TerritoryRepositoryPort {
                         p.getTerritoryCount() == null ? 0L : p.getTerritoryCount(),
                         p.getTotalHexCount() == null ? 0L : p.getTotalHexCount()))
                 .toList();
+    }
+
+    public Page<TerritoryOwnerArea> findOwnersByAreaPaged(Pageable pageable) {
+        return territoryJpaRepository.findOwnersByAreaPaged(pageable)
+                .map(p -> new TerritoryOwnerArea(
+                        p.getOwnerMemberSno(),
+                        p.getTotalAreaSqm() == null ? 0.0 : p.getTotalAreaSqm(),
+                        p.getTerritoryCount() == null ? 0L : p.getTerritoryCount(),
+                        p.getTotalHexCount() == null ? 0L : p.getTotalHexCount()));
+    }
+
+    public Page<Territory> findAllActiveForAdmin(Pageable pageable) {
+        return territoryJpaRepository.findByStatusOrderByCreateAtDesc(Territory.STATUS_ACTIVE, pageable);
     }
 
     public List<Territory> findActiveMissingHex() {

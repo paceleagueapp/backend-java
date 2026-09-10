@@ -3,7 +3,9 @@ package com.paceleague.member.adapter.out.persistence;
 import com.paceleague.member.application.port.out.MemberRepositoryPort;
 import com.paceleague.member.domain.entity.Member;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -33,5 +35,9 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
 
     public List<Member> searchByMemberIdOrNickname(String query, int limit) {
         return memberJpaRepository.searchByMemberIdOrNickname(query, PageRequest.of(0, limit));
+    }
+
+    public Page<Member> searchForAdmin(String query, Pageable pageable) {
+        return memberJpaRepository.searchForAdmin(query, pageable);
     }
 }

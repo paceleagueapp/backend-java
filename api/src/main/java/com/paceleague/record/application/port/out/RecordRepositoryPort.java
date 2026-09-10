@@ -18,6 +18,9 @@ public interface RecordRepositoryPort {
 
     Page<Record> findByUnoOrderByStartTimeDesc(Long uno, Pageable pageable);
 
+    // 관리자 러닝데이터관리 화면 — 전체 회원 대상, 최신순 페이지네이션.
+    Page<Record> findAllForAdmin(Pageable pageable);
+
     List<Record> findByUnoOrderByStartTimeDesc(Long uno);
 
     List<Record> findByUnoAndStartTimeGreaterThanEqualAndStartTimeLessThanOrderByStartTimeAsc(

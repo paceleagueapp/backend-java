@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>회원 상세 - Pace League Admin</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <link rel="stylesheet" href="/css/app.css?v=20260908">
+  <link rel="stylesheet" href="/css/admin.css?v=20260910">
+  <style>
+    .back-link { display: inline-block; margin-bottom: 16px; font-size: 13px; color: #8a8e96; }
+    .detail-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; max-width: 480px; }
+    .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f1f3; font-size: 14px; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { color: #8a8e96; }
+    .detail-value { color: #1c2024; font-weight: 600; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 12.5px; font-weight: 700; }
+    .badge-yes { background: #e6f4ea; color: #1c8a4a; }
+    .badge-no { background: #fbeaea; color: #d02b22; }
+    .badge-unset { background: #f2f3f5; color: #8a8e96; }
+  </style>
+</head>
+<body>
+  <div id="admin-header"></div>
+  <div class="admin-layout">
+    <div id="admin-sidebar"></div>
+    <main class="admin-content" id="admin-content" hidden>
+      <a class="back-link" href="/admin/members.html">← 회원 목록으로</a>
+      <h1>회원 상세</h1>
+      <div class="detail-card" id="detail-card"></div>
+    </main>
+  </div>
+
+  <script src="/js/admin.js?v=20260910"></script>
+  <script>
+    function statusLabel(status) {
+      return status === 'WITHDRAWN' ? '탈퇴' : '활성';
+    }
+
+    function pushBadge(detail) {
+      if (!detail.pushNotificationAnswered) {
+        return '<span class="badge badge-unset">응답 안 함</span>';
+      }
+      return detail.pushNotificationAgreed
+        ? '<span class="badge badge-yes">동의함</span>'
+        : '<span class="badge badge-no">동의 안 함</span>';
+    }
+
+    function escapeHtmlAdmin(str) {
+      return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function loadDetail(sno) {
+      var card = document.getElementById('detail-card');
+      card.innerHTML = '불러오는 중...';
+
+      adminApiFetch('/api/admin/members/' + sno).then(function (result) {
+        if (!result.ok || !result.json.success) {
+          card.innerHTML = '회원 정보를 불러오지 못했습니다.';
+          return;
+        }
+        var d = result.json.data;
+        card.innerHTML =
+          '<div class="detail-row"><span class="detail-label">회원번호</span><span class="detail-value">' + d.sno + '</span></div>' +
+          '<div class="detail-row"><span class="detail-label">아이디</span><span class="detail-value">' + escapeHtmlAdmin(d.memberId) + '</span></div>' +
+          '<div class="detail-row"><span class="detail-label">닉네임</span><span class="detail-value">' + escapeHtmlAdmin(d.nickname || '-') + '</span></div>' +
+          '<div class="detail-row"><span class="detail-label">이메일</span><span class="detail-value">' + escapeHtmlAdmin(d.email || '-') + '</span></div>' +
+          '<div class="detail-row"><span class="detail-label">상태</span><span class="detail-value">' + statusLabel(d.status) + '</span></div>' +
+          '<div class="detail-row"><span class="detail-label">가입일</span><span class="detail-value">' + String(d.createdAt || '').slice(0, 10) + '</span></div>' +
+          (d.withdrawnAt ? '<div class="detail-row"><span class="detail-label">탈퇴일</span><span class="detail-value">' + String(d.withdrawnAt).slice(0, 10) + '</span></div>' : '') +
+          '<div class="detail-row"><span class="detail-label">푸시 알림 동의</span><span class="detail-value">' + pushBadge(d) + '</span></div>';
+      }).catch(function () {
+        card.innerHTML = '회원 정보를 불러오지 못했습니다.';
+      });
+    }
+
+    requireAdminSession(function () {
+      renderAdminLayout('members');
+      document.getElementById('admin-content').hidden = false;
+
+      var sno = new URLSearchParams(window.location.search).get('sno');
+      if (!sno) {
+        document.getElementById('detail-card').textContent = '잘못된 접근입니다.';
+        return;
+      }
+      loadDetail(sno);
+    });
+  </script>
+</body>
+</html>

@@ -8,6 +8,16 @@
   <link rel="icon" type="image/png" href="/img/favicon.png">
   <link rel="stylesheet" href="/css/app.css?v=20260908">
   <link rel="stylesheet" href="/css/admin.css?v=20260910">
+  <style>
+    table.data-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+    table.data-table th, table.data-table td { padding: 10px 14px; text-align: left; font-size: 13.5px; border-bottom: 1px solid #f0f1f3; }
+    table.data-table th { background: #f7f8fa; color: #4a4e56; font-weight: 700; }
+    .empty-row td { text-align: center; color: #8a8e96; padding: 30px; }
+    .pagination { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+    .pagination button { background: #fff; border: 1px solid #d7dade; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    .pagination button:disabled { opacity: 0.4; cursor: default; }
+    .pagination span { font-size: 13px; color: #4a4e56; }
+  </style>
 </head>
 <body>
   <div id="admin-header"></div>
@@ -15,15 +25,84 @@
     <div id="admin-sidebar"></div>
     <main class="admin-content" id="admin-content" hidden>
       <h1>러닝데이터관리</h1>
-      <div class="admin-placeholder">상세 화면은 추후 구현 예정입니다.</div>
+
+      <table class="data-table">
+        <thead>
+          <tr><th>기록번호</th><th>회원</th><th>거리(km)</th><th>시작 시각</th><th>종료 시각</th><th>등록일</th></tr>
+        </thead>
+        <tbody id="record-tbody"></tbody>
+      </table>
+
+      <div class="pagination">
+        <button id="prev-btn">이전</button>
+        <span id="page-info"></span>
+        <button id="next-btn">다음</button>
+      </div>
     </main>
   </div>
 
   <script src="/js/admin.js?v=20260910"></script>
   <script>
+    var currentPage = 0;
+    var PAGE_SIZE = 20;
+
+    function escapeHtmlAdmin(str) {
+      return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function formatDateTime(iso) {
+      if (!iso) return '-';
+      return String(iso).slice(0, 16).replace('T', ' ');
+    }
+
+    function loadRecords() {
+      var tbody = document.getElementById('record-tbody');
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">불러오는 중...</td></tr>';
+
+      adminApiFetch('/api/admin/records?page=' + currentPage + '&size=' + PAGE_SIZE).then(function (result) {
+        if (!result.ok || !result.json.success) {
+          tbody.innerHTML = '<tr class="empty-row"><td colspan="6">목록을 불러오지 못했습니다.</td></tr>';
+          return;
+        }
+        var pageData = result.json.data;
+        var rows = pageData.content || [];
+
+        tbody.innerHTML = rows.length === 0
+          ? '<tr class="empty-row"><td colspan="6">러닝 기록이 없습니다.</td></tr>'
+          : rows.map(function (r) {
+              var km = r.distanceMeters == null ? '-' : (Number(r.distanceMeters) / 1000).toFixed(2);
+              return '<tr>' +
+                '<td>' + r.recordSno + '</td>' +
+                '<td>' + escapeHtmlAdmin(r.memberNickname || ('#' + r.memberSno)) + '</td>' +
+                '<td>' + km + '</td>' +
+                '<td>' + formatDateTime(r.startTime) + '</td>' +
+                '<td>' + formatDateTime(r.endTime) + '</td>' +
+                '<td>' + formatDateTime(r.createdAt) + '</td>' +
+              '</tr>';
+            }).join('');
+
+        document.getElementById('page-info').textContent =
+          (pageData.totalElements === 0 ? 0 : currentPage + 1) + ' / ' + Math.max(pageData.totalPages, 1) + ' 페이지 (총 ' + pageData.totalElements + '건)';
+        document.getElementById('prev-btn').disabled = currentPage <= 0;
+        document.getElementById('next-btn').disabled = currentPage >= pageData.totalPages - 1;
+      }).catch(function () {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="6">목록을 불러오지 못했습니다.</td></tr>';
+      });
+    }
+
+    document.getElementById('prev-btn').addEventListener('click', function () {
+      if (currentPage > 0) { currentPage--; loadRecords(); }
+    });
+    document.getElementById('next-btn').addEventListener('click', function () {
+      currentPage++; loadRecords();
+    });
+
     requireAdminSession(function () {
       renderAdminLayout('records');
       document.getElementById('admin-content').hidden = false;
+      loadRecords();
     });
   </script>
 </body>

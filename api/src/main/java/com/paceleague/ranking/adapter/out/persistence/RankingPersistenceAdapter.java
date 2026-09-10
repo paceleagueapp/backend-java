@@ -4,6 +4,8 @@ import com.paceleague.rank.domain.entity.MemberScore;
 import com.paceleague.ranking.application.port.out.RankingProjection;
 import com.paceleague.ranking.application.port.out.RankingRepositoryPort;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -34,5 +36,9 @@ public class RankingPersistenceAdapter implements RankingRepositoryPort {
 
     public List<RankingProjection> findAroundRanking(Long seasonSno, int limit, int offset) {
         return rankingJpaRepository.findAroundRanking(seasonSno, limit, offset);
+    }
+
+    public Page<RankingProjection> findAllBySeasonSno(Long seasonSno, Pageable pageable) {
+        return rankingJpaRepository.findAllBySeasonSno(seasonSno, pageable);
     }
 }

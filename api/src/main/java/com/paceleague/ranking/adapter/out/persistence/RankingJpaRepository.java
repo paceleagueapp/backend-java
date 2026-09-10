@@ -5,6 +5,8 @@ package com.paceleague.ranking.adapter.out.persistence;
 // 이번 리팩토링에서 합치지 않고 그대로 보존함.
 import com.paceleague.rank.domain.entity.MemberScore;
 import com.paceleague.ranking.application.port.out.RankingProjection;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
@@ -65,4 +67,21 @@ public interface RankingJpaRepository extends JpaRepository<MemberScore, Long> {
             @Param("limit") int limit,
             @Param("offset") int offset
     );
+
+    @Query(value = """
+        select
+            ms.member_sno as memberSno,
+            m.nickname as nickname,
+            ms.total_score as totalScore,
+            ms.tier as tier
+        from member_score ms
+        join member m on ms.member_sno = m.sno
+        where ms.season_sno = :seasonSno
+        order by ms.total_score desc, ms.update_at asc, ms.member_sno asc
+    """,
+    countQuery = """
+        select count(*) from member_score ms where ms.season_sno = :seasonSno
+    """,
+    nativeQuery = true)
+    Page<RankingProjection> findAllBySeasonSno(@Param("seasonSno") Long seasonSno, Pageable pageable);
 }

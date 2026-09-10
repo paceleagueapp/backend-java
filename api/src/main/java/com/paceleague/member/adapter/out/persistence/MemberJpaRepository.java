@@ -1,6 +1,7 @@
 package com.paceleague.member.adapter.out.persistence;
 
 import com.paceleague.member.domain.entity.Member;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -27,4 +28,18 @@ public interface MemberJpaRepository extends JpaRepository<Member, Long> {
                      m.memberId asc
             """)
     List<Member> searchByMemberIdOrNickname(@Param("q") String q, Pageable pageable);
+
+    @Query(value = """
+            select m from Member m
+            where :q = ''
+               or lower(m.memberId) like lower(concat('%', :q, '%'))
+               or lower(m.nickname) like lower(concat('%', :q, '%'))
+            """,
+           countQuery = """
+            select count(m) from Member m
+            where :q = ''
+               or lower(m.memberId) like lower(concat('%', :q, '%'))
+               or lower(m.nickname) like lower(concat('%', :q, '%'))
+            """)
+    Page<Member> searchForAdmin(@Param("q") String q, Pageable pageable);
 }

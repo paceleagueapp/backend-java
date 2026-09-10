@@ -1,17 +1,22 @@
 package com.paceleague.appversion.application.service;
 
 import com.paceleague.appversion.application.dto.AppVersionCheckResponse;
+import com.paceleague.appversion.application.dto.AppVersionSummary;
 import com.paceleague.appversion.application.port.in.CheckAppVersionUseCase;
+import com.paceleague.appversion.application.port.in.shared.AdminAppVersionUseCase;
 import com.paceleague.appversion.application.port.out.AppVersionPolicyRepositoryPort;
 import com.paceleague.appversion.domain.entity.AppVersionPolicy;
 import com.paceleague.appversion.domain.enums.AppPlatform;
 import com.paceleague.appversion.domain.enums.AppUpdateType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class AppVersionService implements CheckAppVersionUseCase {
+public class AppVersionService implements CheckAppVersionUseCase, AdminAppVersionUseCase {
 
     private final AppVersionPolicyRepositoryPort appVersionPolicyRepositoryPort;
 
@@ -51,6 +56,25 @@ public class AppVersionService implements CheckAppVersionUseCase {
         }
 
         return AppUpdateType.NONE;
+    }
+
+    @Override
+    public List<AppVersionSummary> list() {
+        return appVersionPolicyRepositoryPort.findAll().stream()
+                .map(p -> new AppVersionSummary(p.getPlatform(), p.getLatestVersion(), p.getMinRequiredVersion(), p.getUpdateAt()))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public AppVersionSummary updateVersion(AppPlatform platform, String latestVersion, String minRequiredVersion) {
+        AppVersionPolicy policy = appVersionPolicyRepositoryPort.findByPlatform(platform)
+                .orElseGet(() -> AppVersionPolicy.create(platform, latestVersion, minRequiredVersion));
+
+        policy.updateVersion(latestVersion, minRequiredVersion);
+        AppVersionPolicy saved = appVersionPolicyRepositoryPort.save(policy);
+
+        return new AppVersionSummary(saved.getPlatform(), saved.getLatestVersion(), saved.getMinRequiredVersion(), saved.getUpdateAt());
     }
 
     private int compareVersion(String v1, String v2) {
