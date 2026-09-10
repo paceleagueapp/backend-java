@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>회원가입 - Pace League</title>
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2124974034690240" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="/css/app.css?v=20260908">
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-K4Q3GDB8');</script>
+  <!-- End Google Tag Manager -->
+  <style>
+    /* 공용 스타일은 /css/app.css. 아래는 회원가입 페이지 전용. */
+    body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
+    .brand { margin-bottom: 18px; }
+    .brand-name { color: #1c2024; }
+    #lang-select { background: #fff; color: #4a4e56; border: 1px solid #d7dade; border-radius: 10px; padding: 6px 10px; margin-bottom: 22px; }
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #1c2024; }
+    form { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 10px; }
+    form input { padding: 12px 14px; border-radius: 10px; font-size: 15px; }
+    form button {
+      background: #e5342f; color: #fff; border: none; padding: 12px; border-radius: 24px;
+      font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px;
+    }
+    form button:hover { background: #c62828; }
+    form button:disabled { background: #d7dade; cursor: not-allowed; }
+    .error { color: #d02b22; font-size: 13px; min-height: 18px; }
+    a.back { color: #8a8e96; font-size: 13px; margin-top: 20px; }
+    .agree-box { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 14px; margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .agree-row { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #4a4e56; }
+    .agree-row input[type="checkbox"] { width: 16px; height: 16px; flex-shrink: 0; }
+    .agree-row a { color: #1c2024; text-decoration: underline; margin-left: auto; white-space: nowrap; }
+    .agree-all { font-weight: 700; color: #1c2024; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
+    .agree-note { font-size: 12px; color: #8a8e96; margin-top: -2px; }
+  </style>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-K4Q3GDB8"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+  <a class="brand" href="/index.html">
+    <img class="brand-mark" src="/img/favicon.png" alt="PACELEAGUE">
+    <span class="brand-name">PACELEAGUE</span>
+  </a>
+  <select id="lang-select"></select>
+  <h1 id="join-heading"></h1>
+  <form id="join-form">
+    <input type="text" id="memberId" autocomplete="username" required>
+    <input type="password" id="password" autocomplete="new-password" required minlength="8">
+    <input type="text" id="nickname" autocomplete="nickname">
+    <input type="email" id="email" autocomplete="email">
+
+    <div class="agree-box">
+      <label class="agree-row agree-all">
+        <input type="checkbox" id="agree-all">
+        <span id="agree-all-label"></span>
+      </label>
+      <label class="agree-row">
+        <input type="checkbox" id="agree-terms" class="agree-required">
+        <span id="agree-terms-label"></span>
+        <a href="/ko/terms.html" target="_blank" rel="noopener" id="agree-terms-link"></a>
+      </label>
+      <label class="agree-row">
+        <input type="checkbox" id="agree-privacy" class="agree-required">
+        <span id="agree-privacy-label"></span>
+        <a href="/ko/privacy.html" target="_blank" rel="noopener" id="agree-privacy-link"></a>
+      </label>
+      <label class="agree-row">
+        <input type="checkbox" id="agree-location" class="agree-required">
+        <span id="agree-location-label"></span>
+        <a href="/ko/location-terms.html" target="_blank" rel="noopener" id="agree-location-link"></a>
+      </label>
+      <div class="agree-note" id="agree-note"></div>
+    </div>
+
+    <div class="error" id="error"></div>
+    <button type="submit" id="join-submit" disabled></button>
+  </form>
+  <a class="back" id="back-link" href="/login.html"></a>
+
+  <script src="/js/app.js?v=20260910"></script>
+  <script src="/js/i18n.js?v=20260910"></script>
+  <script>
+    renderLangSelect(document.getElementById('lang-select'));
+    document.getElementById('join-heading').textContent = t('joinHeading');
+    document.getElementById('memberId').placeholder = t('memberIdPlaceholder');
+    document.getElementById('password').placeholder = t('joinPasswordPlaceholder');
+    document.getElementById('nickname').placeholder = t('nicknamePlaceholder');
+    document.getElementById('email').placeholder = t('emailPlaceholder');
+    document.getElementById('agree-all-label').textContent = t('agreeAll');
+    document.getElementById('agree-terms-label').textContent = t('agreeTerms');
+    document.getElementById('agree-terms-link').textContent = t('viewDoc');
+    document.getElementById('agree-privacy-label').textContent = t('agreePrivacy');
+    document.getElementById('agree-privacy-link').textContent = t('viewDoc');
+    document.getElementById('agree-location-label').textContent = t('agreeLocation');
+    document.getElementById('agree-location-link').textContent = t('viewDoc');
+    document.getElementById('agree-note').textContent = t('agreeLocationNote');
+    document.getElementById('join-submit').textContent = t('joinSubmit');
+    document.getElementById('back-link').textContent = t('backToLogin');
+
+    var requiredBoxes = Array.prototype.slice.call(document.querySelectorAll('.agree-required'));
+    var allBox = document.getElementById('agree-all');
+    var submitBtn = document.getElementById('join-submit');
+
+    function updateSubmitState() {
+      submitBtn.disabled = !requiredBoxes.every(function (b) { return b.checked; });
+    }
+    allBox.addEventListener('change', function () {
+      requiredBoxes.forEach(function (b) { b.checked = allBox.checked; });
+      updateSubmitState();
+    });
+    requiredBoxes.forEach(function (b) {
+      b.addEventListener('change', function () {
+        allBox.checked = requiredBoxes.every(function (x) { return x.checked; });
+        updateSubmitState();
+      });
+    });
+
+    document.getElementById('join-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var errorEl = document.getElementById('error');
+      errorEl.textContent = '';
+
+      join({
+        memberId: document.getElementById('memberId').value.trim(),
+        password: document.getElementById('password').value,
+        nickname: document.getElementById('nickname').value.trim() || null,
+        email: document.getElementById('email').value.trim() || null,
+        agreedTerms: document.getElementById('agree-terms').checked,
+        agreedPrivacy: document.getElementById('agree-privacy').checked,
+        agreedLocation: document.getElementById('agree-location').checked
+      })
+        .then(function (data) {
+          storeAuth(data);
+          redirectAfterAuth();
+        })
+        .catch(function (err) {
+          errorEl.textContent = err.message || t('joinFailed');
+        });
+    });
+  </script>
+</body>
+</html>

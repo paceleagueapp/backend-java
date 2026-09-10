@@ -3,10 +3,13 @@ package com.paceleague.member.application.service;
 import com.paceleague.common.config.JwtProperties;
 import com.paceleague.member.application.dto.AuthTokenInfo;
 import com.paceleague.member.application.port.in.MemberAuthUseCase;
+import com.paceleague.member.application.port.out.MemberAgreementRepositoryPort;
 import com.paceleague.member.application.port.out.MemberRepositoryPort;
 import com.paceleague.member.application.port.out.RefreshTokenStorePort;
 import com.paceleague.member.application.port.out.TokenIssuerPort;
+import com.paceleague.member.domain.entity.AgreementType;
 import com.paceleague.member.domain.entity.Member;
+import com.paceleague.member.domain.entity.MemberAgreement;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +26,7 @@ public class MemberAuthService implements MemberAuthUseCase {
     private static final Duration LOGIN_LOCKOUT_WINDOW = Duration.ofMinutes(15);
 
     private final MemberRepositoryPort memberRepositoryPort;
+    private final MemberAgreementRepositoryPort memberAgreementRepositoryPort;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenStorePort refreshTokenStorePort;
     private final TokenIssuerPort tokenIssuerPort;
@@ -30,12 +34,14 @@ public class MemberAuthService implements MemberAuthUseCase {
     private final StringRedisTemplate redis;
 
     public MemberAuthService(MemberRepositoryPort memberRepositoryPort,
+                                 MemberAgreementRepositoryPort memberAgreementRepositoryPort,
                                  PasswordEncoder passwordEncoder,
                                  RefreshTokenStorePort refreshTokenStorePort,
                                  TokenIssuerPort tokenIssuerPort,
                                  JwtProperties props,
                                  StringRedisTemplate redis) {
         this.memberRepositoryPort = memberRepositoryPort;
+        this.memberAgreementRepositoryPort = memberAgreementRepositoryPort;
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenStorePort = refreshTokenStorePort;
         this.props = props;
@@ -44,7 +50,14 @@ public class MemberAuthService implements MemberAuthUseCase {
     }
 
     @Transactional
-    public AuthTokenInfo join(String memberId, String rawPassword, String nickname, String email) {
+    public AuthTokenInfo join(String memberId, String rawPassword, String nickname, String email,
+                               boolean agreedTerms, boolean agreedPrivacy, boolean agreedLocation) {
+
+        // 이용약관/개인정보처리방침/위치정보 수집·이용 — 위치정보는 GPS 기반 핵심 기능(러닝 기록/땅따먹기) 없이는
+        // 서비스 자체가 성립하지 않는 앱 특성상 셋 다 필수 동의로 처리(가입 자체를 막음).
+        if (!agreedTerms || !agreedPrivacy || !agreedLocation) {
+            throw new IllegalArgumentException("이용약관, 개인정보 처리방침, 위치정보 수집·이용에 모두 동의해야 회원가입할 수 있습니다.");
+        }
 
         if (memberRepositoryPort.existsByMemberId(memberId)) {
             throw new IllegalArgumentException("이미 존재하는 아이디입니다.");
@@ -54,6 +67,11 @@ public class MemberAuthService implements MemberAuthUseCase {
         Member member = Member.create(memberId, hash, nickname, email);
 
         memberRepositoryPort.save(member);
+
+        Long memberSno = member.getSno().longValue();
+        memberAgreementRepositoryPort.save(MemberAgreement.create(memberSno, AgreementType.TERMS, true));
+        memberAgreementRepositoryPort.save(MemberAgreement.create(memberSno, AgreementType.PRIVACY, true));
+        memberAgreementRepositoryPort.save(MemberAgreement.create(memberSno, AgreementType.LOCATION, true));
 
         return issueTokens(member);
     }

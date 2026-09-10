@@ -35,8 +35,9 @@ public class CorsConfig {
 
         CorsConfiguration authAndBoard = new CorsConfiguration();
         authAndBoard.setAllowedOriginPatterns(origins);
-        // PUT은 게시글 수정(PUT /api/board/posts/{postSno})을 위해 추가됨 — member/media에는 PUT 엔드포인트가
-        // 없어 실질적으로는 board에만 해당하지만, 세 경로가 같은 CorsConfiguration을 공유하므로 여기서 함께 허용.
+        // PUT은 게시글 수정(PUT /api/board/posts/{postSno})을 위해 추가됨 — 이후 회원 동의 갱신
+        // (PUT /api/member/agreements)에도 쓰이게 됨. media에는 여전히 PUT 엔드포인트가 없지만
+        // 세 경로가 같은 CorsConfiguration을 공유하므로 여기서 함께 허용.
         authAndBoard.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
         authAndBoard.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 

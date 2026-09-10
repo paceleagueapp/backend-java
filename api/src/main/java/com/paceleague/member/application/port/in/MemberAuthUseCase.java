@@ -3,7 +3,8 @@ package com.paceleague.member.application.port.in;
 import com.paceleague.member.application.dto.AuthTokenInfo;
 
 public interface MemberAuthUseCase {
-    AuthTokenInfo join(String memberId, String rawPassword, String nickname, String email);
+    AuthTokenInfo join(String memberId, String rawPassword, String nickname, String email,
+                        boolean agreedTerms, boolean agreedPrivacy, boolean agreedLocation);
 
     AuthTokenInfo login(String memberId, String rawPassword);
 

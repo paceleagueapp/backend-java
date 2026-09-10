@@ -3,6 +3,7 @@ package com.paceleague.member.adapter.in.web;
 import com.paceleague.common.response.ResponseApi;
 import com.paceleague.common.web.MemberSno;
 import com.paceleague.member.application.dto.*;
+import com.paceleague.member.application.port.in.MemberAgreementUseCase;
 import com.paceleague.member.application.port.in.MemberAuthUseCase;
 import com.paceleague.member.application.port.in.MemberBlockUseCase;
 import com.paceleague.member.application.port.in.MemberWithdrawUseCase;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,13 +35,16 @@ public class MemberController {
     private final SearchMembersPort searchMembersPort;
     private final MemberWithdrawUseCase withdrawService;
     private final MemberBlockUseCase blockService;
+    private final MemberAgreementUseCase agreementService;
 
     public MemberController(MemberAuthUseCase authService, SearchMembersPort searchMembersPort,
-                           MemberWithdrawUseCase withdrawService, MemberBlockUseCase blockService) {
+                           MemberWithdrawUseCase withdrawService, MemberBlockUseCase blockService,
+                           MemberAgreementUseCase agreementService) {
         this.authService = authService;
         this.searchMembersPort = searchMembersPort;
         this.withdrawService = withdrawService;
         this.blockService = blockService;
+        this.agreementService = agreementService;
     }
 
     @Operation(summary = "회원 검색", description = "아이디(접두 일치) 또는 닉네임(부분 일치)으로 회원을 찾습니다. 크루 초대 대상 선택 등에 사용. 로그인 필요.")
@@ -53,7 +58,7 @@ public class MemberController {
         return ResponseApi.success(searchMembersPort.search(q, 20));
     }
 
-    @Operation(summary = "회원가입", description = "회원가입 후 access/refresh token 발급")
+    @Operation(summary = "회원가입", description = "이용약관/개인정보처리방침/위치정보 수집·이용에 모두 동의해야 가입 가능. 회원가입 후 access/refresh token 발급")
     @ApiResponse(responseCode = "200", description = "회원가입 성공")
     @PostMapping("/join")
     public ResponseEntity<ResponseApi<TokenResponse>> join(@Valid @RequestBody JoinRequest req) {
@@ -62,12 +67,32 @@ public class MemberController {
                 req.memberId(),
                 req.password(),
                 req.nickname(),
-                req.email()
+                req.email(),
+                req.agreedTerms(),
+                req.agreedPrivacy(),
+                req.agreedLocation()
         );
 
         return ResponseEntity.ok(
                 ResponseApi.success("회원가입 성공", toTokenResponse(result))
         );
+    }
+
+    @Operation(summary = "내 동의 상태 조회", description = "약관/개인정보/위치정보/알림(서비스·마케팅·야간마케팅) 동의 상태를 모두 반환. 알림 3종은 아직 응답(answered=false)이 없으면 로그인 시 동의 화면으로 보내는 용도. 로그인 필요.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/agreements")
+    public ResponseApi<List<AgreementStatusResponse>> agreements(@MemberSno Long memberSno) {
+        return ResponseApi.success(agreementService.getStatus(memberSno));
+    }
+
+    @Operation(summary = "동의 상태 갱신", description = "알림(서비스/마케팅/야간마케팅) 동의를 로그인 직후 동의 화면 또는 계정설정에서 저장/변경할 때 사용. 로그인 필요.")
+    @ApiResponse(responseCode = "200", description = "저장 성공")
+    @SecurityRequirement(name = "bearerAuth")
+    @PutMapping("/agreements")
+    public ResponseApi<String> updateAgreements(@MemberSno Long memberSno, @Valid @RequestBody AgreementUpdateRequest req) {
+        agreementService.updateAgreements(memberSno, req.agreements());
+        return ResponseApi.success("저장되었습니다.");
     }
 
     @Operation(summary = "로그인", description = "memberId/password로 로그인 후 access/refresh token 발급")

@@ -326,6 +326,49 @@ Object.keys(MODERATION_STRINGS).forEach(function (code) {
   if (TRANSLATIONS[code]) { Object.assign(TRANSLATIONS[code], MODERATION_STRINGS[code]); }
 });
 
+// 회원가입/로그인 후 알림 동의/계정설정 문자열. ko/en 만 채우고 나머지 언어는 t()의 ko 폴백을 쓴다.
+var ACCOUNT_STRINGS = {
+  ko: {
+    goToJoin: '회원가입', backToLogin: '← 로그인으로',
+    joinHeading: 'Pace League 회원가입', joinPasswordPlaceholder: '비밀번호 (8자 이상)',
+    nicknamePlaceholder: '닉네임 (선택)', emailPlaceholder: '이메일 (선택)',
+    agreeAll: '전체 동의', agreeTerms: '[필수] 이용약관 동의', agreePrivacy: '[필수] 개인정보 처리방침 동의',
+    agreeLocation: '[필수] 위치정보 수집·이용 동의', viewDoc: '보기',
+    agreeLocationNote: '러닝 기록·랜드잇 등 GPS 기반 기능을 위해 위치정보 동의가 필요합니다.',
+    joinSubmit: '가입하기', joinFailed: '회원가입에 실패했습니다.',
+    ncHeading: '알림 수신 설정', ncSub: '아래 알림 수신 여부를 설정해주세요. 계정설정에서 언제든 변경할 수 있습니다.',
+    ncPushTitle: '서비스 알림', ncPushDesc: '땅따먹기(랜드잇) 요약, 크루 초대 등 서비스 이용 관련 알림입니다.',
+    ncMarketingTitle: '마케팅 정보 수신 동의', ncMarketingDesc: '이벤트/프로모션 등 광고성 정보 수신에 동의합니다.',
+    ncMarketingNightTitle: '야간(21시~08시) 수신 동의',
+    ncSave: '저장하고 계속하기', ncSaveFailed: '저장에 실패했습니다.',
+    accountHeading: '계정설정', accountBack: '← 메인으로',
+    accountNotifTitle: '알림 설정', accountSaveBtn: '저장', accountSaved: '저장되었습니다.',
+    accountSaveFailed: '저장에 실패했습니다.', accountLoadFailed: '설정을 불러오지 못했습니다.',
+    accountLink: '계정설정'
+  },
+  en: {
+    goToJoin: 'Sign up', backToLogin: '← Back to login',
+    joinHeading: 'Sign up for Pace League', joinPasswordPlaceholder: 'Password (8+ characters)',
+    nicknamePlaceholder: 'Nickname (optional)', emailPlaceholder: 'Email (optional)',
+    agreeAll: 'Agree to all', agreeTerms: '[Required] Terms of Service', agreePrivacy: '[Required] Privacy Policy',
+    agreeLocation: '[Required] Location data collection & use', viewDoc: 'View',
+    agreeLocationNote: 'Location consent is required for GPS-based features like run tracking and Land-it.',
+    joinSubmit: 'Sign up', joinFailed: 'Sign up failed.',
+    ncHeading: 'Notification preferences', ncSub: 'Choose which notifications you want to receive. You can change this anytime in Account settings.',
+    ncPushTitle: 'Service notifications', ncPushDesc: 'Service-related alerts such as Land-it daily summaries and crew invitations.',
+    ncMarketingTitle: 'Marketing notifications', ncMarketingDesc: 'Agree to receive promotional/event information.',
+    ncMarketingNightTitle: 'Receive between 9PM-8AM',
+    ncSave: 'Save and continue', ncSaveFailed: 'Failed to save.',
+    accountHeading: 'Account settings', accountBack: '← Back to home',
+    accountNotifTitle: 'Notifications', accountSaveBtn: 'Save', accountSaved: 'Saved.',
+    accountSaveFailed: 'Failed to save.', accountLoadFailed: 'Failed to load settings.',
+    accountLink: 'Account'
+  }
+};
+Object.keys(ACCOUNT_STRINGS).forEach(function (code) {
+  if (TRANSLATIONS[code]) { Object.assign(TRANSLATIONS[code], ACCOUNT_STRINGS[code]); }
+});
+
 function getLang() {
   var stored = localStorage.getItem('pl_lang');
   if (stored && TRANSLATIONS[stored]) return stored;

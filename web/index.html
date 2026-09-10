@@ -303,6 +303,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       if (isLoggedIn()) {
         actionsEl.innerHTML =
           langSelectHtml +
+          '<a class="btn ghost" href="/account.html">' + t('accountLink') + '</a>' +
           '<a class="btn ghost" href="#" id="logout-link">' + t('logout') + '</a>' +
           '<button class="btn" id="write-btn">' + t('write') + '</button>';
         document.getElementById('logout-link').addEventListener('click', function (e) {
@@ -312,6 +313,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       } else {
         actionsEl.innerHTML =
           langSelectHtml +
+          '<a class="btn ghost" href="/join.html">' + t('goToJoin') + '</a>' +
           '<a class="btn ghost" href="/login.html">' + t('login') + '</a>' +
           '<button class="btn" id="write-btn">' + t('write') + '</button>';
       }

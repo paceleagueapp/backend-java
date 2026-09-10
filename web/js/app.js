@@ -114,6 +114,47 @@ function login(memberId, password) {
   });
 }
 
+// 회원가입. login()과 마찬가지로 아직 토큰이 없으므로 apiFetch를 거치지 않는다.
+function join(payload) {
+  return fetch(API_BASE + '/api/member/join', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function (res) {
+    return res.json().then(function (json) {
+      if (!res.ok || !json.success) {
+        throw new Error((json && json.message) || '회원가입에 실패했습니다.');
+      }
+      return json.data;
+    });
+  });
+}
+
+// 로그인 시점에 별도로 확인하는 알림 동의 3종(서비스 알림/마케팅/야간 마케팅) — 회원가입 때는 받지 않는다.
+var NOTIFICATION_AGREEMENT_TYPES = ['PUSH_SERVICE', 'MARKETING', 'MARKETING_NIGHT'];
+
+function getMemberAgreements() {
+  return apiFetch('/api/member/agreements');
+}
+
+function saveMemberAgreements(items) {
+  return apiFetch('/api/member/agreements', { method: 'PUT', body: { agreements: items } });
+}
+
+// 로그인/회원가입 성공 직후 호출. 알림 동의 3종 중 하나라도 아직 응답(answered)한 적 없으면
+// 동의 화면으로, 이미 다 응답했으면 메인으로 보낸다.
+function redirectAfterAuth() {
+  getMemberAgreements().then(function (json) {
+    var list = (json && json.data) || [];
+    var answered = {};
+    list.forEach(function (a) { answered[a.agreementType] = a.answered; });
+    var needsConsent = NOTIFICATION_AGREEMENT_TYPES.some(function (type) { return !answered[type]; });
+    window.location.href = needsConsent ? '/notification-consent.html' : '/index.html';
+  }).catch(function () {
+    window.location.href = '/index.html';
+  });
+}
+
 function logout() {
   var refreshToken = localStorage.getItem(STORAGE_KEYS.refreshToken);
   var done = refreshToken

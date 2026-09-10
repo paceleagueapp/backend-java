@@ -49,6 +49,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="error" id="error"></div>
     <button type="submit" id="login-submit"></button>
   </form>
+  <a class="back" id="join-link" href="/join.html"></a>
   <a class="back" id="back-link" href="/index.html"></a>
 
   <script src="/js/app.js?v=20260828f"></script>
@@ -59,6 +60,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     document.getElementById('memberId').placeholder = t('memberIdPlaceholder');
     document.getElementById('password').placeholder = t('passwordPlaceholder');
     document.getElementById('login-submit').textContent = t('login');
+    document.getElementById('join-link').textContent = t('goToJoin');
     document.getElementById('back-link').textContent = t('backToMain');
 
     document.getElementById('login-form').addEventListener('submit', function (e) {
@@ -71,7 +73,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       login(memberId, password)
         .then(function (data) {
           storeAuth(data);
-          window.location.href = '/index.html';
+          redirectAfterAuth();
         })
         .catch(function (err) {
           errorEl.textContent = err.message || t('loginFailed');
