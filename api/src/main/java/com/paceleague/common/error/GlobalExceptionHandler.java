@@ -4,11 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -33,6 +36,25 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiError.of(ErrorCode.BAD_REQUEST, "요청 파라미터가 올바르지 않습니다."));
+    }
+
+    // @Valid @RequestBody 검증 실패(예: JoinRequest의 @NotNull agreedTerms 등 필수 필드 누락) — 도메인 검증 실패를
+    // IllegalArgumentException→400으로 처리하는 것과 같은 취지로, catch-all의 500이 아니라 400으로 내린다.
+    // (2026-09-13 회귀: 이 핸들러가 없어서 구버전 클라이언트가 새로 추가된 필수 필드를 안 보내면 500이 났다.)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException e) {
+
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+        if (message.isBlank()) {
+            message = "요청 값이 올바르지 않습니다.";
+        }
+
+        log.warn("Validation failed: {}", message);
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.of(ErrorCode.BAD_REQUEST, message));
     }
 
     // 존재하지 않는 경로 요청 — 아래 catch-all(Exception)에 걸리면 500이 되므로 먼저 404로 처리한다.
