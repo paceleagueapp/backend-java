@@ -153,6 +153,18 @@ add_header Cache-Control "no-cache" always;
 
 **주의**: 기존 `.html` 주소는 여전히 리다이렉트 없이 200으로 응답합니다(북마크/외부 링크 호환을 위해 그대로 둠). `.html` 요청을 확장자 없는 주소로 실제 301 리다이렉트하려면 별도로 Nginx 설정(운영 서버, 저장소 밖)을 건드려야 하며, 이건 위 서치 콘솔 섹션에서 언급한 `www`→apex 리다이렉트와 같은 종류의 보류 항목입니다 — 필요하면 요청하세요.
 
+## 2026-09-17 (다섯 번째 후속): 위 두 보류 항목을 실제 Nginx에 적용 — `.html` 301 리다이렉트 + `www`→apex 301
+
+사용자 명시 요청으로 `paceleague`(앱 서버, `i-0998774e170eb0928`) EC2의 `/etc/nginx/conf.d/paceleague.conf`를 SSM(`AWS-RunShellScript`)으로 직접 수정했습니다. 적용 전 사용자에게 정확한 diff를 보여주고 승인받았고, 기존 관례대로 백업(`paceleague.conf.bak.<타임스탬프>`) → `nginx -t` 검증 통과 시에만 `systemctl reload nginx` → 검증 실패 시 자동 롤백 스크립트로 처리했습니다.
+
+`paceleague.co.kr`/`www.paceleague.co.kr`를 같이 서빙하던 443 서버 블록을 분리:
+- `paceleague.co.kr` 전용 블록에 `.html` 확장자 요청을 확장자 없는 URL로 보내는 301 규칙 추가.
+- `www.paceleague.co.kr` 전용 새 블록(같은 인증서 재사용)이 모든 요청을 `https://paceleague.co.kr$request_uri`로 301.
+
+**1차 적용에서 버그 발생 → 즉시 재수정**: 처음엔 `location = /index.html { return 301 /; }` + `location ~ ^(.+)\.html$ { return 301 $1$is_args$args; }`로 구현했는데, `/`(루트) 요청이 무한 리다이렉트되는 버그가 나왔습니다. 원인: 기존 `try_files $uri $uri.html $uri/ =404;`의 마지막 `$uri/` 매칭이 디렉터리로 판정되면 `index index.html;` 디렉티브가 **내부적으로 `/index.html`을 다시 location 매칭시키는 내부 리다이렉트**를 일으키는데, 이게 새로 추가한 `location = /index.html` 규칙에 다시 걸려 `/`로 301 → 클라이언트가 다시 `/` 요청 → 반복. **수정**: location 기반 매칭 대신 `if ($request_uri = /index.html) { return 301 /; }` + `if ($request_uri ~ ^(.+)\.html(\?.*)?$) { return 301 $1$2; }`로 교체 — `$request_uri`는 내부 리다이렉트로 안 바뀌고 클라이언트가 원래 보낸 요청 그대로 유지되므로 루프가 발생하지 않음. 서버 컨텍스트에서 `return`만 쓰는 단순 `if`는 Nginx가 공식적으로 안전하다고 명시한 패턴("if is evil" 문서에서 예외로 언급).
+
+재배포 후 `/`, `/login.html`→`/login`, `/index.html`→`/`, `www.*`→apex(루트 포함), `/admin/`(내부 index 처리 엣지케이스), `api.paceleague.co.kr`, 확장자 없는 모든 주요 경로, 쿼리스트링 보존까지 curl로 전부 재검증 완료. 포트 80(HTTP→HTTPS) 블록과 `api.paceleague.co.kr` 블록은 손대지 않음.
+
 ## 배포 시 서버에 반영되는 방식
 
 기존에는 이 두 도메인의 콘텐츠가 각각 다른 경로로 관리되고 있었습니다: Java 앱은 GitHub Actions → ECR → SSM으로 자동 배포됐지만, `web/`에 해당하는 정적 파일은 서버에 직접 올려져 있어 **git으로 버전 관리되지 않는 상태**였습니다.
