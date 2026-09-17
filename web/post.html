@@ -105,15 +105,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   <div class="topbar">
     <div class="topbar-inner">
-      <a class="brand" href="/index.html">
+      <a class="brand" href="/">
         <img class="brand-mark" src="/img/favicon.png" alt="PACELEAGUE">
         <span class="brand-name">PACELEAGUE</span>
       </a>
       <nav class="header-nav">
-        <a href="/about.html" class="navlink" data-navkey="navAbout">소개</a>
-        <a href="/index.html" class="navlink active" data-navkey="navCommunity">커뮤니티</a>
-        <a href="/territory.html" class="navlink" data-navkey="navLandit">랜드잇</a>
-        <a href="/crew.html" class="navlink" data-navkey="navCrew">크루</a>
+        <a href="/about" class="navlink" data-navkey="navAbout">소개</a>
+        <a href="/" class="navlink active" data-navkey="navCommunity">커뮤니티</a>
+        <a href="/territory" class="navlink" data-navkey="navLandit">랜드잇</a>
+        <a href="/crew" class="navlink" data-navkey="navCrew">크루</a>
       </nav>
       <div class="header-actions">
         <select id="lang-select"></select>
@@ -124,7 +124,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <div class="page">
     <div class="post-nav">
       <a href="javascript:history.back()" id="back-link"></a>
-      <a href="/index.html" id="main-link"></a>
+      <a href="/" id="main-link"></a>
     </div>
 
     <div class="post-box" id="post-box"></div>
@@ -169,15 +169,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </dialog>
 
   <nav class="bottom-nav">
-    <a href="/index.html" class="bnav active" data-navkey="navCommunity">
+    <a href="/" class="bnav active" data-navkey="navCommunity">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <span class="bnav-label">커뮤니티</span>
     </a>
-    <a href="/territory.html" class="bnav" data-navkey="navLandit">
+    <a href="/territory" class="bnav" data-navkey="navLandit">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.7-6-10a6 6 0 0 1 12 0c0 4.3-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg>
       <span class="bnav-label">랜드잇</span>
     </a>
-    <a href="/crew.html" class="bnav" data-navkey="navCrew">
+    <a href="/crew" class="bnav" data-navkey="navCrew">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       <span class="bnav-label">크루</span>
     </a>
@@ -290,7 +290,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           if (!confirm(t('confirmBlock'))) return;
           blockMember(post.memberSno).then(function (json) {
             alert(json && json.success ? t('blocked') : t('blockFailed'));
-            if (json && json.success) window.location.href = '/index.html';
+            if (json && json.success) window.location.href = '/';
           });
         });
       }
@@ -303,7 +303,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           if (redirectToLoginIfNeeded()) return;
           if (!confirm(t('confirmDeletePost'))) return;
           apiFetch('/api/board/posts/' + postSno, { method: 'DELETE' }).then(function () {
-            window.location.href = '/index.html';
+            window.location.href = '/';
           });
         });
       }

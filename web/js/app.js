@@ -149,9 +149,9 @@ function redirectAfterAuth() {
     var answered = {};
     list.forEach(function (a) { answered[a.agreementType] = a.answered; });
     var needsConsent = NOTIFICATION_AGREEMENT_TYPES.some(function (type) { return !answered[type]; });
-    window.location.href = needsConsent ? '/notification-consent.html' : '/index.html';
+    window.location.href = needsConsent ? '/notification-consent' : '/';
   }).catch(function () {
-    window.location.href = '/index.html';
+    window.location.href = '/';
   });
 }
 
@@ -167,7 +167,7 @@ function logout() {
 
   return done.then(function () {
     clearAuth();
-    window.location.href = '/index.html';
+    window.location.href = '/';
   });
 }
 
@@ -223,7 +223,7 @@ function apiFetch(path, options) {
       })
       .catch(function () {
         clearAuth();
-        window.location.href = '/login.html';
+        window.location.href = '/login';
         return Promise.reject(new Error('unauthorized'));
       });
   });
@@ -463,14 +463,14 @@ function loadRecordOptions(selectEl, selectedRecordSno, extraRecord) {
 
 function requireLogin() {
   if (!isLoggedIn()) {
-    window.location.href = '/login.html';
+    window.location.href = '/login';
   }
 }
 
 // 글쓰기/댓글/투표처럼 로그인이 필요한 동작을 시작하기 전에 호출. 비로그인이면 로그인 페이지로 보내고 true를 반환.
 function redirectToLoginIfNeeded() {
   if (!isLoggedIn()) {
-    window.location.href = '/login.html';
+    window.location.href = '/login';
     return true;
   }
   return false;

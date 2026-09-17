@@ -113,7 +113,7 @@
 
           Array.prototype.forEach.call(tbody.querySelectorAll('tr[data-sno]'), function (tr) {
             tr.addEventListener('click', function () {
-              window.location.href = '/admin/member-detail.html?sno=' + tr.getAttribute('data-sno');
+              window.location.href = '/admin/member-detail?sno=' + tr.getAttribute('data-sno');
             });
           });
         }

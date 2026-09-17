@@ -10,11 +10,11 @@ var ADMIN_SESSION_KEY = 'pl_admin_session';
 var ADMIN_SESSION_HEADER = 'X-Admin-Session';
 
 var ADMIN_MENU = [
-  { key: 'members', label: '회원관리', href: '/admin/members.html' },
-  { key: 'ranking', label: '랭킹관리', href: '/admin/ranking.html' },
-  { key: 'records', label: '러닝데이터관리', href: '/admin/records.html' },
-  { key: 'territory', label: '랜드잇데이터관리', href: '/admin/territory.html' },
-  { key: 'settings', label: '설정', href: '/admin/settings.html' }
+  { key: 'members', label: '회원관리', href: '/admin/members' },
+  { key: 'ranking', label: '랭킹관리', href: '/admin/ranking' },
+  { key: 'records', label: '러닝데이터관리', href: '/admin/records' },
+  { key: 'territory', label: '랜드잇데이터관리', href: '/admin/territory' },
+  { key: 'settings', label: '설정', href: '/admin/settings' }
 ];
 
 function getAdminSession() {
@@ -97,7 +97,7 @@ function renderAdminHeader() {
   if (!el) return;
   el.innerHTML =
     '<div class="topbar"><div class="topbar-inner" style="justify-content: space-between;">' +
-      '<a class="brand" href="/admin/members.html">' +
+      '<a class="brand" href="/admin/members">' +
         '<img class="brand-mark" src="/img/favicon.png" alt="PACELEAGUE">' +
         '<span class="brand-name">PACELEAGUE ADMIN</span>' +
       '</a>' +

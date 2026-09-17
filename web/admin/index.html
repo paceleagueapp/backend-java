@@ -41,7 +41,7 @@
     if (getAdminSession()) {
       adminApiFetch('/api/admin/me').then(function (result) {
         if (result.ok && result.json.success) {
-          window.location.href = '/admin/members.html';
+          window.location.href = '/admin/members';
         } else {
           clearAdminSession();
         }
@@ -59,7 +59,7 @@
       adminLogin(adminId, password)
         .then(function (data) {
           setAdminSession(data.sessionToken);
-          window.location.href = '/admin/members.html';
+          window.location.href = '/admin/members';
         })
         .catch(function (err) {
           errorEl.textContent = (err && err.message) || '로그인에 실패했습니다.';
