@@ -105,9 +105,29 @@ add_header Cache-Control "no-cache" always;
 - `ko/`, `en/` — 앱스토어 심사에 필요한 이용약관/개인정보처리방침/계정삭제 안내 (한/영)
 - `app-ads.txt` — AdMob 광고 검증 파일
 - `sitemap.xml` — 실제 사용 중인 사이트맵
-- `ko/privacy_bak.html` — `privacy.html`의 백업본으로 보이며 실제 서비스 경로에서는 쓰이지 않음.
 
 > `t_sitemap.xml`(다른 도메인 `onedaykorea.co.kr` 내용이 들어있던 관련 없는 잔여 파일)은 2026-07-12에 삭제했습니다.
+> `ko/privacy_bak.html`(`privacy.html`의 미링크 백업본)은 구글 서치 콘솔이 "표준 URL이 지정되지 않은 중복 페이지"로 잡아낸 원인 중 하나로 확인되어 2026-09-17에 삭제했습니다 — 아래 섹션 참고.
+
+## 2026-09-17: 서치 콘솔 "페이지 색인 생성 안 됨" 조치
+
+구글 서치 콘솔에서 색인 생성 실패 메일을 받고 확인한 결과, `paceleague.co.kr`에는 **동일 페이지가 여러 URL로 중복 서빙되는 구조적 문제**가 있었습니다 (`curl`로 라이브 사이트에서 직접 재현 확인):
+
+- Nginx가 `try_files` 방식으로 `/login`과 `/login.html`을 **둘 다 200**으로 서빙 — 확장자 유무 상관없이 사이트 전체 페이지에 동일하게 적용됨.
+- `paceleague.co.kr`과 `www.paceleague.co.kr`도 리다이렉트 없이 **둘 다 200** (canonical 미지정).
+- 기존 `sitemap.xml`은 `ko`/`en` 하위 페이지를 확장자 없는 형태(`/ko/privacy`)로 등록했는데, 정작 사이트 내부 링크(`index.html`, `join.html` 등)는 전부 `.html`이 붙은 형태(`/ko/privacy.html`)를 사용 — 사이트맵과 실제 링크가 서로 다른 URL을 가리켜 구글이 "표준 URL 미지정 중복"으로 분류.
+
+**저장소(git) 범위 내에서 조치한 것:**
+- 모든 공개 페이지 `<head>`에 실제 내부 링크 형식(`.html` 확장자, 홈은 `/`)을 기준으로 self-referencing `<link rel="canonical">` + `<meta name="description">` 추가.
+- `account.html`, `notification-consent.html`(로그인 이후 내부 플로우 전용, 검색 노출 가치 없음)에 `<meta name="robots" content="noindex, follow">` 추가.
+- `sitemap.xml`을 canonical URL(`.html` 확장자 포함)과 실제 존재하는 모든 공개 페이지 기준으로 재작성 — 예전에 없던 `crew.html`/`territory.html`/`login.html`/`join.html` 등 추가, 확장자 불일치 URL 제거.
+- `ko/terms.html`, `ko/location-terms.html`, `ko/account-deletion.html`에 `<!DOCTYPE html>`보다 앞에 있던 중복·잘못된 `<meta charset="UTF-8">` 라인 제거.
+- 미링크 백업 파일 `ko/privacy_bak.html` 삭제 (위 참고).
+- `admin/*.html`은 이미 전부 `noindex, nofollow`가 걸려있어 별도 조치 불필요 — `robots.txt`에 `/admin/` disallow를 추가하지 **않은** 이유는, robots.txt로 크롤링 자체를 막으면 구글이 `noindex` 메타 태그를 아예 못 보게 되어 오히려 역효과가 날 수 있기 때문(표준 권장사항).
+
+**저장소 밖(서버 Nginx) 조치가 필요해 보류한 것 — 사용자 확인 필요:**
+- `www` → apex(non-www) 301 리다이렉트, `/login.html` ↔ `/login` 중 하나로의 301 리다이렉트를 Nginx에 추가하면 canonical 태그보다 더 확실하게 중복을 해소할 수 있습니다. 다만 이건 `/etc/nginx/conf.d/paceleague.conf`(이 저장소가 관리하지 않는 서버 측 설정)를 실제 운영 트래픽에 영향을 주며 수정하는 작업이라, 명시적 요청 없이 진행하지 않았습니다. 필요하면 요청하세요.
+- 서치 콘솔에 남아있던 "404 13개 / robots.txt에 의해 차단됨 1개 / 리디렉션 포함 1개" 항목은 실제 URL 목록을 봐야 정확한 원인을 특정할 수 있어 미해결 상태입니다.
 
 ## 배포 시 서버에 반영되는 방식
 
