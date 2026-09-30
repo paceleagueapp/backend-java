@@ -72,6 +72,7 @@ JWT-based, stateless (`SecurityConfig`, `sessionCreationPolicy(STATELESS)`).
 
 ### Response/error conventions
 
+- **Error messages are English** (2026-09-30, explicit user decision): every user-facing exception message (`IllegalArgumentException` etc.), `GlobalExceptionHandler`'s fixed messages, and `SecurityConfig`'s 401/403 JSON bodies are English regardless of client language — write new ones in English too. Log messages, Swagger docs, and non-error display strings (e.g. `"탈퇴한 사용자"`, push notification text) are unchanged.
 - All controller responses wrap in `ResponseApi<T>` (`success`/`code`/`message`/`data`/`timestamp`) via `ResponseApi.success(...)`.
 - `GlobalExceptionHandler` (`@RestControllerAdvice`) maps `IllegalArgumentException` → 400, `MethodArgumentTypeMismatchException`/`MissingServletRequestParameterException` (bad/missing query or path param, e.g. `zoom=16.5` into an `int`) → 400 (added 2026-09-07), `NoResourceFoundException` (unknown path) → 404, and everything else → 500, all as `ApiError` bodies with `ErrorCode`. Domain/service-layer validation failures should throw `IllegalArgumentException` to get a proper 400 rather than falling through to the generic 500 handler. (The 404 handler was added 2026-08-27 because disabling springdoc in prod routed `/swagger-ui.html`·`/v3/api-docs` into the catch-all as 500s.)
 

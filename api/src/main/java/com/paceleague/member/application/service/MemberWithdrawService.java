@@ -37,13 +37,13 @@ public class MemberWithdrawService implements MemberWithdrawUseCase {
     @Transactional
     public void withdraw(Long memberSno, String rawPassword) {
         Member member = memberRepositoryPort.findBySno(memberSno)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         if (!member.isActive()) {
             return; // 이미 탈퇴 처리됨 — 멱등
         }
         if (rawPassword == null || !passwordEncoder.matches(rawPassword, member.getPasswordHash())) {
-            throw new IllegalArgumentException("비밀번호가 올바르지 않습니다.");
+            throw new IllegalArgumentException("Incorrect password.");
         }
 
         // 크루장이면 여기서 400 — member/데이터는 아직 그대로.

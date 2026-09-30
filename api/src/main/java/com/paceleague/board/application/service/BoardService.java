@@ -228,7 +228,7 @@ public class BoardService implements BoardUseCase {
         Post post = postRepositoryPort.findBySnoForUpdate(postSno)
                 .orElseThrow(() -> new IllegalArgumentException("post not found"));
         if (post.getMemberSno().equals(memberSno)) {
-            throw new IllegalArgumentException("본인 게시글은 신고할 수 없습니다.");
+            throw new IllegalArgumentException("You cannot report your own post.");
         }
         recordReport(memberSno, ReportTargetType.POST, postSno, reason, detail);
         if (!post.isHidden()
@@ -243,7 +243,7 @@ public class BoardService implements BoardUseCase {
         Comment comment = commentRepositoryPort.findBySnoForUpdate(commentSno)
                 .orElseThrow(() -> new IllegalArgumentException("comment not found"));
         if (comment.getMemberSno().equals(memberSno)) {
-            throw new IllegalArgumentException("본인 댓글은 신고할 수 없습니다.");
+            throw new IllegalArgumentException("You cannot report your own comment.");
         }
         recordReport(memberSno, ReportTargetType.COMMENT, commentSno, reason, detail);
         if (!comment.isHidden()
@@ -261,7 +261,7 @@ public class BoardService implements BoardUseCase {
         try {
             reason = ReportReason.valueOf(reasonStr == null ? "" : reasonStr.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("유효하지 않은 신고 사유입니다: " + reasonStr);
+            throw new IllegalArgumentException("Invalid report reason: " + reasonStr);
         }
         String trimmedDetail = detail == null ? null : detail.substring(0, Math.min(detail.length(), 500));
         boardReportRepositoryPort.save(BoardReport.create(memberSno, type, targetSno, reason, trimmedDetail));

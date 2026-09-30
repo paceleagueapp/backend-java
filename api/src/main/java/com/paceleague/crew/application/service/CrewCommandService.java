@@ -32,11 +32,11 @@ public class CrewCommandService implements CrewCommandUseCase {
     @Override
     public Long create(Long memberSno, CrewCreateRequest req) {
         if (crewMemberRepositoryPort.existsByMemberSno(memberSno)) {
-            throw new IllegalArgumentException("이미 크루에 소속되어 있습니다. 새 크루를 만들려면 먼저 탈퇴하세요");
+            throw new IllegalArgumentException("You are already in a crew. Leave it first to create a new one.");
         }
         String name = CrewNamePolicy.normalizeAndValidate(req.name(), props.nameMinLength(), props.nameMaxLength());
         if (crewRepositoryPort.existsByNameAndStatusActive(name)) {
-            throw new IllegalArgumentException("이미 사용 중인 크루명입니다");
+            throw new IllegalArgumentException("This crew name is already taken.");
         }
         String iconUrl = resolveIcon(req.iconMediaId(), memberSno);
         String description = trimToMax(req.description(), props.descriptionMaxLength());
@@ -54,7 +54,7 @@ public class CrewCommandService implements CrewCommandUseCase {
 
         String name = CrewNamePolicy.normalizeAndValidate(req.name(), props.nameMinLength(), props.nameMaxLength());
         if (!name.equals(crew.getName()) && crewRepositoryPort.existsByNameAndStatusActive(name)) {
-            throw new IllegalArgumentException("이미 사용 중인 크루명입니다");
+            throw new IllegalArgumentException("This crew name is already taken.");
         }
         String iconUrl;
         if (req.iconMediaId() != null) {
@@ -88,7 +88,7 @@ public class CrewCommandService implements CrewCommandUseCase {
         Crew crew = crewRepositoryPort.findBySnoForUpdate(crewSno)
                 .orElseThrow(CrewCommandService::crewNotFound);
         CrewMember cm = crewMemberRepositoryPort.findByCrewSnoAndMemberSno(crewSno, memberSno)
-                .orElseThrow(() -> new IllegalArgumentException("크루원이 아닙니다"));
+                .orElseThrow(() -> new IllegalArgumentException("You are not a member of this crew."));
         CrewMembershipPolicy.assertLeaderCanLeave(crew, memberSno);
 
         crewMemberRepositoryPort.delete(cm);
@@ -102,10 +102,10 @@ public class CrewCommandService implements CrewCommandUseCase {
                 .orElseThrow(CrewCommandService::crewNotFound);
         CrewMembershipPolicy.assertLeader(crew, leaderMemberSno);
         if (leaderMemberSno.equals(targetMemberSno)) {
-            throw new IllegalArgumentException("크루장은 스스로를 추방할 수 없습니다");
+            throw new IllegalArgumentException("The crew leader cannot remove themselves.");
         }
         CrewMember target = crewMemberRepositoryPort.findByCrewSnoAndMemberSno(crewSno, targetMemberSno)
-                .orElseThrow(() -> new IllegalArgumentException("대상이 크루원이 아닙니다"));
+                .orElseThrow(() -> new IllegalArgumentException("The target member is not in this crew."));
 
         crewMemberRepositoryPort.delete(target);
         crew.decreaseMemberCount();
@@ -117,12 +117,12 @@ public class CrewCommandService implements CrewCommandUseCase {
         Crew crew = getCrew(crewSno);
         CrewMembershipPolicy.assertLeader(crew, leaderMemberSno);
         if (leaderMemberSno.equals(targetMemberSno)) {
-            throw new IllegalArgumentException("이미 크루장입니다");
+            throw new IllegalArgumentException("This member is already the crew leader.");
         }
         CrewMember current = crewMemberRepositoryPort.findByCrewSnoAndMemberSno(crewSno, leaderMemberSno)
-                .orElseThrow(() -> new IllegalArgumentException("크루원이 아닙니다"));
+                .orElseThrow(() -> new IllegalArgumentException("You are not a member of this crew."));
         CrewMember target = crewMemberRepositoryPort.findByCrewSnoAndMemberSno(crewSno, targetMemberSno)
-                .orElseThrow(() -> new IllegalArgumentException("대상이 크루원이 아닙니다"));
+                .orElseThrow(() -> new IllegalArgumentException("The target member is not in this crew."));
 
         current.demoteToMember();
         target.promoteToLeader();
@@ -137,7 +137,7 @@ public class CrewCommandService implements CrewCommandUseCase {
     }
 
     private static IllegalArgumentException crewNotFound() {
-        return new IllegalArgumentException("크루를 찾을 수 없습니다");
+        return new IllegalArgumentException("Crew not found.");
     }
 
     private String resolveIcon(Long iconMediaId, Long ownerMemberSno) {
@@ -153,7 +153,7 @@ public class CrewCommandService implements CrewCommandUseCase {
             return null;
         }
         if (trimmed.length() > max) {
-            throw new IllegalArgumentException("길이 제한(" + max + "자)을 초과했습니다");
+            throw new IllegalArgumentException("Exceeds the maximum length of " + max + " characters.");
         }
         return trimmed;
     }

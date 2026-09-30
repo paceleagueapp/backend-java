@@ -30,9 +30,9 @@ public class MediaQueryService implements GetPostAttachmentsPort, GetApprovedMed
 
     public String requireApprovedUrl(Long mediaSno, Long ownerMemberSno) {
         Media media = mediaRepositoryPort.findBySnoAndMemberSno(mediaSno, ownerMemberSno)
-                .orElseThrow(() -> new IllegalArgumentException("이미지를 찾을 수 없습니다"));
+                .orElseThrow(() -> new IllegalArgumentException("Image not found."));
         if (media.getStatus() != MediaStatus.APPROVED || media.getUrl() == null) {
-            throw new IllegalArgumentException("아직 승인되지 않은 이미지입니다");
+            throw new IllegalArgumentException("This image has not been approved yet.");
         }
         return media.getUrl();
     }

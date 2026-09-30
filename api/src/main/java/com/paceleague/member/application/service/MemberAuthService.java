@@ -56,11 +56,11 @@ public class MemberAuthService implements MemberAuthUseCase {
         // 이용약관/개인정보처리방침/위치정보 수집·이용 — 위치정보는 GPS 기반 핵심 기능(러닝 기록/땅따먹기) 없이는
         // 서비스 자체가 성립하지 않는 앱 특성상 셋 다 필수 동의로 처리(가입 자체를 막음).
         if (!agreedTerms || !agreedPrivacy || !agreedLocation) {
-            throw new IllegalArgumentException("이용약관, 개인정보 처리방침, 위치정보 수집·이용에 모두 동의해야 회원가입할 수 있습니다.");
+            throw new IllegalArgumentException("You must agree to the Terms of Service, Privacy Policy, and Location Data terms to sign up.");
         }
 
         if (memberRepositoryPort.existsByMemberId(memberId)) {
-            throw new IllegalArgumentException("이미 존재하는 아이디입니다.");
+            throw new IllegalArgumentException("This username is already taken.");
         }
 
         String hash = passwordEncoder.encode(rawPassword);
@@ -82,16 +82,16 @@ public class MemberAuthService implements MemberAuthUseCase {
 
         String failCount = redis.opsForValue().get(failKey);
         if (failCount != null && Long.parseLong(failCount) >= LOGIN_FAIL_LIMIT) {
-            throw new IllegalArgumentException("로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.");
+            throw new IllegalArgumentException("Too many login attempts. Please try again later.");
         }
 
         Member member = memberRepositoryPort.findByMemberId(memberId).orElse(null);
         if (member == null || !passwordEncoder.matches(rawPassword, member.getPasswordHash())) {
             recordLoginFailure(failKey);
-            throw new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
+            throw new IllegalArgumentException("Incorrect username or password.");
         }
         if (!member.isActive()) {
-            throw new IllegalArgumentException("탈퇴 처리된 계정입니다.");
+            throw new IllegalArgumentException("This account has been deleted.");
         }
 
         redis.delete(failKey);
@@ -117,7 +117,7 @@ public class MemberAuthService implements MemberAuthUseCase {
                 .orElseThrow(() -> new IllegalArgumentException("member not found"));
 
         if (!member.isActive()) {
-            throw new IllegalArgumentException("탈퇴 처리된 계정입니다.");
+            throw new IllegalArgumentException("This account has been deleted.");
         }
 
         return issueTokens(member);

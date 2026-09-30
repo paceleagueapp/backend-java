@@ -18,7 +18,7 @@ class CrewMembershipManager {
 
     void joinCrew(Long crewSno, Long memberSno) {
         Crew crew = crewRepositoryPort.findBySnoForUpdate(crewSno)
-                .orElseThrow(() -> new IllegalArgumentException("크루를 찾을 수 없습니다"));
+                .orElseThrow(() -> new IllegalArgumentException("Crew not found."));
         boolean alreadyInACrew = crewMemberRepositoryPort.existsByMemberSno(memberSno);
         CrewMembershipPolicy.assertJoinable(crew, alreadyInACrew);
 

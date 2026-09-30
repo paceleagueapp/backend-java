@@ -25,9 +25,9 @@ public class CrewWithdrawService implements LeaveCrewOnWithdrawPort {
     public void onMemberWithdraw(Long memberSno) {
         crewMemberRepositoryPort.findByMemberSno(memberSno).ifPresent(cm -> {
             Crew crew = crewRepositoryPort.findBySnoForUpdate(cm.getCrewSno())
-                    .orElseThrow(() -> new IllegalArgumentException("크루를 찾을 수 없습니다"));
+                    .orElseThrow(() -> new IllegalArgumentException("Crew not found."));
             if (crew.isLeader(memberSno)) {
-                throw new IllegalArgumentException("크루장은 크루를 먼저 위임하거나 해체한 뒤 탈퇴할 수 있습니다.");
+                throw new IllegalArgumentException("As crew leader, you must transfer leadership or disband the crew before deleting your account.");
             }
             crewMemberRepositoryPort.delete(cm);
             crew.decreaseMemberCount();

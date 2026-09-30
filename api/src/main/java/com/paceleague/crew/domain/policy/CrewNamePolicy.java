@@ -9,11 +9,11 @@ public final class CrewNamePolicy {
     // 앞뒤 공백을 다듬은 크루명을 돌려준다. 길이/공백 위반이면 예외.
     public static String normalizeAndValidate(String rawName, int minLength, int maxLength) {
         if (rawName == null || rawName.isBlank()) {
-            throw new IllegalArgumentException("크루명을 입력해주세요");
+            throw new IllegalArgumentException("Please enter a crew name.");
         }
         String name = rawName.trim();
         if (name.length() < minLength || name.length() > maxLength) {
-            throw new IllegalArgumentException("크루명은 " + minLength + "~" + maxLength + "자여야 합니다");
+            throw new IllegalArgumentException("Crew name must be " + minLength + "-" + maxLength + " characters.");
         }
         return name;
     }

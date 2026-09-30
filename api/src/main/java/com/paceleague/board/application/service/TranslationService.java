@@ -124,7 +124,7 @@ public class TranslationService implements TranslationUseCase {
             redis.expire(key, RATE_LIMIT_WINDOW);
         }
         if (count != null && count > RATE_LIMIT_MAX_CALLS) {
-            throw new IllegalArgumentException("번역 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
+            throw new IllegalArgumentException("Too many translation requests. Please try again later.");
         }
     }
 }

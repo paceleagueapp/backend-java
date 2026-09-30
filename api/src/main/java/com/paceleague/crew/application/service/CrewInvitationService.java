@@ -35,16 +35,16 @@ public class CrewInvitationService implements CrewInvitationUseCase {
         CrewMembershipPolicy.assertLeader(crew, leaderMemberSno);
 
         if (leaderMemberSno.equals(inviteeMemberSno)) {
-            throw new IllegalArgumentException("자기 자신은 초대할 수 없습니다");
+            throw new IllegalArgumentException("You cannot invite yourself.");
         }
         if (crewMemberRepositoryPort.existsByMemberSno(inviteeMemberSno)) {
-            throw new IllegalArgumentException("이미 다른 크루에 소속된 회원입니다");
+            throw new IllegalArgumentException("This member already belongs to another crew.");
         }
         if (crewInvitationRepositoryPort.existsPendingByCrewSnoAndInvitee(crewSno, inviteeMemberSno)) {
-            throw new IllegalArgumentException("이미 초대한 회원입니다");
+            throw new IllegalArgumentException("This member has already been invited.");
         }
         if (crew.isFull()) {
-            throw new IllegalArgumentException("크루 정원이 가득 찼습니다");
+            throw new IllegalArgumentException("This crew is full.");
         }
 
         LocalDateTime expiresAt = LocalDateTime.now().plusDays(props.invitationExpireDays());
@@ -78,15 +78,15 @@ public class CrewInvitationService implements CrewInvitationUseCase {
     public void accept(Long memberSno, Long invitationId) {
         CrewInvitation inv = getInvitation(invitationId);
         if (!inv.getInviteeMemberSno().equals(memberSno)) {
-            throw new IllegalArgumentException("본인이 받은 초대가 아닙니다");
+            throw new IllegalArgumentException("This invitation was not sent to you.");
         }
         if (!inv.isPending()) {
-            throw new IllegalArgumentException("이미 처리된 초대입니다");
+            throw new IllegalArgumentException("This invitation has already been processed.");
         }
         if (inv.isExpired(LocalDateTime.now())) {
             inv.expire();
             crewInvitationRepositoryPort.save(inv);
-            throw new IllegalArgumentException("만료된 초대입니다");
+            throw new IllegalArgumentException("This invitation has expired.");
         }
 
         membershipManager.joinCrew(inv.getCrewSno(), memberSno);
@@ -98,10 +98,10 @@ public class CrewInvitationService implements CrewInvitationUseCase {
     public void decline(Long memberSno, Long invitationId) {
         CrewInvitation inv = getInvitation(invitationId);
         if (!inv.getInviteeMemberSno().equals(memberSno)) {
-            throw new IllegalArgumentException("본인이 받은 초대가 아닙니다");
+            throw new IllegalArgumentException("This invitation was not sent to you.");
         }
         if (!inv.isPending()) {
-            throw new IllegalArgumentException("이미 처리된 초대입니다");
+            throw new IllegalArgumentException("This invitation has already been processed.");
         }
         inv.decline();
         crewInvitationRepositoryPort.save(inv);
@@ -113,7 +113,7 @@ public class CrewInvitationService implements CrewInvitationUseCase {
         Crew crew = getCrew(inv.getCrewSno());
         CrewMembershipPolicy.assertLeader(crew, leaderMemberSno);
         if (!inv.isPending()) {
-            throw new IllegalArgumentException("이미 처리된 초대입니다");
+            throw new IllegalArgumentException("This invitation has already been processed.");
         }
         inv.cancel();
         crewInvitationRepositoryPort.save(inv);
@@ -121,11 +121,11 @@ public class CrewInvitationService implements CrewInvitationUseCase {
 
     private Crew getCrew(Long crewSno) {
         return crewRepositoryPort.findBySno(crewSno)
-                .orElseThrow(() -> new IllegalArgumentException("크루를 찾을 수 없습니다"));
+                .orElseThrow(() -> new IllegalArgumentException("Crew not found."));
     }
 
     private CrewInvitation getInvitation(Long id) {
         return crewInvitationRepositoryPort.findBySno(id)
-                .orElseThrow(() -> new IllegalArgumentException("초대를 찾을 수 없습니다"));
+                .orElseThrow(() -> new IllegalArgumentException("Invitation not found."));
     }
 }

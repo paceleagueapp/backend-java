@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
         log.warn("Bad request param: {}", e.getMessage());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiError.of(ErrorCode.BAD_REQUEST, "요청 파라미터가 올바르지 않습니다."));
+                .body(ApiError.of(ErrorCode.BAD_REQUEST, "Invalid request parameter."));
     }
 
     // @Valid @RequestBody 검증 실패(예: JoinRequest의 @NotNull agreedTerms 등 필수 필드 누락) — 도메인 검증 실패를
@@ -48,7 +48,7 @@ public class GlobalExceptionHandler {
                 .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
                 .collect(Collectors.joining(", "));
         if (message.isBlank()) {
-            message = "요청 값이 올바르지 않습니다.";
+            message = "Invalid request.";
         }
 
         log.warn("Validation failed: {}", message);
@@ -63,7 +63,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleNotFound(NoResourceFoundException e) {
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiError.of(ErrorCode.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다."));
+                .body(ApiError.of(ErrorCode.NOT_FOUND, "The requested resource was not found."));
     }
 
     @ExceptionHandler(Exception.class)
@@ -72,6 +72,6 @@ public class GlobalExceptionHandler {
         log.error("Unhandled exception", e);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiError.of(ErrorCode.INTERNAL_ERROR, "서버 오류"));
+                .body(ApiError.of(ErrorCode.INTERNAL_ERROR, "Internal server error."));
     }
 }

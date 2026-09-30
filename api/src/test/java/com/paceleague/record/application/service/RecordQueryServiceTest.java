@@ -111,7 +111,7 @@ class RecordQueryServiceTest {
 
         assertThatThrownBy(() -> service().getGpsTrack(7L, 100L))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("GPS 트랙이 없습니다");
+                .hasMessageContaining("no GPS track");
     }
 
     @Test

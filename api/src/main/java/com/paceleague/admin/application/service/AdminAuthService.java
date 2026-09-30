@@ -22,10 +22,10 @@ public class AdminAuthService implements AdminAuthUseCase {
     @Override
     public AdminSessionInfo login(String adminId, String rawPassword) {
         Admin admin = adminRepositoryPort.findByAdminId(adminId)
-                .orElseThrow(() -> new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Incorrect username or password."));
 
         if (!passwordEncoder.matches(rawPassword, admin.getPasswordHash())) {
-            throw new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
+            throw new IllegalArgumentException("Incorrect username or password.");
         }
 
         String token = adminSessionStorePort.issue(admin.getSno());

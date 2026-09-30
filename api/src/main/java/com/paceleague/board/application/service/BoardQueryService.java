@@ -97,7 +97,7 @@ public class BoardQueryService implements BoardQueryUseCase {
                 .orElseThrow(() -> new IllegalArgumentException("post not found"));
 
         if (post.isHidden()) {
-            throw new IllegalArgumentException("삭제되었거나 숨겨진 게시글입니다.");
+            throw new IllegalArgumentException("This post has been deleted or hidden.");
         }
 
         postRepositoryPort.incrementViewCount(postSno);

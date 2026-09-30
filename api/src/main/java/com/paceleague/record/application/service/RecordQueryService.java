@@ -133,7 +133,7 @@ public class RecordQueryService implements RecordQueryUseCase, GetRecordSummaryP
                 .orElseThrow(() -> new IllegalArgumentException("record not found"));
 
         RecordTrack track = recordTrackRepositoryPort.findByRecordSno(recordSno)
-                .orElseThrow(() -> new IllegalArgumentException("이 러닝에는 GPS 트랙이 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("This run has no GPS track."));
 
         List<GpsPoint> points = parsePoints(track);
         return new RecordGpsTrackResponse(

@@ -67,14 +67,14 @@ public class SecurityConfig {
                             response.setStatus(401);
                             response.setContentType("application/json;charset=UTF-8");
                             response.getWriter().write("""
-                            {"success":false,"code":"UNAUTHORIZED","message":"인증이 필요합니다."}
+                            {"success":false,"code":"UNAUTHORIZED","message":"Authentication required."}
                         """);
                         })
                         .accessDeniedHandler((request, response, ex) -> {
                             response.setStatus(403);
                             response.setContentType("application/json;charset=UTF-8");
                             response.getWriter().write("""
-                            {"success":false,"code":"FORBIDDEN","message":"접근 권한이 없습니다."}
+                            {"success":false,"code":"FORBIDDEN","message":"Access denied."}
                         """);
                         })
                 )

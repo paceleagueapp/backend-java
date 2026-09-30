@@ -64,7 +64,7 @@ public class MemberQueryService implements GetMemberNicknamePort, SearchMembersP
     @Override
     public AdminMemberDetail getDetail(Long memberSno) {
         Member m = memberRepositoryPort.findBySno(memberSno)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         var pushAgreement = memberAgreementRepositoryPort.findByMemberSnoAndAgreementType(memberSno, AgreementType.PUSH_SERVICE);
 

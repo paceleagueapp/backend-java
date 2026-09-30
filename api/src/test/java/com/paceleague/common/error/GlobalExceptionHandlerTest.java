@@ -46,7 +46,7 @@ class GlobalExceptionHandlerTest {
                 handler.handleBadParam(new MissingServletRequestParameterException("token", "String"));
 
         // 파라미터명("token") 등 내부 정보가 그대로 새지 않고 고정 문구만 내려가야 한다.
-        assertThat(response.getBody().message()).isEqualTo("요청 파라미터가 올바르지 않습니다.");
+        assertThat(response.getBody().message()).isEqualTo("Invalid request parameter.");
         assertThat(response.getBody().message()).doesNotContain("token");
     }
 
@@ -93,6 +93,6 @@ class GlobalExceptionHandlerTest {
 
         ResponseEntity<ApiError> response = handler.handleValidation(e);
 
-        assertThat(response.getBody().message()).isEqualTo("요청 값이 올바르지 않습니다.");
+        assertThat(response.getBody().message()).isEqualTo("Invalid request.");
     }
 }

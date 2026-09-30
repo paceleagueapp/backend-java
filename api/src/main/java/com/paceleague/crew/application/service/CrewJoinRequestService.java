@@ -31,19 +31,19 @@ public class CrewJoinRequestService implements CrewJoinRequestUseCase {
     @Override
     public Long apply(Long memberSno, Long crewSno, String message) {
         if (crewMemberRepositoryPort.existsByMemberSno(memberSno)) {
-            throw new IllegalArgumentException("이미 크루에 소속되어 있습니다");
+            throw new IllegalArgumentException("You are already in a crew.");
         }
         Crew crew = getCrew(crewSno);
         if (crew.isFull()) {
-            throw new IllegalArgumentException("크루 정원이 가득 찼습니다");
+            throw new IllegalArgumentException("This crew is full.");
         }
         if (crewJoinRequestRepositoryPort.existsPendingByCrewSnoAndMemberSno(crewSno, memberSno)) {
-            throw new IllegalArgumentException("이미 가입신청 중입니다");
+            throw new IllegalArgumentException("You already have a pending join request.");
         }
 
         String msg = (message == null || message.isBlank()) ? null : message.trim();
         if (msg != null && msg.length() > MESSAGE_MAX_LENGTH) {
-            throw new IllegalArgumentException("메시지가 너무 깁니다 (최대 " + MESSAGE_MAX_LENGTH + "자)");
+            throw new IllegalArgumentException("Message is too long (max " + MESSAGE_MAX_LENGTH + " characters).");
         }
         return crewJoinRequestRepositoryPort.save(CrewJoinRequest.create(crewSno, memberSno, msg)).getSno();
     }
@@ -70,7 +70,7 @@ public class CrewJoinRequestService implements CrewJoinRequestUseCase {
         Crew crew = getCrew(jr.getCrewSno());
         CrewMembershipPolicy.assertLeader(crew, leaderMemberSno);
         if (!jr.isPending()) {
-            throw new IllegalArgumentException("이미 처리된 신청입니다");
+            throw new IllegalArgumentException("This join request has already been processed.");
         }
         membershipManager.joinCrew(jr.getCrewSno(), jr.getMemberSno());
         jr.approve();
@@ -83,7 +83,7 @@ public class CrewJoinRequestService implements CrewJoinRequestUseCase {
         Crew crew = getCrew(jr.getCrewSno());
         CrewMembershipPolicy.assertLeader(crew, leaderMemberSno);
         if (!jr.isPending()) {
-            throw new IllegalArgumentException("이미 처리된 신청입니다");
+            throw new IllegalArgumentException("This join request has already been processed.");
         }
         jr.reject();
         crewJoinRequestRepositoryPort.save(jr);
@@ -93,10 +93,10 @@ public class CrewJoinRequestService implements CrewJoinRequestUseCase {
     public void cancel(Long memberSno, Long joinRequestId) {
         CrewJoinRequest jr = getJoinRequest(joinRequestId);
         if (!jr.getMemberSno().equals(memberSno)) {
-            throw new IllegalArgumentException("본인 신청이 아닙니다");
+            throw new IllegalArgumentException("This is not your join request.");
         }
         if (!jr.isPending()) {
-            throw new IllegalArgumentException("이미 처리된 신청입니다");
+            throw new IllegalArgumentException("This join request has already been processed.");
         }
         jr.cancel();
         crewJoinRequestRepositoryPort.save(jr);
@@ -104,11 +104,11 @@ public class CrewJoinRequestService implements CrewJoinRequestUseCase {
 
     private Crew getCrew(Long crewSno) {
         return crewRepositoryPort.findBySno(crewSno)
-                .orElseThrow(() -> new IllegalArgumentException("크루를 찾을 수 없습니다"));
+                .orElseThrow(() -> new IllegalArgumentException("Crew not found."));
     }
 
     private CrewJoinRequest getJoinRequest(Long id) {
         return crewJoinRequestRepositoryPort.findBySno(id)
-                .orElseThrow(() -> new IllegalArgumentException("가입신청을 찾을 수 없습니다"));
+                .orElseThrow(() -> new IllegalArgumentException("Join request not found."));
     }
 }

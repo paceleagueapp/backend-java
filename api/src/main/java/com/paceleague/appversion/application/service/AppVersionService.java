@@ -22,7 +22,7 @@ public class AppVersionService implements CheckAppVersionUseCase, AdminAppVersio
 
     public AppVersionCheckResponse checkVersion(AppPlatform platform, String currentVersion) {
         AppVersionPolicy policy = appVersionPolicyRepositoryPort.findByPlatform(platform)
-                .orElseThrow(() -> new IllegalArgumentException("앱 버전 정책이 존재하지 않습니다. platform=" + platform));
+                .orElseThrow(() -> new IllegalArgumentException("App version policy not found. platform=" + platform));
 
         AppUpdateType updateType = getUpdateType(
                 currentVersion,

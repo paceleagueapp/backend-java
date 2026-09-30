@@ -25,7 +25,7 @@ public class MemberBlockService implements MemberBlockUseCase, GetBlockedMemberS
     @Transactional
     public void block(Long blockerMemberSno, Long blockedMemberSno) {
         if (blockedMemberSno == null || blockedMemberSno.equals(blockerMemberSno)) {
-            throw new IllegalArgumentException("자기 자신은 차단할 수 없습니다.");
+            throw new IllegalArgumentException("You cannot block yourself.");
         }
         if (!memberBlockRepositoryPort.exists(blockerMemberSno, blockedMemberSno)) {
             memberBlockRepositoryPort.save(MemberBlock.create(blockerMemberSno, blockedMemberSno));

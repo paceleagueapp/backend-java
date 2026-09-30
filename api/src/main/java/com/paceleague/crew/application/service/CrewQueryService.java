@@ -55,7 +55,7 @@ public class CrewQueryService implements CrewQueryUseCase, GetMemberCrewBadgePor
     @Override
     public CrewDetailResponse getDetail(Long crewSno, Long viewerMemberSno, String lang) {
         Crew crew = crewRepositoryPort.findBySno(crewSno)
-                .orElseThrow(() -> new IllegalArgumentException("크루를 찾을 수 없습니다"));
+                .orElseThrow(() -> new IllegalArgumentException("Crew not found."));
         return toDetail(crew, viewerMemberSno, Language.fromCode(lang));
     }
 
@@ -70,9 +70,9 @@ public class CrewQueryService implements CrewQueryUseCase, GetMemberCrewBadgePor
     @Override
     public List<CrewRankingEntryResponse> getRanking(Long viewerMemberSno, Long crewSno, String lang) {
         crewRepositoryPort.findBySno(crewSno)
-                .orElseThrow(() -> new IllegalArgumentException("크루를 찾을 수 없습니다"));
+                .orElseThrow(() -> new IllegalArgumentException("Crew not found."));
         if (crewMemberRepositoryPort.findByCrewSnoAndMemberSno(crewSno, viewerMemberSno).isEmpty()) {
-            throw new IllegalArgumentException("크루원만 볼 수 있습니다");
+            throw new IllegalArgumentException("Only crew members can view this.");
         }
 
         Language language = Language.fromCode(lang);
