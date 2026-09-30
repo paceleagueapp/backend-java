@@ -539,3 +539,12 @@ function renderLangSelect(selectEl) {
     window.location.reload();
   });
 }
+
+// 상단 "가이드" 메뉴는 선택 언어의 가이드로 (/guide = 한국어, /{lang}/guide = 그 외 9개 언어)
+function guideHref() {
+  var lang = getLang();
+  return lang === 'ko' ? '/guide' : '/' + lang + '/guide';
+}
+document.querySelectorAll('a[data-navkey="navGuide"]').forEach(function (a) {
+  a.setAttribute('href', guideHref());
+});

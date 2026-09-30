@@ -51,6 +51,321 @@
   </url>
 
   <url>
+    <loc>https://paceleague.co.kr/en/guide</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/en/guide/pace</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/en/guide/first-5k</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/en/guide/injury-prevention</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/en/guide/landit-strategy</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/ja/guide</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/ja/guide/pace</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/ja/guide/first-5k</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/ja/guide/injury-prevention</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/ja/guide/landit-strategy</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/zh/guide</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/zh/guide/pace</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/zh/guide/first-5k</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/zh/guide/injury-prevention</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/zh/guide/landit-strategy</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/es/guide</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/es/guide/pace</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/es/guide/first-5k</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/es/guide/injury-prevention</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/es/guide/landit-strategy</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/fr/guide</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/fr/guide/pace</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/fr/guide/first-5k</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/fr/guide/injury-prevention</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/fr/guide/landit-strategy</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/de/guide</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/de/guide/pace</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/de/guide/first-5k</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/de/guide/injury-prevention</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/de/guide/landit-strategy</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/pt/guide</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/pt/guide/pace</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/pt/guide/first-5k</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/pt/guide/injury-prevention</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/pt/guide/landit-strategy</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/vi/guide</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/vi/guide/pace</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/vi/guide/first-5k</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/vi/guide/injury-prevention</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/vi/guide/landit-strategy</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/th/guide</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/th/guide/pace</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/th/guide/first-5k</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/th/guide/injury-prevention</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://paceleague.co.kr/th/guide/landit-strategy</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
     <loc>https://paceleague.co.kr/territory</loc>
     <lastmod>2026-09-17</lastmod>
     <changefreq>daily</changefreq>
