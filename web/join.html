@@ -87,7 +87,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <a class="back" id="back-link" href="/login"></a>
 
   <script src="/js/app.js?v=20260910"></script>
-  <script src="/js/i18n.js?v=20260910"></script>
+  <script src="/js/i18n.js?v=20260930"></script>
   <script>
     renderLangSelect(document.getElementById('lang-select'));
     document.getElementById('join-heading').textContent = t('joinHeading');
@@ -105,6 +105,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     document.getElementById('agree-note').textContent = t('agreeLocationNote');
     document.getElementById('join-submit').textContent = t('joinSubmit');
     document.getElementById('back-link').textContent = t('backToLogin');
+    // 약관 보기 링크를 선택한 언어의 문서로 (/{lang}/terms 등 10개 언어 모두 존재)
+    ['terms', 'privacy', 'location-terms'].forEach(function (doc) {
+      var id = doc === 'location-terms' ? 'agree-location-link' : 'agree-' + doc + '-link';
+      document.getElementById(id).href = '/' + getLang() + '/' + doc;
+    });
 
     var requiredBoxes = Array.prototype.slice.call(document.querySelectorAll('.agree-required'));
     var allBox = document.getElementById('agree-all');
