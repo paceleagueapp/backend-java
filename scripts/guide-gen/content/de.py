@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Deutscher Ratgeber (übersetzt aus ko.py)."""
 
-UI = dict(crumb="Lauf-Ratgeber", author="Pace-League-Team", date="30. September 2026", related="Weitere Ratgeber", read_in="Lesen auf")
+UI = dict(crumb="Lauf-Ratgeber", author="Pace-League-Team", date="30. September 2026", related="Weitere Ratgeber")
 
 HUB = dict(title="Lauf-Ratgeber",
            desc="Pace berechnen, 8-Wochen-Plan für die ersten 5 km, Verletzungen vorbeugen und Landeat-Strategie – Laufratgeber von Pace League.",

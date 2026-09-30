@@ -58,7 +58,7 @@ HEAD = """<!DOCTYPE html>
 {alternates}  <link rel="icon" type="image/png" href="/img/favicon.png">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2124974034690240" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="/css/app.css?v=20260908">
-  <link rel="stylesheet" href="/css/guide.css?v=20260930b">
+  <link rel="stylesheet" href="/css/guide.css?v=20260930c">
 {extra_head}  <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){{w[l]=w[l]||[];w[l].push({{'gtm.start':
   new Date().getTime(),event:'gtm.js'}});var f=d.getElementsByTagName(s)[0],
@@ -86,7 +86,9 @@ HEAD = """<!DOCTYPE html>
         <a href="/territory" class="navlink" data-navkey="navLandit">{nav[navLandit]}</a>
         <a href="/crew" class="navlink" data-navkey="navCrew">{nav[navCrew]}</a>
       </nav>
-      <div class="header-actions" id="header-actions"></div>
+      <div class="header-actions">
+{lang_select}        <span id="auth-actions"></span>
+      </div>
     </div>
   </div>
 
@@ -121,12 +123,17 @@ FOOT = """  </main>
         (label || el).textContent = v;
       }}
     }});
-    // 다른 언어로 읽기 링크를 누르면 사이트 언어도 그 언어로 맞춘다
-    document.querySelectorAll('.guide-langs a[data-lang]').forEach(function (a) {{
-      a.addEventListener('click', function () {{ setLang(a.getAttribute('data-lang')); }});
-    }});
+    // 언어를 바꾸면 사이트 언어를 저장하고 같은 페이지의 그 언어 버전으로 이동한다
+    (function () {{
+      var sel = document.getElementById('lang-select');
+      sel.addEventListener('change', function () {{
+        var opt = sel.options[sel.selectedIndex];
+        setLang(opt.value);
+        window.location.href = opt.getAttribute('data-href');
+      }});
+    }})();
     (function renderAuthActions() {{
-      var el = document.getElementById('header-actions');
+      var el = document.getElementById('auth-actions');
       if (isLoggedIn()) {{
         var nick = localStorage.getItem('pl_nickname') || '';
         el.innerHTML = '<span class="header-nick">' + escapeHtml(nick) + '</span>'
@@ -148,14 +155,15 @@ def alternates(path_fn):
     return "".join(lines)
 
 
-def lang_row(cur, path_fn, label):
-    links = []
-    for l in LANGS:
-        if l == cur:
-            links.append("<strong>%s</strong>" % LANG_NAMES[l])
-        else:
-            links.append('<a href="%s" hreflang="%s" data-lang="%s">%s</a>' % (path_fn(l), l, l, LANG_NAMES[l]))
-    return '    <div class="guide-langs">🌐 %s: %s</div>\n' % (label, " · ".join(links))
+LANG_FLAGS = {"ko": "🇰🇷", "en": "🇺🇸", "ja": "🇯🇵", "zh": "🇨🇳", "es": "🇪🇸",
+              "fr": "🇫🇷", "de": "🇩🇪", "pt": "🇵🇹", "vi": "🇻🇳", "th": "🇹🇭"}
+
+
+def lang_select(cur, path_fn):
+    """상단 언어 선택 (다른 페이지의 #lang-select 와 같은 모양). 옵션마다 그 언어 버전 페이지 주소를 담는다."""
+    opts = "".join('          <option value="%s" data-href="%s"%s>%s %s</option>\n'
+                   % (l, path_fn(l), " selected" if l == cur else "", LANG_FLAGS[l], LANG_NAMES[l]) for l in LANGS)
+    return '        <select id="lang-select" aria-label="language">\n%s        </select>\n' % opts
 
 
 def jsonld(lang, slug, a):
@@ -206,11 +214,10 @@ ICONS = {
 
 def build_about(lang, a, nav, ui):
     html = HEAD.format(lang=lang, title=a["title"], desc=a["desc"], site=SITE, path=about_path(lang),
-                       alternates=alternates(about_path), jsonld="", nav=nav, hub=hub_path(lang),
+                       alternates=alternates(about_path), lang_select=lang_select(lang, about_path), jsonld="", nav=nav, hub=hub_path(lang),
                        about=about_path(lang), about_active=" active", guide_active="",
                        main_class="about-page", extra_head=ABOUT_CSS)
     html += "    <h1>%s</h1>\n" % a["h1"]
-    html += lang_row(lang, about_path, ui["read_in"])
     html += '    <p class="about-lead">%s</p>\n' % a["lead"]
     for icon, heading, para in a["sections"]:
         html += """
@@ -250,13 +257,12 @@ def main():
         for slug in SLUGS:
             a = c.ARTICLES[slug]
             html = HEAD.format(lang=lang, title=a["title"], desc=a["desc"], site=SITE, path=art_path(lang, slug),
-                               alternates=alternates(lambda l: art_path(l, slug)), jsonld=jsonld(lang, slug, a),
+                               alternates=alternates(lambda l: art_path(l, slug)), lang_select=lang_select(lang, lambda l: art_path(l, slug)), jsonld=jsonld(lang, slug, a),
                                nav=nav, hub=hub_path(lang), about=about_path(lang), about_active="",
                                guide_active=" active", main_class="guide-page", extra_head="")
             html += '    <div class="guide-crumb"><a href="%s">%s</a> › %s</div>\n' % (hub_path(lang), ui["crumb"], a["tag"])
             html += "    <h1>%s</h1>\n" % a["title"]
             html += '    <div class="guide-meta">%s · %s</div>\n' % (ui["author"], ui["date"])
-            html += lang_row(lang, lambda l: art_path(l, slug), ui["read_in"])
             html += c.BODY[slug]
             related = "\n".join('      <a href="%s">%s</a>' % (art_path(lang, s), c.ARTICLES[s]["title"])
                                 for s in SLUGS if s != slug)
@@ -270,10 +276,9 @@ def main():
         <p>%s</p>
       </a>""" % (art_path(lang, s), c.ARTICLES[s]["tag"], c.ARTICLES[s]["title"], c.ARTICLES[s]["summary"]) for s in SLUGS)
         hub = HEAD.format(lang=lang, title=c.HUB["title"], desc=c.HUB["desc"], site=SITE, path=hub_path(lang),
-                          alternates=alternates(hub_path), jsonld="", nav=nav, hub=hub_path(lang), about=about_path(lang), about_active="",
+                          alternates=alternates(hub_path), lang_select=lang_select(lang, hub_path), jsonld="", nav=nav, hub=hub_path(lang), about=about_path(lang), about_active="",
                                guide_active=" active", main_class="guide-page", extra_head="")
         hub += "    <h1>%s</h1>\n" % c.HUB["title"]
-        hub += lang_row(lang, hub_path, ui["read_in"])
         hub += '    <p class="guide-lead">%s</p>\n' % c.HUB["lead"]
         hub += '    <div class="guide-list">\n%s\n    </div>\n' % cards
         hub += FOOT.format(nav=nav)

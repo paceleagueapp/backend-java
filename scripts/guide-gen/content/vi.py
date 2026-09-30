@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Hướng dẫn tiếng Việt (dịch từ ko.py)."""
 
-UI = dict(crumb="Hướng dẫn chạy bộ", author="Đội ngũ Pace League", date="30 tháng 9, 2026", related="Hướng dẫn khác", read_in="Đọc bằng")
+UI = dict(crumb="Hướng dẫn chạy bộ", author="Đội ngũ Pace League", date="30 tháng 9, 2026", related="Hướng dẫn khác")
 
 HUB = dict(title="Hướng dẫn chạy bộ",
            desc="Tính pace, kế hoạch 5 km trong 8 tuần cho người mới, phòng tránh chấn thương và chiến thuật Landeat — bộ hướng dẫn chạy bộ của Pace League.",

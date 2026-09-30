@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Guide en français (traduit de ko.py)."""
 
-UI = dict(crumb="Guide running", author="Équipe Pace League", date="30 septembre 2026", related="Autres guides", read_in="Lire en")
+UI = dict(crumb="Guide running", author="Équipe Pace League", date="30 septembre 2026", related="Autres guides")
 
 HUB = dict(title="Guide running",
            desc="Calcul de l'allure, plan 5 km en 8 semaines pour débutants, prévention des blessures et stratégie Landeat : les guides running de Pace League.",

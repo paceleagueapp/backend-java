@@ -20,7 +20,7 @@
   <link rel="icon" type="image/png" href="/img/favicon.png">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2124974034690240" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="/css/app.css?v=20260908">
-  <link rel="stylesheet" href="/css/guide.css?v=20260930b">
+  <link rel="stylesheet" href="/css/guide.css?v=20260930c">
   <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
   new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -49,7 +49,21 @@
         <a href="/territory" class="navlink" data-navkey="navLandit">Landeat</a>
         <a href="/crew" class="navlink" data-navkey="navCrew">Crew</a>
       </nav>
-      <div class="header-actions" id="header-actions"></div>
+      <div class="header-actions">
+        <select id="lang-select" aria-label="language">
+          <option value="ko" data-href="/guide/first-5k">🇰🇷 한국어</option>
+          <option value="en" data-href="/en/guide/first-5k" selected>🇺🇸 English</option>
+          <option value="ja" data-href="/ja/guide/first-5k">🇯🇵 日本語</option>
+          <option value="zh" data-href="/zh/guide/first-5k">🇨🇳 中文</option>
+          <option value="es" data-href="/es/guide/first-5k">🇪🇸 Español</option>
+          <option value="fr" data-href="/fr/guide/first-5k">🇫🇷 Français</option>
+          <option value="de" data-href="/de/guide/first-5k">🇩🇪 Deutsch</option>
+          <option value="pt" data-href="/pt/guide/first-5k">🇵🇹 Português</option>
+          <option value="vi" data-href="/vi/guide/first-5k">🇻🇳 Tiếng Việt</option>
+          <option value="th" data-href="/th/guide/first-5k">🇹🇭 ไทย</option>
+        </select>
+        <span id="auth-actions"></span>
+      </div>
     </div>
   </div>
 
@@ -57,7 +71,6 @@
     <div class="guide-crumb"><a href="/en/guide">Running Guide</a> › Beginner</div>
     <h1>An 8-Week 5K Plan for New Runners</h1>
     <div class="guide-meta">Pace League Team · September 30, 2026</div>
-    <div class="guide-langs">🌐 Read in: <a href="/guide/first-5k" hreflang="ko" data-lang="ko">한국어</a> · <strong>English</strong> · <a href="/ja/guide/first-5k" hreflang="ja" data-lang="ja">日本語</a> · <a href="/zh/guide/first-5k" hreflang="zh" data-lang="zh">中文</a> · <a href="/es/guide/first-5k" hreflang="es" data-lang="es">Español</a> · <a href="/fr/guide/first-5k" hreflang="fr" data-lang="fr">Français</a> · <a href="/de/guide/first-5k" hreflang="de" data-lang="de">Deutsch</a> · <a href="/pt/guide/first-5k" hreflang="pt" data-lang="pt">Português</a> · <a href="/vi/guide/first-5k" hreflang="vi" data-lang="vi">Tiếng Việt</a> · <a href="/th/guide/first-5k" hreflang="th" data-lang="th">ไทย</a></div>
 
     <p class="guide-lead">
       Even if you have never run 5 km without stopping, eight weeks is enough to get there. The key is not trying to run
@@ -161,12 +174,17 @@
         (label || el).textContent = v;
       }
     });
-    // 다른 언어로 읽기 링크를 누르면 사이트 언어도 그 언어로 맞춘다
-    document.querySelectorAll('.guide-langs a[data-lang]').forEach(function (a) {
-      a.addEventListener('click', function () { setLang(a.getAttribute('data-lang')); });
-    });
+    // 언어를 바꾸면 사이트 언어를 저장하고 같은 페이지의 그 언어 버전으로 이동한다
+    (function () {
+      var sel = document.getElementById('lang-select');
+      sel.addEventListener('change', function () {
+        var opt = sel.options[sel.selectedIndex];
+        setLang(opt.value);
+        window.location.href = opt.getAttribute('data-href');
+      });
+    })();
     (function renderAuthActions() {
-      var el = document.getElementById('header-actions');
+      var el = document.getElementById('auth-actions');
       if (isLoggedIn()) {
         var nick = localStorage.getItem('pl_nickname') || '';
         el.innerHTML = '<span class="header-nick">' + escapeHtml(nick) + '</span>'
