@@ -213,7 +213,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </dialog>
 
-  <script src="/js/app.js?v=20260828f"></script>
+  <script src="/js/app.js?v=20260930c"></script>
   <script src="/js/i18n.js?v=20260930b"></script>
   <script>
     var postEditor = createPostEditor({
@@ -303,24 +303,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     function renderHeader() {
       var actionsEl = document.getElementById('header-actions');
-      var langSelectHtml = '<select id="lang-select"></select>';
-      if (isLoggedIn()) {
-        actionsEl.innerHTML =
-          langSelectHtml +
-          '<a class="btn ghost" href="/account">' + t('accountLink') + '</a>' +
-          '<a class="btn ghost" href="#" id="logout-link">' + t('logout') + '</a>' +
-          '<button class="btn" id="write-btn">' + t('write') + '</button>';
-        document.getElementById('logout-link').addEventListener('click', function (e) {
-          e.preventDefault();
-          logout();
-        });
-      } else {
-        actionsEl.innerHTML =
-          langSelectHtml +
-          '<a class="btn ghost" href="/join">' + t('goToJoin') + '</a>' +
-          '<a class="btn ghost" href="/login">' + t('login') + '</a>' +
-          '<button class="btn" id="write-btn">' + t('write') + '</button>';
-      }
+      renderHeaderAuth(actionsEl, '<button class="btn" id="write-btn">' + t('write') + '</button>');
+      actionsEl.insertAdjacentHTML('afterbegin', '<select id="lang-select"></select>');
       renderLangSelect(document.getElementById('lang-select'));
 
       document.getElementById('write-board-label').textContent = t('boardSelectLabel');

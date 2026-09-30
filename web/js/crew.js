@@ -22,11 +22,7 @@
 
   // ── helpers ──────────────────────────────────────────────────────────────
   function renderAuthActions() {
-    var el = document.getElementById('auth-actions');
-    var nick = localStorage.getItem('pl_nickname') || '';
-    el.innerHTML = '<span class="header-nick">' + escapeHtml(nick) + '</span>'
-      + '<button class="btn ghost sm" id="logout-btn">' + t('logout') + '</button>';
-    document.getElementById('logout-btn').addEventListener('click', logout);
+    renderHeaderAuth(document.getElementById('auth-actions'));
   }
 
   function iconColor(key) {

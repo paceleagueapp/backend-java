@@ -468,6 +468,27 @@ function requireLogin() {
 }
 
 // 글쓰기/댓글/투표처럼 로그인이 필요한 동작을 시작하기 전에 호출. 비로그인이면 로그인 페이지로 보내고 true를 반환.
+// 상단 헤더 우측 계정 버튼 — 모든 페이지 공통.
+// 로그아웃 상태: 회원가입 · 로그인 / 로그인 상태: 닉네임(모바일에선 숨김) · 계정설정 · 로그아웃.
+// extraHtml 은 페이지 전용 버튼(예: 커뮤니티의 글쓰기)으로, 계정 버튼 뒤에 붙는다.
+function renderHeaderAuth(el, extraHtml) {
+  var html;
+  if (isLoggedIn()) {
+    var nick = localStorage.getItem('pl_nickname') || '';
+    html = (nick ? '<span class="header-nick">' + escapeHtml(nick) + '</span>' : '')
+      + '<a class="btn ghost" href="/account">' + t('accountLink') + '</a>'
+      + '<button class="btn ghost" type="button" data-header-logout>' + t('logout') + '</button>';
+  } else {
+    html = '<a class="btn ghost" href="/join">' + t('goToJoin') + '</a>'
+      + '<a class="btn ghost" href="/login">' + t('login') + '</a>';
+  }
+  // #auth-actions 같은 래퍼 span 이면 버튼들이 .header-actions 의 flex gap 을 그대로 받도록 한다
+  if (!el.classList.contains('header-actions')) el.style.display = 'contents';
+  el.innerHTML = html + (extraHtml || '');
+  var logoutBtn = el.querySelector('[data-header-logout]');
+  if (logoutBtn) logoutBtn.addEventListener('click', logout);
+}
+
 function redirectToLoginIfNeeded() {
   if (!isLoggedIn()) {
     window.location.href = '/login';
