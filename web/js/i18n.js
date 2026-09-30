@@ -540,11 +540,14 @@ function renderLangSelect(selectEl) {
   });
 }
 
-// 상단 "가이드" 메뉴는 선택 언어의 가이드로 (/guide = 한국어, /{lang}/guide = 그 외 9개 언어)
-function guideHref() {
+// 상단 "소개"/"가이드" 메뉴는 선택 언어의 페이지로 (/about·/guide = 한국어, /{lang}/about·/{lang}/guide = 그 외 9개 언어)
+function localizedPath(path) {
   var lang = getLang();
-  return lang === 'ko' ? '/guide' : '/' + lang + '/guide';
+  return lang === 'ko' ? path : '/' + lang + path;
 }
 document.querySelectorAll('a[data-navkey="navGuide"]').forEach(function (a) {
-  a.setAttribute('href', guideHref());
+  a.setAttribute('href', localizedPath('/guide'));
+});
+document.querySelectorAll('a[data-navkey="navAbout"]').forEach(function (a) {
+  a.setAttribute('href', localizedPath('/about'));
 });
