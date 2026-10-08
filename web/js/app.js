@@ -107,7 +107,7 @@ function login(memberId, password) {
   }).then(function (res) {
     return res.json().then(function (json) {
       if (!res.ok || !json.success) {
-        throw new Error((json && json.message) || '로그인에 실패했습니다.');
+        throw new Error(localizeApiMessage(json && json.message) || t('loginFailed'));
       }
       return json.data;
     });
@@ -123,7 +123,7 @@ function join(payload) {
   }).then(function (res) {
     return res.json().then(function (json) {
       if (!res.ok || !json.success) {
-        throw new Error((json && json.message) || '회원가입에 실패했습니다.');
+        throw new Error(localizeApiMessage(json && json.message) || t('joinFailed'));
       }
       return json.data;
     });
@@ -210,15 +210,25 @@ function rawFetch(path, options) {
 
 // 공용 API 호출 래퍼. 게시판 조회(GET)는 비로그인도 호출 가능하고, 로그인 상태면 토큰을 자동 첨부한다.
 // 로그인 상태에서 401이 오면(토큰 만료 등) reissue 후 한 번만 재시도.
+// 서버 오류 메시지(항상 영어)를 사용자 언어로 — i18n.js 의 localizeServerMessage. 성공 응답 메시지는 건드리지 않는다.
+function localizeApiMessage(message) {
+  return typeof localizeServerMessage === 'function' ? localizeServerMessage(message) : message;
+}
+
+function localizeApiJson(json) {
+  if (json && json.success !== true && json.message) json.message = localizeApiMessage(json.message);
+  return json;
+}
+
 function apiFetch(path, options) {
   return rawFetch(path, options).then(function (res) {
     if (res.status !== 401 || !isLoggedIn()) {
-      return res.json();
+      return res.json().then(localizeApiJson);
     }
     return reissueTokens()
       .then(function () {
         return rawFetch(path, options).then(function (retryRes) {
-          return retryRes.json();
+          return retryRes.json().then(localizeApiJson);
         });
       })
       .catch(function () {

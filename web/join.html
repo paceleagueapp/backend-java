@@ -30,7 +30,8 @@
       font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px;
     }
     form button:hover { background: #c62828; }
-    form button:disabled { background: #d7dade; cursor: not-allowed; }
+    form button:disabled, form button.is-locked { background: #d7dade; cursor: not-allowed; }
+    form button.is-locked:hover { background: #d7dade; }
     .error { color: #d02b22; font-size: 13px; min-height: 18px; }
     a.back { color: #8a8e96; font-size: 13px; margin-top: 20px; }
     .agree-box { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 14px; margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
@@ -39,6 +40,9 @@
     .agree-row a { color: #1c2024; text-decoration: underline; margin-left: auto; white-space: nowrap; }
     .agree-all { font-weight: 700; color: #1c2024; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
     .agree-note { font-size: 12px; color: #8a8e96; margin-top: -2px; }
+    .agree-hint { font-size: 12.5px; color: #c62828; text-align: center; margin-top: 2px; }
+    .agree-hint[hidden] { display: none; }
+    .agree-box.highlight { border-color: #e5342f; box-shadow: 0 0 0 3px rgba(229,52,47,0.12); }
   </style>
 </head>
 <body>
@@ -82,12 +86,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
 
     <div class="error" id="error"></div>
-    <button type="submit" id="join-submit" disabled></button>
+    <button type="submit" id="join-submit" class="is-locked" aria-disabled="true"></button>
+    <div class="agree-hint" id="agree-hint"></div>
   </form>
   <a class="back" id="back-link" href="/login"></a>
 
-  <script src="/js/app.js?v=20260930c"></script>
-  <script src="/js/i18n.js?v=20260930b"></script>
+  <script src="/js/app.js?v=20261008"></script>
+  <script src="/js/i18n.js?v=20261008"></script>
   <script>
     renderLangSelect(document.getElementById('lang-select'));
     document.getElementById('join-heading').textContent = t('joinHeading');
@@ -105,6 +110,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     document.getElementById('agree-note').textContent = t('agreeLocationNote');
     document.getElementById('join-submit').textContent = t('joinSubmit');
     document.getElementById('back-link').textContent = t('backToLogin');
+    document.getElementById('agree-hint').textContent = t('joinAgreeHint');
     // 약관 보기 링크를 선택한 언어의 문서로 (/{lang}/terms 등 10개 언어 모두 존재)
     ['terms', 'privacy', 'location-terms'].forEach(function (doc) {
       var id = doc === 'location-terms' ? 'agree-location-link' : 'agree-' + doc + '-link';
@@ -115,8 +121,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     var allBox = document.getElementById('agree-all');
     var submitBtn = document.getElementById('join-submit');
 
+    var hintEl = document.getElementById('agree-hint');
+    var agreeBox = document.querySelector('.agree-box');
+    // disabled 속성 대신 잠금 스타일만 준다 — disabled 버튼은 클릭 이벤트가 오지 않아 "왜 안 눌리는지" 안내할 수 없기 때문.
+    function allAgreed() {
+      return requiredBoxes.every(function (b) { return b.checked; });
+    }
     function updateSubmitState() {
-      submitBtn.disabled = !requiredBoxes.every(function (b) { return b.checked; });
+      var ok = allAgreed();
+      submitBtn.classList.toggle('is-locked', !ok);
+      submitBtn.setAttribute('aria-disabled', ok ? 'false' : 'true');
+      hintEl.hidden = ok;
+      if (ok) agreeBox.classList.remove('highlight');
     }
     allBox.addEventListener('change', function () {
       requiredBoxes.forEach(function (b) { b.checked = allBox.checked; });
@@ -131,6 +147,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     document.getElementById('join-form').addEventListener('submit', function (e) {
       e.preventDefault();
+      if (!allAgreed()) {
+        // 잠긴 상태에서 누르면 동의 박스를 강조해 어디를 체크해야 하는지 보여준다
+        agreeBox.classList.add('highlight');
+        agreeBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
       var errorEl = document.getElementById('error');
       errorEl.textContent = '';
 
