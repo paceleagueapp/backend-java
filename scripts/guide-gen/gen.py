@@ -5,6 +5,9 @@ content/<lang>.py 의 원고로 web/guide.html, web/guide/*.html, web/about.html
 web/<lang>/guide.html, web/<lang>/guide/*.html, web/<lang>/about.html (그 외 언어)을 만든다.
 원고를 고친 뒤 `python scripts/guide-gen/gen.py` 로 다시 생성해서 결과 HTML과 함께 커밋한다.
 새 글을 추가하면 web/sitemap.xml 에도 URL을 추가해야 한다.
+
+글 목록과 순서는 한국어 원고(content/ko.py 의 ARTICLES)가 기준이다. 다른 언어 원고에 없는 글은
+그 언어로 만들지 않는다(번역하지 않은 글은 한국어로만 존재). hreflang 도 실제로 있는 언어끼리만 연결한다.
 """
 import importlib, json, os, re, sys
 
@@ -15,8 +18,7 @@ sys.path.insert(0, HERE)
 LANGS = ["ko", "en", "ja", "zh", "es", "fr", "de", "pt", "vi", "th"]
 LANG_NAMES = {"ko": "한국어", "en": "English", "ja": "日本語", "zh": "中文", "es": "Español",
               "fr": "Français", "de": "Deutsch", "pt": "Português", "vi": "Tiếng Việt", "th": "ไทย"}
-SLUGS = ["pace", "first-5k", "injury-prevention", "landit-strategy"]
-DATE = "2026-09-30"
+DATE = "2026-09-30"  # 글에 date 가 없을 때의 기본 발행일
 SITE = "https://paceleague.co.kr"
 
 
@@ -157,10 +159,11 @@ def lang_select(cur, path_fn):
 
 
 def jsonld(lang, slug, a):
+    date = a.get("date", DATE)
     data = {
         "@context": "https://schema.org", "@type": "Article",
         "headline": a["title"], "description": a["desc"],
-        "datePublished": DATE, "dateModified": DATE, "inLanguage": lang,
+        "datePublished": date, "dateModified": date, "inLanguage": lang,
         "mainEntityOfPage": SITE + art_path(lang, slug),
         "author": {"@type": "Organization", "name": "Pace League", "url": SITE + "/"},
         "publisher": {"@type": "Organization", "name": "Pace League",
@@ -241,21 +244,32 @@ def build_about(lang, a, nav, ui):
 
 def main():
     navs = nav_labels()
+    contents = {l: importlib.import_module("content." + l) for l in LANGS}
+    avail = {l: [s for s in contents["ko"].ARTICLES if s in contents[l].ARTICLES] for l in LANGS}
     for lang in LANGS:
-        c = importlib.import_module("content." + lang)
+        c = contents[lang]
         ui, nav = c.UI, navs[lang]
-        for slug in SLUGS:
+        slugs = avail[lang]
+        for slug in slugs:
             a = c.ARTICLES[slug]
+            langs_with = [l for l in LANGS if slug in avail[l]]
+            alts = "".join('  <link rel="alternate" hreflang="%s" href="%s%s">\n' % (l, SITE, art_path(l, slug))
+                           for l in langs_with)
+            alts += '  <link rel="alternate" hreflang="x-default" href="%s%s">\n' % (SITE, art_path("ko", slug))
+            # 번역이 없는 언어를 고르면 그 언어의 가이드 목록으로 보낸다
+            sel_path = lambda l, slug=slug: art_path(l, slug) if slug in avail[l] else hub_path(l)
             html = HEAD.format(lang=lang, title=a["title"], desc=a["desc"], site=SITE, path=art_path(lang, slug),
-                               alternates=alternates(lambda l: art_path(l, slug)), lang_select=lang_select(lang, lambda l: art_path(l, slug)), jsonld=jsonld(lang, slug, a),
+                               alternates=alts, lang_select=lang_select(lang, sel_path), jsonld=jsonld(lang, slug, a),
                                nav=nav, hub=hub_path(lang), about=about_path(lang), about_active="",
                                guide_active=" active", main_class="guide-page", extra_head="")
             html += '    <div class="guide-crumb"><a href="%s">%s</a> › %s</div>\n' % (hub_path(lang), ui["crumb"], a["tag"])
             html += "    <h1>%s</h1>\n" % a["title"]
-            html += '    <div class="guide-meta">%s · %s</div>\n' % (ui["author"], ui["date"])
+            html += '    <div class="guide-meta">%s · %s</div>\n' % (ui["author"], a.get("date_label", ui["date"]))
             html += c.BODY[slug]
+            # 관련 글: 같은 태그 먼저, 최대 6편
+            others = sorted((s for s in slugs if s != slug), key=lambda s: c.ARTICLES[s]["tag"] != a["tag"])
             related = "\n".join('      <a href="%s">%s</a>' % (art_path(lang, s), c.ARTICLES[s]["title"])
-                                for s in SLUGS if s != slug)
+                                for s in others[:6])
             html += '\n    <div class="guide-related">\n      <h2>%s</h2>\n%s\n    </div>\n' % (ui["related"], related)
             html += FOOT.format(nav=nav)
             write(art_path(lang, slug), html)
@@ -264,7 +278,7 @@ def main():
         <div class="guide-card-tag">%s</div>
         <h2>%s</h2>
         <p>%s</p>
-      </a>""" % (art_path(lang, s), c.ARTICLES[s]["tag"], c.ARTICLES[s]["title"], c.ARTICLES[s]["summary"]) for s in SLUGS)
+      </a>""" % (art_path(lang, s), c.ARTICLES[s]["tag"], c.ARTICLES[s]["title"], c.ARTICLES[s]["summary"]) for s in slugs)
         hub = HEAD.format(lang=lang, title=c.HUB["title"], desc=c.HUB["desc"], site=SITE, path=hub_path(lang),
                           alternates=alternates(hub_path), lang_select=lang_select(lang, hub_path), jsonld="", nav=nav, hub=hub_path(lang), about=about_path(lang), about_active="",
                                guide_active=" active", main_class="guide-page", extra_head="")
