@@ -3,7 +3,7 @@ package com.paceleague.member.domain.entity;
 // 동의 유형. currentVersion은 약관 문서를 개정할 때마다 여기 값을 올려 재동의 필요 여부를 판단할 수 있게 한다.
 // TERMS/PRIVACY/LOCATION은 회원가입 시 필수, 나머지 세 알림 동의는 로그인 시점에 별도로 받는다.
 public enum AgreementType {
-    TERMS("2026-09-10", true),
+    TERMS("2026-11-02", true),
     PRIVACY("2026-09-10", true),
     LOCATION("2026-09-10", true),
     PUSH_SERVICE("2026-09-10", false),
