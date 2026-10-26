@@ -344,7 +344,7 @@ var ACCOUNT_STRINGS = {
     accountHeading: '계정설정', accountBack: '← 메인으로',
     accountNotifTitle: '알림 설정', accountSaveBtn: '저장', accountSaved: '저장되었습니다.',
     accountSaveFailed: '저장에 실패했습니다.', accountLoadFailed: '설정을 불러오지 못했습니다.',
-    accountLink: '계정설정'
+    accountLink: '계정설정', androidApp: '앱 다운로드'
   },
   en: {
     goToJoin: 'Sign up', backToLogin: '← Back to login',
@@ -362,7 +362,7 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'Account settings', accountBack: '← Back to home',
     accountNotifTitle: 'Notifications', accountSaveBtn: 'Save', accountSaved: 'Saved.',
     accountSaveFailed: 'Failed to save.', accountLoadFailed: 'Failed to load settings.',
-    accountLink: 'Account'
+    accountLink: 'Account', androidApp: 'Get the app'
   },
   ja: {
     goToJoin: '新規登録', backToLogin: '← ログインへ',
@@ -380,7 +380,7 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'アカウント設定', accountBack: '← ホームへ',
     accountNotifTitle: '通知設定', accountSaveBtn: '保存', accountSaved: '保存しました。',
     accountSaveFailed: '保存に失敗しました。', accountLoadFailed: '設定を読み込めませんでした。',
-    accountLink: 'アカウント設定'
+    accountLink: 'アカウント設定', androidApp: 'アプリ'
   },
   zh: {
     goToJoin: '注册', backToLogin: '← 返回登录',
@@ -398,7 +398,7 @@ var ACCOUNT_STRINGS = {
     accountHeading: '账户设置', accountBack: '← 返回首页',
     accountNotifTitle: '通知设置', accountSaveBtn: '保存', accountSaved: '已保存。',
     accountSaveFailed: '保存失败。', accountLoadFailed: '无法加载设置。',
-    accountLink: '账户设置'
+    accountLink: '账户设置', androidApp: '下载应用'
   },
   es: {
     goToJoin: 'Registrarse', backToLogin: '← Volver a iniciar sesión',
@@ -416,7 +416,7 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'Configuración de la cuenta', accountBack: '← Volver al inicio',
     accountNotifTitle: 'Notificaciones', accountSaveBtn: 'Guardar', accountSaved: 'Guardado.',
     accountSaveFailed: 'No se pudo guardar.', accountLoadFailed: 'No se pudo cargar la configuración.',
-    accountLink: 'Cuenta'
+    accountLink: 'Cuenta', androidApp: 'Descargar app'
   },
   fr: {
     goToJoin: "S'inscrire", backToLogin: '← Retour à la connexion',
@@ -434,7 +434,7 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'Paramètres du compte', accountBack: "← Retour à l'accueil",
     accountNotifTitle: 'Notifications', accountSaveBtn: 'Enregistrer', accountSaved: 'Enregistré.',
     accountSaveFailed: "Échec de l'enregistrement.", accountLoadFailed: 'Impossible de charger les paramètres.',
-    accountLink: 'Compte'
+    accountLink: 'Compte', androidApp: "Télécharger l’app"
   },
   de: {
     goToJoin: 'Registrieren', backToLogin: '← Zurück zur Anmeldung',
@@ -452,7 +452,7 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'Kontoeinstellungen', accountBack: '← Zur Startseite',
     accountNotifTitle: 'Benachrichtigungen', accountSaveBtn: 'Speichern', accountSaved: 'Gespeichert.',
     accountSaveFailed: 'Speichern fehlgeschlagen.', accountLoadFailed: 'Einstellungen konnten nicht geladen werden.',
-    accountLink: 'Konto'
+    accountLink: 'Konto', androidApp: 'App laden'
   },
   pt: {
     goToJoin: 'Cadastrar-se', backToLogin: '← Voltar ao login',
@@ -470,7 +470,7 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'Configurações da conta', accountBack: '← Voltar ao início',
     accountNotifTitle: 'Notificações', accountSaveBtn: 'Salvar', accountSaved: 'Salvo.',
     accountSaveFailed: 'Falha ao salvar.', accountLoadFailed: 'Não foi possível carregar as configurações.',
-    accountLink: 'Conta'
+    accountLink: 'Conta', androidApp: 'Baixar app'
   },
   vi: {
     goToJoin: 'Đăng ký', backToLogin: '← Quay lại đăng nhập',
@@ -488,7 +488,7 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'Cài đặt tài khoản', accountBack: '← Về trang chủ',
     accountNotifTitle: 'Thông báo', accountSaveBtn: 'Lưu', accountSaved: 'Đã lưu.',
     accountSaveFailed: 'Lưu thất bại.', accountLoadFailed: 'Không thể tải cài đặt.',
-    accountLink: 'Tài khoản'
+    accountLink: 'Tài khoản', androidApp: 'Tải ứng dụng'
   },
   th: {
     goToJoin: 'สมัครสมาชิก', backToLogin: '← กลับไปเข้าสู่ระบบ',
@@ -506,7 +506,7 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'การตั้งค่าบัญชี', accountBack: '← กลับหน้าหลัก',
     accountNotifTitle: 'การแจ้งเตือน', accountSaveBtn: 'บันทึก', accountSaved: 'บันทึกแล้ว',
     accountSaveFailed: 'บันทึกไม่สำเร็จ', accountLoadFailed: 'ไม่สามารถโหลดการตั้งค่าได้',
-    accountLink: 'บัญชี'
+    accountLink: 'บัญชี', androidApp: 'ดาวน์โหลดแอป'
   }
 };
 Object.keys(ACCOUNT_STRINGS).forEach(function (code) {

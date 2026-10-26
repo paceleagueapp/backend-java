@@ -481,15 +481,27 @@ function requireLogin() {
 // 상단 헤더 우측 계정 버튼 — 모든 페이지 공통.
 // 로그아웃 상태: 회원가입 · 로그인 / 로그인 상태: 닉네임(모바일에선 숨김) · 계정설정 · 로그아웃.
 // extraHtml 은 페이지 전용 버튼(예: 커뮤니티의 글쓰기)으로, 계정 버튼 뒤에 붙는다.
+// 맨 앞에는 로그인 여부와 무관하게 Android 앱(Google Play) 다운로드 버튼 — 모바일에선 아이콘만.
+var ANDROID_APP_URL = 'https://play.google.com/store/apps/details?id=com.paceleague.app';
+
+function androidAppButtonHtml() {
+  var label = t('androidApp');
+  return '<a class="btn app-dl" href="' + ANDROID_APP_URL + '" target="_blank" rel="noopener"'
+    + ' aria-label="' + escapeHtml(label) + ' (Android)" title="' + escapeHtml(label) + ' (Android)">'
+    + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    + '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>'
+    + '<span class="app-dl-label">' + escapeHtml(label) + '</span></a>';
+}
+
 function renderHeaderAuth(el, extraHtml) {
-  var html;
+  var html = androidAppButtonHtml();
   if (isLoggedIn()) {
     var nick = localStorage.getItem('pl_nickname') || '';
-    html = (nick ? '<span class="header-nick">' + escapeHtml(nick) + '</span>' : '')
+    html += (nick ? '<span class="header-nick">' + escapeHtml(nick) + '</span>' : '')
       + '<a class="btn ghost" href="/account">' + t('accountLink') + '</a>'
       + '<button class="btn ghost" type="button" data-header-logout>' + t('logout') + '</button>';
   } else {
-    html = '<a class="btn ghost" href="/join">' + t('goToJoin') + '</a>'
+    html += '<a class="btn ghost" href="/join">' + t('goToJoin') + '</a>'
       + '<a class="btn ghost" href="/login">' + t('login') + '</a>';
   }
   // #auth-actions 같은 래퍼 span 이면 버튼들이 .header-actions 의 flex gap 을 그대로 받도록 한다
