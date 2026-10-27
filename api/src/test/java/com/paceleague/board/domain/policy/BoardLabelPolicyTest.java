@@ -32,7 +32,7 @@ class BoardLabelPolicyTest {
             if (lang == Language.KO) {
                 continue;
             }
-            for (String slug : new String[] {"free", "qna", "verify", "crew_promo"}) {
+            for (String slug : new String[] {"free", "qna", "verify", "crew_promo", "course"}) {
                 assertThat(BoardLabelPolicy.name(slug, lang, "fallback"))
                         .as("slug=%s lang=%s", slug, lang)
                         .isNotEqualTo("fallback");

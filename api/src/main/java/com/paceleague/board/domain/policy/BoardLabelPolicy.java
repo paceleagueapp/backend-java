@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-// board.name/description을 언어별로 번역해 보여주기 위한 순수 조회 테이블. slug(free/qna/verify)로 찾는다.
+// board.name/description을 언어별로 번역해 보여주기 위한 순수 조회 테이블. slug(free/qna/verify/crew_promo/course)로 찾는다.
 // 한국어는 DB에 이미 원본(한국어) 값이 들어있으므로 여기 따로 두지 않고 항상 DB 값(fallback)을 그대로 쓴다 —
 // 두 곳에 같은 한국어 원문을 중복 유지하지 않기 위함. 미등록 slug(향후 보드 추가 시)나 KO는 fallback으로 처리.
 public class BoardLabelPolicy {
@@ -80,6 +80,18 @@ public class BoardLabelPolicy {
                 new Labels("Recrutar crew", "Apresente sua crew e recrute membros."),
                 new Labels("Tuyển crew", "Giới thiệu crew của bạn và tuyển thành viên."),
                 new Labels("รับสมัครครู", "แนะนำครูของคุณและรับสมาชิก")
+        ));
+
+        table.put("course", row(
+                new Labels("Routes", "Recommend a running route you've run."),
+                new Labels("コースおすすめ", "自分が走ったランニングコースをおすすめしましょう。"),
+                new Labels("路线推荐", "推荐你跑过的跑步路线。"),
+                new Labels("Rutas", "Recomienda una ruta de running que hayas corrido."),
+                new Labels("Parcours", "Recommandez un parcours que vous avez couru."),
+                new Labels("Strecken", "Empfiehl eine Laufstrecke, die du gelaufen bist."),
+                new Labels("Rotas", "Recomende uma rota de corrida que você correu."),
+                new Labels("Cung đường", "Giới thiệu cung đường chạy bạn đã chạy."),
+                new Labels("แนะนำเส้นทาง", "แนะนำเส้นทางวิ่งที่คุณเคยวิ่ง")
         ));
 
         return table;

@@ -7,7 +7,7 @@
   <meta name="description" content="페이스리그 커뮤니티 게시글 - 러닝 기록과 랜드잇, 크루 이야기를 나눠보세요.">
   <link rel="icon" type="image/png" href="/img/favicon.png">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2124974034690240" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="/css/app.css?v=20261027">
+  <link rel="stylesheet" href="/css/app.css?v=20261028">
   <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
   new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -34,7 +34,10 @@
     .vote-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .vote-btn { background: #fff; border: 1px solid #d7dade; color: #4a4e56; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; }
     .vote-btn.active-up { background: #e5342f; color: #fff; border-color: #e5342f; }
-    .vote-btn.active-down { background: #3949ab; color: #fff; border-color: #3949ab; }
+    .vote-btn { display: inline-flex; align-items: center; gap: 6px; }
+    .course-map-wrap { margin-bottom: 14px; }
+    .course-map-heading { font-size: 11px; color: #8a8e96; margin-bottom: 6px; }
+    .course-map { width: 100%; height: 280px; border-radius: 10px; border: 1px solid #eceef1; background: #f2f3f5; }
     .translate-btn { background: none; border: 1px solid #d7dade; color: #8a8e96; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
     .score-text { font-size: 14px; font-weight: 700; }
     .edit-link { margin-left: auto; color: #8a8e96; font-size: 12px; cursor: pointer; }
@@ -88,7 +91,6 @@
     .comment-actions { display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap; }
     .comment-actions button { background: #fff; border: 1px solid #d7dade; color: #4a4e56; border-radius: 6px; padding: 3px 8px; cursor: pointer; font-size: 12px; }
     .comment-actions button.active-up { background: #e5342f; color: #fff; border-color: #e5342f; }
-    .comment-actions button.active-down { background: #3949ab; color: #fff; border-color: #3949ab; }
     .comment-actions .reply-link, .comment-actions .delete-link, .comment-actions .translate-link { color: #8a8e96; cursor: pointer; }
     .replies { margin-left: 20px; margin-top: 8px; }
     .reply-form { display: none; margin-top: 8px; gap: 6px; flex-direction: column; }
@@ -185,8 +187,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </a>
   </nav>
 
-  <script src="/js/app.js?v=20261027"></script>
-  <script src="/js/i18n.js?v=20261027"></script>
+  <script src="/js/app.js?v=20261028"></script>
+  <script src="/js/i18n.js?v=20261028"></script>
   <script>
     renderLangSelect(document.getElementById('lang-select'));
     renderHeaderAuth(document.getElementById('auth-actions'));
@@ -246,7 +248,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     function renderPost(post) {
       var isMine = myMemberSno && post.memberSno === myMemberSno;
       var upClass = post.myVote === 1 ? ' active-up' : '';
-      var downClass = post.myVote === -1 ? ' active-down' : '';
 
       var recordHtml = '';
       if (post.attachedRecord) {
@@ -268,11 +269,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           '<span>' + escapeHtml(formatLocalTime(post.createAt)) + '</span>' +
         '</div>' +
         recordHtml +
+        (hasCourse(post) ? '<div class="course-map-wrap"><div class="course-map-heading">🗺 ' + escapeHtml(t('courseMapHeading')) + '</div><div class="course-map" id="course-map"></div></div>' : '') +
         '<div class="post-content" id="post-content">' + post.content + '</div>' +
         '<div class="vote-row">' +
           '<button class="vote-btn' + upClass + '" id="post-up">' + t('voteUp') + '</button>' +
           '<span class="score-text" id="post-score">' + post.score + '</span>' +
-          '<button class="vote-btn' + downClass + '" id="post-down">' + t('voteDown') + '</button>' +
           '<button class="translate-btn" id="post-translate">' + t('translateShow') + '</button>' +
           (isMine ? '<span class="edit-link" id="post-edit">' + t('editLink') + '</span>' : '') +
           (isMine ? '<span class="delete-link" id="post-delete">' + t('delete') + '</span>' : '') +
@@ -281,7 +282,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         '</div>';
 
       document.getElementById('post-up').addEventListener('click', function () { votePost(1); });
-      document.getElementById('post-down').addEventListener('click', function () { votePost(-1); });
+      if (hasCourse(post)) renderCourseMap(post.course);
       document.getElementById('post-translate').addEventListener('click', togglePostTranslation);
       if (!isMine) {
         document.getElementById('post-report').addEventListener('click', function () {
@@ -399,6 +400,48 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       document.getElementById('post-translate').textContent = t('translateHide');
     }
 
+    // ── 코스추천 게시판: 첨부 러닝의 경로를 지도에 그린다 (territory.html 과 같은 리퍼러 제한 키) ──
+    var GOOGLE_MAPS_API_KEY = 'AIzaSyCO8M-PtHdhcCAxQShVwqARdNoGv11Ti_w';
+    var mapsLoading = null;
+
+    function hasCourse(post) {
+      return post.course && post.course.length >= 2;
+    }
+
+    function loadGoogleMaps() {
+      if (window.google && window.google.maps) return Promise.resolve();
+      if (mapsLoading) return mapsLoading;
+      mapsLoading = new Promise(function (resolve, reject) {
+        window.__onCourseMapsLoaded = resolve;
+        var s = document.createElement('script');
+        s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(GOOGLE_MAPS_API_KEY)
+          + '&callback=__onCourseMapsLoaded&loading=async';
+        s.async = true;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+      return mapsLoading;
+    }
+
+    function renderCourseMap(points) {
+      var el = document.getElementById('course-map');
+      if (!el) return;
+      loadGoogleMaps().then(function () {
+        var path = points.map(function (p) { return { lat: p.lat, lng: p.lng }; });
+        var map = new google.maps.Map(el, {
+          streetViewControl: false, mapTypeControl: false, fullscreenControl: true
+        });
+        var bounds = new google.maps.LatLngBounds();
+        path.forEach(function (p) { bounds.extend(p); });
+        map.fitBounds(bounds, 24);
+        new google.maps.Polyline({ map: map, path: path, strokeColor: '#e5342f', strokeWeight: 4, strokeOpacity: 0.9 });
+        new google.maps.Marker({ map: map, position: path[0], label: { text: 'S', color: '#fff', fontSize: '11px' } });
+        new google.maps.Marker({ map: map, position: path[path.length - 1], label: { text: 'F', color: '#fff', fontSize: '11px' } });
+      }).catch(function () {
+        el.parentNode.removeChild(el);
+      });
+    }
+
     function votePost(voteValue) {
       if (redirectToLoginIfNeeded()) return;
       apiFetch('/api/board/posts/' + postSno + '/vote', {
@@ -410,15 +453,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     function commentHtml(c, isReply) {
       var isMine = myMemberSno && c.memberSno === myMemberSno;
       var upClass = c.myVote === 1 ? ' active-up' : '';
-      var downClass = c.myVote === -1 ? ' active-down' : '';
 
       var html = '<div class="comment-item" data-sno="' + c.sno + '" data-original="' + escapeHtml(c.content) + '">' +
         '<div class="comment-meta"><span>' + escapeHtml(c.nickname) + '</span><span>' + escapeHtml(formatLocalTime(c.createAt)) + '</span></div>' +
         '<div class="comment-content" id="comment-content-' + c.sno + '">' + escapeHtml(c.content) + '</div>' +
         '<div class="comment-actions">' +
-          '<button class="vote-up' + upClass + '" data-sno="' + c.sno + '">▲</button>' +
-          '<span>' + c.score + '</span>' +
-          '<button class="vote-down' + downClass + '" data-sno="' + c.sno + '">▼</button>' +
+          '<button class="vote-up' + upClass + '" data-sno="' + c.sno + '" title="' + escapeHtml(t('reactionLabel')) + '">♥ ' + c.score + '</button>' +
           '<span class="translate-link" data-sno="' + c.sno + '">' + t('translateShow') + '</span>';
 
       if (!isReply) {
@@ -465,9 +505,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
       listEl.querySelectorAll('.vote-up').forEach(function (btn) {
         btn.addEventListener('click', function () { voteComment(btn.getAttribute('data-sno'), 1); });
-      });
-      listEl.querySelectorAll('.vote-down').forEach(function (btn) {
-        btn.addEventListener('click', function () { voteComment(btn.getAttribute('data-sno'), -1); });
       });
       listEl.querySelectorAll('.delete-link').forEach(function (el) {
         el.addEventListener('click', function () { deleteComment(el.getAttribute('data-sno')); });

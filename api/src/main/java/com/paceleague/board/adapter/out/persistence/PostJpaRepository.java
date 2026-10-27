@@ -22,6 +22,14 @@ public interface PostJpaRepository extends JpaRepository<Post, Long> {
                                      @Param("blockedSnos") java.util.Collection<Long> blockedSnos,
                                      Pageable pageable);
 
+    // 댓글 많은순 — 정렬 기준이 집계라 Pageable 의 Sort 로는 못 써서 order by 를 직접 쓴다(pageable 은 정렬 없이 넘길 것).
+    @Query(value = "select p from Post p where p.boardSno = :boardSno and p.hidden = false and p.memberSno not in :blockedSnos"
+            + " order by (select count(c) from Comment c where c.postSno = p.sno) desc, p.createAt desc",
+           countQuery = "select count(p) from Post p where p.boardSno = :boardSno and p.hidden = false and p.memberSno not in :blockedSnos")
+    Page<Post> findVisibleByBoardSnoOrderByCommentCount(@Param("boardSno") Long boardSno,
+                                                        @Param("blockedSnos") java.util.Collection<Long> blockedSnos,
+                                                        Pageable pageable);
+
     Optional<Post> findBySnoAndMemberSno(Long sno, Long memberSno);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

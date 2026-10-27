@@ -72,7 +72,7 @@
 - `GET /api/common/language`
 - `GET /robots.txt` (검색엔진 크롤링 전면 차단용, [infra.md](./infra.md#검색엔진-크롤링-차단-apipaceleaguecokr) 참고)
 - `/v3/api-docs/**`, `/swagger-ui.html`, `/swagger-ui/**` (로컬 전용 — 운영에서는 springdoc이 비활성화되어 404)
-- `GET /api/board`, `GET /api/board/{boardSno}/posts`, `GET /api/board/posts/{postSno}`, `GET /api/board/posts/{postSno}/comments` (게시판 조회 4종만 공개 — 작성/삭제/추천은 인증 필요, [Board API](#board-api-apiboard--조회는-공개-작성삭제추천은-인증-필요) 참고)
+- `GET /api/board`, `GET /api/board/{boardSno}/posts`, `GET /api/board/posts/{postSno}`, `GET /api/board/posts/{postSno}/comments` (게시판 조회 4종만 공개 — 작성/삭제/좋아요는 인증 필요, [Board API](#board-api-apiboard--조회는-공개-작성삭제좋아요는-인증-필요) 참고)
 
 그 외 모든 엔드포인트는 인증이 필요합니다.
 
@@ -961,15 +961,19 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 | Rekognition 모더레이션 임계값 | 라벨 신뢰도(confidence) 60 이상이면 거부 |
 | presigned 업로드 URL 만료 | 5분 |
 
-## Board API (`/api/board`) — 조회는 공개, 작성/삭제/추천은 인증 필요
+## Board API (`/api/board`) — 조회는 공개, 작성/삭제/좋아요는 인증 필요
 
-커뮤니티(보드/게시글/댓글/추천). 레딧처럼 **조회(GET)는 비로그인도 가능**하고, 글/댓글 작성·삭제·추천처럼 쓰기 작업(POST/DELETE)만 로그인이 필요합니다. 웹(`paceleague.co.kr`/`www.paceleague.co.kr`)에서 브라우저로 직접 호출하므로 CORS가 열려 있습니다(`CorsConfig`의 `/api/board/**` 등록, [architecture.md](./architecture.md) 참고).
+커뮤니티(보드/게시글/댓글/좋아요). 레딧처럼 **조회(GET)는 비로그인도 가능**하고, 글/댓글 작성·삭제·좋아요처럼 쓰기 작업(POST/DELETE)만 로그인이 필요합니다. 웹(`paceleague.co.kr`/`www.paceleague.co.kr`)에서 브라우저로 직접 호출하므로 CORS가 열려 있습니다(`CorsConfig`의 `/api/board/**` 등록, [architecture.md](./architecture.md) 참고).
 
 비로그인으로 조회하면 `myVote`는 항상 `null`입니다(내 투표 여부를 알 수 없으므로).
 
 댓글은 **1단계 중첩만 허용**됩니다 — 최상위 댓글에는 답글을 달 수 있지만, 답글에는 답글을 달 수 없습니다(`parentCommentSno`가 이미 있는 댓글을 다시 `parentCommentSno`로 지정하면 400).
 
-추천/비추천은 토글 방식입니다: 같은 값으로 다시 요청하면 추천 취소, 다른 값으로 요청하면 전환, 처음이면 신규 생성.
+**좋아요**는 토글 방식입니다: 처음 `voteValue: 1` 을 보내면 좋아요, 다시 보내면 취소. 응답/목록의 `score` = 좋아요 수.
+(2026-10-27: 추천/비추천 → 좋아요로 변경, **비추천(`-1`) 폐지** — 기존 비추천 기록은 마이그레이션에서 삭제하고 `score` 를 좋아요 수로 재계산.)
+
+보드(`slug`): `free`(자유게시판) / `qna`(질문) / `verify`(인증) / `crew_promo`(크루 홍보) / `course`(코스추천, 2026-10-27 추가).
+기능은 모두 같고, `course` 게시판만 첨부한 러닝의 **경로(지도)** 를 상세 조회에서 함께 내려준다(아래 `course` 필드).
 
 ### GET `/api/board` — 보드 목록 조회 (공개)
 
@@ -988,7 +992,7 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 ]
 ```
 
-- `slug`는 언어와 무관하게 항상 고정(URL/로직용 식별자), `name`/`description`만 `lang`에 따라 번역되어 내려간다(`board.domain.policy.BoardLabelPolicy`의 고정 번역 테이블 — 보드가 3개뿐이라 AWS Translate 대신 정적 테이블 사용). `lang=ko`이거나 정책에 없는 신규 보드/slug면 DB에 저장된 원본 값을 그대로 반환한다.
+- `slug`는 언어와 무관하게 항상 고정(URL/로직용 식별자), `name`/`description`만 `lang`에 따라 번역되어 내려간다(`board.domain.policy.BoardLabelPolicy`의 고정 번역 테이블 — 보드가 몇 개 안 돼 AWS Translate 대신 정적 테이블 사용). `lang=ko`이거나 정책에 없는 신규 보드/slug면 DB에 저장된 원본 값을 그대로 반환한다.
 
 ### GET `/api/board/{boardSno}/posts` — 게시글 목록 조회 (공개)
 
@@ -998,7 +1002,7 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 |---|---|---|---|
 | page | int | 0 | |
 | size | int | 20 | |
-| sort | string (`new`\|`top`) | `new` | `top`은 `score DESC, create_at DESC` |
+| sort | string (`new`\|`likes`\|`comments`) | `new` | `new` 날짜순(`create_at DESC`) · `likes` 좋아요순(`score DESC, create_at DESC`, 예전 값 `top` 도 허용) · `comments` 댓글 많은순(댓글 수 DESC, `create_at DESC`) |
 | lang | string (`ko`\|`en`\|`ja`\|`zh`\|`es`\|`fr`\|`de`\|`pt`\|`vi`\|`th`) | `ko` | `authorTierLabel` 표시 언어. 미지원 값은 `ko`로 처리 |
 | country | string (ISO 3166-1 alpha-2, 예: `KR`) | - | 주어지면 `lang` 대신 이 국가에 맞는 언어로 응답 |
 
@@ -1006,6 +1010,7 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 
 **Response** `200 OK` — `data`: Spring `Page<PostSummaryResponse>` (`sno`, `title`, `authorMemberSno`, `nickname`, `authorTier`, `authorTierLabel`, `recordSno`, `contentSnippet`, `thumbnailUrl`, `thumbnailType`, `viewCount`, `score`, `commentCount`, `createAt`)
 
+- `score`: 좋아요 수. `commentCount`: 댓글 수(목록에 둘 다 표시).
 - `authorMemberSno`: 작성자 회원 sno(차단 버튼용). 회원 검색 API로 이미 노출되는 값이라 프라이버시 영향은 미미.
 
 - `authorTier`: 작성자의 현재 시즌 티어(`RankTier` enum, `rank.GetMemberTierPort`로 조회, 이번 시즌 기록이 없으면 기본값 `SILVER`) — 언어와 무관한 원본 코드
@@ -1013,7 +1018,7 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 - `recordSno`: 작성 시 첨부한 기록의 PK(없으면 `null`). 목록에서는 첨부 여부 표시용으로만 쓰고, 기록 상세 내용은 게시글 상세 조회에서만 내려줌
 - `contentSnippet`: 게시글 `content`(sanitize된 HTML)에서 태그를 뺀 순수 텍스트를 최대 200자로 잘라 내려주는 목록용 본문 미리보기(`PostContentSanitizer.snippet`). 이미지/동영상만 있고 텍스트가 없으면 빈 문자열(`""`) — 웹 클라이언트는 이 경우 스니펫 영역 자체를 숨김.
 - `thumbnailUrl`/`thumbnailType`(`IMAGE`\|`VIDEO`, 없으면 둘 다 `null`): 게시글 `content` HTML 안에서 **가장 먼저 등장하는** 이미지/동영상 하나를 서버가 정규식으로 뽑아 목록용 썸네일로 내려줌(`board.domain.policy.PostContentSanitizer.firstMediaPreview`) — 미디어 테이블을 다시 조회하지 않고 이미 응답에 포함된 `content`에서 바로 추출하는 방식. 2026-08-11 이전에는 `attachmentCount`(첨부 개수)였으나, 웹 에디터가 이미지/동영상을 `content`에 인라인으로 삽입하는 방식으로 바뀌면서 `attachmentMediaIds`로 명시 연결되는 미디어가 웹에서는 사실상 없어져 이 필드가 항상 0이 되는 문제가 있어 교체함.
-- 웹 클라이언트(`web/index.html`)는 카드 하나에 제목 → `contentSnippet`(최대 3줄, 넘치면 말줄임) → 썸네일(카드 폭 100%, 최대 높이 360px, `object-fit: cover`로 비율 유지하며 채움) → 메타(닉네임/티어/추천/댓글/조회/시간) 순서로 렌더링(레딧 카드뷰 벤치마킹).
+- 웹 클라이언트(`web/index.html`)는 카드 하나에 제목 → `contentSnippet`(최대 3줄, 넘치면 말줄임) → 썸네일(카드 폭 100%, 최대 높이 360px, `object-fit: cover`로 비율 유지하며 채움) → 메타(닉네임/티어/댓글/조회/시간) 순서로 렌더링하고, 카드 왼쪽 칸에 ♥ 좋아요 수를 보여준다(레딧 카드뷰 벤치마킹).
 
 **실패**: 존재하지 않는 `boardSno` → 400
 
@@ -1051,7 +1056,7 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 
 ### GET `/api/board/posts/{postSno}` — 게시글 상세 조회 (공개)
 
-조회할 때마다 `view_count`가 1 증가합니다(중복 방지 없음). `myVote`는 내가 이 글에 투표한 값(`1`/`-1`/`null`), 비로그인이면 항상 `null`.
+조회할 때마다 `view_count`가 1 증가합니다(중복 방지 없음). `myVote`는 내가 좋아요를 눌렀으면 `1`, 아니면 `null`(비로그인이면 항상 `null`).
 
 **Query Parameters**
 
@@ -1072,6 +1077,7 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
     "recordSno": 456, "startTime": "2026-08-08T06:30:00", "endTime": "2026-08-08T07:05:00",
     "distance": 10230.5, "createAt": "2026-08-08T07:05:10"
   },
+  "course": [ { "lat": 37.5123, "lng": 126.9961 }, { "lat": 37.5126, "lng": 126.9968 } ],
   "attachments": [
     { "mediaSno": 11, "type": "IMAGE", "url": "https://paceleague-media.s3.ap-northeast-2.amazonaws.com/media/image/5/....jpg" }
   ],
@@ -1084,25 +1090,26 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 - `authorTier`/`authorTierLabel`: 목록 조회와 동일 — `authorTier`는 원본 코드, `authorTierLabel`이 번역된 표시 문자열
 - `content`: 서버에서 sanitize된 HTML(위 작성 API 설명 참고). 클라이언트는 이 값을 `innerHTML`로 그대로 렌더링해도 되는 것을 서버가 보장함(sanitize가 쓰기 시점 1곳에서만 이뤄지는 게 이 API의 신뢰 경계).
 - `attachedRecord`: 첨부한 기록이 없으면 `null`. 첨부된 기록이 이후 삭제된 경우에도 `null`로 응답(참조 무결성을 강제하지 않음)
+- `course`: **코스추천(`course`) 게시판 글에만** 채워지는 첨부 러닝의 경로(위경도 배열, 최대 500점으로 고르게 솎음 — 시작/끝 점 유지). 다른 게시판(인증 등)이거나 첨부 러닝이 없거나 GPS 트랙이 없는 러닝(수동 저장)이면 빈 배열. 위경도 외(시각·고도 등)는 내려주지 않는다. 웹(`post.html`)은 2점 이상이면 Google 지도에 경로 + 출발(S)/도착(F) 마커로 그린다. 경로는 출발·도착 위치를 그대로 보여주므로 작성자가 직접 고른 코스추천 글에서만 공개한다.
 - `attachments`: `attachmentMediaIds`로 명시적으로 연결된 첨부 목록(없으면 빈 배열) — **웹 클라이언트는 더 이상 이 필드를 화면에 쓰지 않습니다**(이미지/동영상이 이미 `content` 안에 인라인으로 포함돼 있어서 별도로 그리면 중복 표시됨). 다른 클라이언트를 위해 API에는 계속 남아 있음 — [Media API](#media-api-apimedia--인증-필요) 참고
 
 **실패**: 존재하지 않는 `postSno` → 400, 신고 누적으로 숨김(`hidden = 1`) 처리된 게시글 → 400 "삭제되었거나 숨겨진 게시글입니다."(작성자 본인도 볼 수 없음)
 
 ### DELETE `/api/board/posts/{postSno}` — 게시글 삭제 (인증 필요)
 
-본인 게시글만 삭제 가능. 그 게시글의 댓글/대댓글/추천 기록도 함께 삭제됩니다(하드 삭제, 복구 불가).
+본인 게시글만 삭제 가능. 그 게시글의 댓글/대댓글/좋아요 기록도 함께 삭제됩니다(하드 삭제, 복구 불가).
 
 **실패**: 존재하지 않거나 본인 소유가 아님 → 400
 
-### POST `/api/board/posts/{postSno}/vote` — 게시글 추천/비추천 (인증 필요)
+### POST `/api/board/posts/{postSno}/vote` — 게시글 좋아요 (인증 필요)
 
 ```json
 { "voteValue": 1 }
 ```
 
-`voteValue`는 `1`(추천) 또는 `-1`(비추천). **Response** `200 OK` — `data`: `{ "score": 4, "myVote": 1 }` (취소된 경우 `myVote: null`)
+`voteValue`는 `1`(좋아요)만 허용. 이미 좋아요한 상태에서 다시 보내면 취소. **Response** `200 OK` — `data`: `{ "score": 4, "myVote": 1 }` (`score` = 좋아요 수, 취소된 경우 `myVote: null`)
 
-**실패**: `voteValue`가 1/-1이 아님 → 400, 존재하지 않는 `postSno` → 400
+**실패**: `voteValue`가 1이 아님(`-1` 포함) → 400 `"voteValue must be 1"`, 존재하지 않는 `postSno` → 400
 
 ### GET `/api/board/posts/{postSno}/comments` — 댓글 목록 조회 (공개)
 
@@ -1134,13 +1141,13 @@ S3에 실제 업로드가 끝난 뒤 호출합니다. 본인 소유가 아니거
 
 ### DELETE `/api/board/comments/{commentSno}` — 댓글 삭제 (인증 필요)
 
-본인 댓글만 삭제 가능. 그 댓글의 답글/추천 기록도 함께 삭제됩니다.
+본인 댓글만 삭제 가능. 그 댓글의 답글/좋아요 기록도 함께 삭제됩니다.
 
 **실패**: 존재하지 않거나 본인 소유가 아님 → 400
 
-### POST `/api/board/comments/{commentSno}/vote` — 댓글 추천/비추천 (인증 필요)
+### POST `/api/board/comments/{commentSno}/vote` — 댓글 좋아요 (인증 필요)
 
-게시글 추천과 동일한 토글 규칙. `voteValue`: `1`\|`-1`. **Response** `200 OK` — `data`: `VoteResponse`
+게시글 좋아요와 동일한 토글 규칙. `voteValue`: `1` 만 허용. **Response** `200 OK` — `data`: `VoteResponse`
 
 ### POST `/api/board/posts/{postSno}/translate` — 게시글 번역 (인증 필요)
 

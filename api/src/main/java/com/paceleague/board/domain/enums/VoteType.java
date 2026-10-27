@@ -1,8 +1,8 @@
 package com.paceleague.board.domain.enums;
 
+// 2026-10-27: 추천/비추천 → 좋아요 하나로 변경(비추천 폐지). 같은 값을 다시 보내면 좋아요 취소.
 public enum VoteType {
-    UP(1),
-    DOWN(-1);
+    UP(1);
 
     private final int value;
 
@@ -20,6 +20,6 @@ public enum VoteType {
                 return type;
             }
         }
-        throw new IllegalArgumentException("voteValue must be 1 or -1");
+        throw new IllegalArgumentException("voteValue must be 1");
     }
 }

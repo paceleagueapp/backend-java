@@ -189,7 +189,7 @@ totalScore = baseScore + scaledScore + addScore
 
 ## 커뮤니티(Board) 도메인
 
-`board` 패키지. 보드(카테고리) → 게시글 → 댓글(1단계) → 추천/비추천 구조. 레딧처럼 **조회(GET)는 비로그인도 가능**하고, 작성/삭제/추천(POST/DELETE)만 로그인이 필요합니다 — `SecurityConfig`에 `HttpMethod.GET` 한정으로 `/api/board`, `/api/board/*/posts`, `/api/board/posts/*`, `/api/board/posts/*/comments` 4개 경로만 `permitAll`, 나머지(같은 경로의 POST/DELETE 포함)는 기본 `anyRequest().authenticated()`에 걸림. `BoardController`는 이 4개 조회 엔드포인트에서 `@MemberSno(required = false) Long memberSno`(비로그인이면 `null`)를 쓰고, 나머지 쓰기 엔드포인트는 기본값인 `@MemberSno Long memberSno`(비로그인이면 예외)를 그대로 씀 — 인증된 컨트롤러 전체가 공유하는 `common.web.MemberSnoArgumentResolver`([architecture.md](./architecture.md) 참고)의 `required` 옵션 차이.
+`board` 패키지. 보드(카테고리) → 게시글 → 댓글(1단계) → 좋아요 구조(2026-10-27: 추천/비추천 → 좋아요, 비추천 폐지 — `VoteType` 은 `UP(1)` 하나, `vote_value` 컬럼·`score` 컬럼은 그대로 쓰고 `score` = 좋아요 수). 보드: `free`/`qna`/`verify`/`crew_promo`/`course`(코스추천, 2026-10-27 — `course` 글만 상세 조회에 첨부 러닝의 경로 `course` 를 `record.GetRecordCoursePort` 로 붙여 준다, 다른 보드는 요약만). 레딧처럼 **조회(GET)는 비로그인도 가능**하고, 작성/삭제/좋아요(POST/DELETE)만 로그인이 필요합니다 — `SecurityConfig`에 `HttpMethod.GET` 한정으로 `/api/board`, `/api/board/*/posts`, `/api/board/posts/*`, `/api/board/posts/*/comments` 4개 경로만 `permitAll`, 나머지(같은 경로의 POST/DELETE 포함)는 기본 `anyRequest().authenticated()`에 걸림. `BoardController`는 이 4개 조회 엔드포인트에서 `@MemberSno(required = false) Long memberSno`(비로그인이면 `null`)를 쓰고, 나머지 쓰기 엔드포인트는 기본값인 `@MemberSno Long memberSno`(비로그인이면 예외)를 그대로 씀 — 인증된 컨트롤러 전체가 공유하는 `common.web.MemberSnoArgumentResolver`([architecture.md](./architecture.md) 참고)의 `required` 옵션 차이.
 
 ### 시각(createAt/updateAt)은 전세계 사용자를 가정해 UTC로 저장 — 다른 도메인과 다른 규칙
 
@@ -224,9 +224,11 @@ totalScore = baseScore + scaledScore + addScore
 
 `GET /api/board/posts/{sno}` 호출마다 원자적 `UPDATE post SET view_count = view_count + 1`로 증가. 중복 방지(동일 사용자 재방문 시 미증가 등) 없음 — 의도된 단순화.
 
-### 정렬 (`top`)
+### 정렬 (`new` / `likes` / `comments`)
 
-`GET /api/board/{boardSno}/posts?sort=top`은 `score DESC, create_at DESC` 순으로 정렬됨(레딧의 "hot" 알고리즘 같은 시간 가중치는 없음, 순수 추천수 내림차순).
+`GET /api/board/{boardSno}/posts?sort=` — `new`(기본, 날짜순 `create_at DESC`), `likes`(좋아요순 `score DESC, create_at DESC`; 예전 값 `top` 도 같은 뜻으로 허용),
+`comments`(댓글 많은순 — 집계라 `Pageable` 정렬로 못 해서 `PostJpaRepository.findVisibleByBoardSnoOrderByCommentCount` 가
+`order by (select count(c) from Comment c where c.postSno = p.sno) desc, p.createAt desc` 를 직접 씀). 레딧 "hot" 같은 시간 가중치는 없음.
 
 ### 게시글/댓글 번역 (`TranslationUseCase`)
 

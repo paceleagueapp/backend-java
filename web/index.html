@@ -8,7 +8,7 @@
   <link rel="canonical" href="https://paceleague.co.kr/">
   <link rel="icon" type="image/png" href="/img/favicon.png">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2124974034690240" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="/css/app.css?v=20261027">
+  <link rel="stylesheet" href="/css/app.css?v=20261028">
   <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
   new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -51,7 +51,7 @@
     .sort-buttons button { background: none; border: none; color: #9aa0a8; font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 2px; }
     .sort-buttons button.active { color: #1c2024; font-weight: 700; }
 
-    /* ── 글 카드 (좌측 추천수 컬럼 + 본문) ── */
+    /* ── 글 카드 (좌측 좋아요 수 컬럼 + 본문) ── */
     .post-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
     .post-card { display: flex; background: #fff; border: 1px solid #eceef1; border-radius: 12px; box-shadow: 0 1px 2px rgba(20,22,26,0.05); overflow: hidden; }
     .post-vote {
@@ -213,8 +213,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </dialog>
 
-  <script src="/js/app.js?v=20261027"></script>
-  <script src="/js/i18n.js?v=20261027"></script>
+  <script src="/js/app.js?v=20261028"></script>
+  <script src="/js/i18n.js?v=20261028"></script>
   <script>
     var postEditor = createPostEditor({
       editorEl: document.getElementById('write-content'),
@@ -320,7 +320,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       document.getElementById('fmt-image').title = t('editorImageTitle');
       document.getElementById('fmt-video').title = t('editorVideoTitle');
 
-      // 비로그인 상태에서 글쓰기를 누르면 로그인 페이지로 보낸다(작성/댓글/추천만 로그인 필요).
+      // 비로그인 상태에서 글쓰기를 누르면 로그인 페이지로 보낸다(작성/댓글/좋아요만 로그인 필요).
       document.getElementById('write-btn').addEventListener('click', function () {
         if (redirectToLoginIfNeeded()) return;
         document.getElementById('write-title').value = '';
@@ -337,7 +337,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           '<div class="tabs" id="tabs"></div>' +
           '<div class="sort-buttons">' +
             '<button id="sort-new" class="active">' + t('sortNew') + '</button>' +
-            '<button id="sort-top">' + t('sortTop') + '</button>' +
+            '<button id="sort-likes">' + t('sortTop') + '</button>' +
+            '<button id="sort-comments">' + t('sortComments') + '</button>' +
           '</div>' +
         '</div>' +
         '<ol class="post-list" id="post-list"></ol>' +
@@ -395,8 +396,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
             return '<li class="post-card">' +
               '<div class="post-vote">' +
-                '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5-5 5 5"/><path d="M12 6v13"/></svg>' +
-                '<span class="post-vote-num">' + p.score + '</span>' +
+                '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.1 4.3 2.4h2c.7-1.3 2.2-2.4 4.3-2.4 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg>' +
+                '<span class="post-vote-num" title="' + escapeHtml(t('reactionLabel')) + '">' + p.score + '</span>' +
               '</div>' +
               '<div class="post-body">' +
                 '<div class="post-head">' +
@@ -489,12 +490,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         currentSort = sort;
         currentPage = 0;
         document.getElementById('sort-new').classList.toggle('active', sort === 'new');
-        document.getElementById('sort-top').classList.toggle('active', sort === 'top');
+        document.getElementById('sort-likes').classList.toggle('active', sort === 'likes');
+        document.getElementById('sort-comments').classList.toggle('active', sort === 'comments');
         loadPosts();
       }
 
       document.getElementById('sort-new').addEventListener('click', function () { selectSort('new'); });
-      document.getElementById('sort-top').addEventListener('click', function () { selectSort('top'); });
+      document.getElementById('sort-likes').addEventListener('click', function () { selectSort('likes'); });
+      document.getElementById('sort-comments').addEventListener('click', function () { selectSort('comments'); });
 
       document.getElementById('write-submit').addEventListener('click', function () {
         var title = document.getElementById('write-title').value.trim();

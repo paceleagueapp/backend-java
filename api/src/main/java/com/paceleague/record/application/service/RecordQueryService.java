@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.paceleague.member.application.port.in.shared.GetMemberNicknamePort;
 import com.paceleague.record.application.dto.AdminRecordSummary;
 import com.paceleague.record.application.dto.GpsSessionRequest.GpsPoint;
+import com.paceleague.record.application.dto.CoursePoint;
 import com.paceleague.record.application.dto.RecordGpsTrackResponse;
 import com.paceleague.record.application.dto.RecordListItemResponse;
 import com.paceleague.record.application.dto.RecordMonthResponse;
@@ -14,6 +15,7 @@ import com.paceleague.record.application.dto.RecordSummaryDto;
 import com.paceleague.record.application.dto.RecordSummaryProjection;
 import com.paceleague.record.application.dto.RunningRecordResponse;
 import com.paceleague.record.application.port.in.shared.AdminRecordQueryPort;
+import com.paceleague.record.application.port.in.shared.GetRecordCoursePort;
 import com.paceleague.record.application.port.in.shared.GetRecordSummaryPort;
 import com.paceleague.record.application.port.in.RecordQueryUseCase;
 import com.paceleague.record.application.port.out.RecordRepositoryPort;
@@ -37,7 +39,8 @@ import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
-public class RecordQueryService implements RecordQueryUseCase, GetRecordSummaryPort, AdminRecordQueryPort {
+public class RecordQueryService implements RecordQueryUseCase, GetRecordSummaryPort, AdminRecordQueryPort,
+        GetRecordCoursePort {
     private final RecordRepositoryPort recordRepositoryPort;
     private final RecordTrackRepositoryPort recordTrackRepositoryPort;
     private final GetMemberNicknamePort getMemberNicknamePort;
@@ -164,6 +167,32 @@ public class RecordQueryService implements RecordQueryUseCase, GetRecordSummaryP
                         r.getEndTime(),
                         r.getCreateAt()
                 ));
+    }
+
+    // 지도에 그리기엔 수백 점이면 충분해 응답 크기를 줄이려고 COURSE_MAX_POINTS 개 이하로 고르게 솎는다(시작/끝 점은 유지).
+    static final int COURSE_MAX_POINTS = 500;
+
+    @Override
+    public List<CoursePoint> getCourse(Long recordSno) {
+        return recordTrackRepositoryPort.findByRecordSno(recordSno)
+                .map(track -> parsePoints(track).stream()
+                        .filter(p -> p.latitude() != null && p.longitude() != null)
+                        .map(p -> new CoursePoint(p.latitude(), p.longitude()))
+                        .toList())
+                .map(RecordQueryService::downsample)
+                .orElse(List.of());
+    }
+
+    static List<CoursePoint> downsample(List<CoursePoint> points) {
+        if (points.size() <= COURSE_MAX_POINTS) {
+            return points;
+        }
+        List<CoursePoint> result = new java.util.ArrayList<>(COURSE_MAX_POINTS);
+        double step = (points.size() - 1) / (double) (COURSE_MAX_POINTS - 1);
+        for (int i = 0; i < COURSE_MAX_POINTS; i++) {
+            result.add(points.get((int) Math.round(i * step)));
+        }
+        return result;
     }
 
     private List<GpsPoint> parsePoints(RecordTrack track) {

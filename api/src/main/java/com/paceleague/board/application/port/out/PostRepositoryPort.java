@@ -18,6 +18,9 @@ public interface PostRepositoryPort {
     // 목록용 — 숨김 글 + 차단한 작성자(blockedSnos) 글 제외.
     Page<Post> findVisibleByBoardSno(Long boardSno, java.util.Collection<Long> blockedSnos, Pageable pageable);
 
+    // 댓글 많은순(같으면 최신순). pageable 의 정렬은 무시된다.
+    Page<Post> findVisibleByBoardSnoOrderByCommentCount(Long boardSno, java.util.Collection<Long> blockedSnos, Pageable pageable);
+
     Optional<Post> findBySnoAndMemberSno(Long sno, Long memberSno);
 
     // @Lock(PESSIMISTIC_WRITE) — 어댑터 구현에서 그대로 보존

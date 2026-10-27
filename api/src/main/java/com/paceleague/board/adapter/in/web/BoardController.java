@@ -21,7 +21,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/board")
-@Tag(name = "Board", description = "커뮤니티(게시판) API — 보드/게시글/댓글/추천. 조회(GET)는 비로그인도 가능, 작성/삭제/추천은 로그인 필요.")
+@Tag(name = "Board", description = "커뮤니티(게시판) API — 보드/게시글/댓글/좋아요. 조회(GET)는 비로그인도 가능, 작성/삭제/좋아요는 로그인 필요.")
 public class BoardController {
     private final BoardUseCase boardUseCase;
     private final BoardQueryUseCase boardQueryUseCase;
@@ -43,7 +43,7 @@ public class BoardController {
         return ResponseApi.success(boardQueryUseCase.listBoards(resolveLang(lang, country)));
     }
 
-    @Operation(summary = "게시글 목록 조회", description = "sort=new(기본)|top")
+    @Operation(summary = "게시글 목록 조회", description = "sort=new(날짜순, 기본)|likes(좋아요순, top 도 허용)|comments(댓글 많은순). 각 글의 score = 좋아요 수")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{boardSno}/posts")
     public ResponseApi<Page<PostSummaryResponse>> listPosts(
@@ -51,7 +51,7 @@ public class BoardController {
             @PathVariable Long boardSno,
             @Parameter(description = "페이지 번호(0-base)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "new") String sort,
+            @Parameter(description = "정렬 기준: new | likes | comments") @RequestParam(defaultValue = "new") String sort,
             @Parameter(description = "작성자 티어뱃지 표시 언어(ko/en/ja/zh/es/fr/de/pt/vi/th), 미지원 값이면 ko") @RequestParam(defaultValue = "ko") String lang,
             @Parameter(description = "ISO 3166-1 alpha-2 국가코드(예: KR). 주어지면 lang 대신 이 국가에 맞는 언어로 응답") @RequestParam(required = false) String country
     ) {
@@ -96,7 +96,7 @@ public class BoardController {
         return ResponseApi.success("게시글이 수정되었습니다.");
     }
 
-    @Operation(summary = "게시글 삭제", description = "본인 게시글만 삭제 가능하며, 댓글/추천도 함께 삭제됩니다.")
+    @Operation(summary = "게시글 삭제", description = "본인 게시글만 삭제 가능하며, 댓글/좋아요도 함께 삭제됩니다.")
     @ApiResponse(responseCode = "200", description = "삭제 성공")
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/posts/{postSno}")
@@ -117,7 +117,7 @@ public class BoardController {
         return ResponseApi.success(translationUseCase.translatePost(memberSno, postSno, req.targetLanguage()));
     }
 
-    @Operation(summary = "게시글 추천/비추천", description = "같은 값 재요청 시 취소, 다른 값이면 전환됩니다.")
+    @Operation(summary = "게시글 좋아요", description = "voteValue=1 만 허용. 이미 좋아요한 상태에서 다시 보내면 취소됩니다. 응답 score = 좋아요 수")
     @ApiResponse(responseCode = "200", description = "처리 성공")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/posts/{postSno}/vote")
@@ -161,7 +161,7 @@ public class BoardController {
         return ResponseApi.success(translationUseCase.translateComment(memberSno, commentSno, req.targetLanguage()));
     }
 
-    @Operation(summary = "댓글 삭제", description = "본인 댓글만 삭제 가능하며, 대댓글/추천도 함께 삭제됩니다.")
+    @Operation(summary = "댓글 삭제", description = "본인 댓글만 삭제 가능하며, 대댓글/좋아요도 함께 삭제됩니다.")
     @ApiResponse(responseCode = "200", description = "삭제 성공")
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/comments/{commentSno}")
@@ -170,7 +170,7 @@ public class BoardController {
         return ResponseApi.success("댓글이 삭제되었습니다.");
     }
 
-    @Operation(summary = "댓글 추천/비추천")
+    @Operation(summary = "댓글 좋아요", description = "voteValue=1 만 허용. 다시 보내면 취소. 응답 score = 좋아요 수")
     @ApiResponse(responseCode = "200", description = "처리 성공")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/comments/{commentSno}/vote")
