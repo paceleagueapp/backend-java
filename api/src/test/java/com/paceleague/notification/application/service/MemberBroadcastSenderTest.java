@@ -93,7 +93,7 @@ class MemberBroadcastSenderTest {
 
         MemberBroadcastSender.BroadcastResult result = sender.sendToAllMembers("t", "b", Map.of());
 
-        verify(deviceTokenRepositoryPort).deleteAllByTokenIn(List.of("dead"));
+        verify(deviceTokenRepositoryPort).deleteAllByFcmIdIn(List.of("dead"));
         assertThat(result.detail()).isEqualTo("tokens=2 success=1 failure=1 removed=1");
     }
 

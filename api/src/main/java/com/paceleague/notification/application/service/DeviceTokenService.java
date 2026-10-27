@@ -14,32 +14,39 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class DeviceTokenService implements RegisterDeviceTokenUseCase, PurgeMemberDeviceTokensPort {
 
-    private static final Set<String> PLATFORMS = Set.of("ANDROID", "IOS");
+    private static final Set<String> DEVICES = Set.of("ANDROID", "IOS");
+    private static final int FCM_ID_MAX_LENGTH = 255;
 
     private final DeviceTokenRepositoryPort deviceTokenRepositoryPort;
 
     @Override
     @Transactional
-    public void register(Long memberSno, String token, String platform) {
-        String normalized = platform == null ? "" : platform.trim().toUpperCase();
-        if (!PLATFORMS.contains(normalized)) {
-            throw new IllegalArgumentException("platform must be ANDROID or IOS.");
+    public boolean register(Long memberSno, String fcmId, String device) {
+        String id = fcmId == null ? "" : fcmId.trim();
+        String normalizedDevice = device == null ? "" : device.trim().toUpperCase();
+        if (id.isEmpty() || id.length() > FCM_ID_MAX_LENGTH || !DEVICES.contains(normalizedDevice)) {
+            return false;
         }
-        String trimmed = token.trim();
-        DeviceToken existing = deviceTokenRepositoryPort.findByToken(trimmed).orElse(null);
+        DeviceToken existing = deviceTokenRepositoryPort.findByFcmId(id).orElse(null);
         if (existing == null) {
-            deviceTokenRepositoryPort.save(DeviceToken.create(memberSno, trimmed, normalized));
+            deviceTokenRepositoryPort.save(DeviceToken.create(memberSno, id, normalizedDevice));
         } else {
-            existing.touch(memberSno, normalized);
+            existing.touch(memberSno, normalizedDevice);
             deviceTokenRepositoryPort.save(existing);
         }
+        return true;
     }
 
-    // 본인 토큰만 지운다 — 남의 토큰 문자열을 알아도 그 기기 수신을 끊을 수 없게.
+    // 본인 토큰만 지운다 — 남의 fcmId 를 알아도 그 기기 수신을 끊을 수 없게.
     @Override
     @Transactional
-    public void unregister(Long memberSno, String token) {
-        deviceTokenRepositoryPort.deleteByTokenAndMemberSno(token.trim(), memberSno);
+    public boolean unregister(Long memberSno, String fcmId) {
+        String id = fcmId == null ? "" : fcmId.trim();
+        if (id.isEmpty()) {
+            return false;
+        }
+        deviceTokenRepositoryPort.deleteByFcmIdAndMemberSno(id, memberSno);
+        return true;
     }
 
     @Override

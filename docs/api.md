@@ -662,24 +662,34 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 **마이그레이션**: [migrations/2026-10-27_notification_history.sql](./migrations/2026-10-27_notification_history.sql) (운영은 배포 전 직접 실행)
 
-### POST `/api/notification/device-token` — 푸시 기기 토큰 등록 (앱)
+### POST `/api/notification/fcm-token` — FCM 토큰 등록 (앱)
 
 전체 회원 푸시(매일 아침 땅따먹기 요약 등)는 **여기 등록된 토큰으로만** 발송된다(FCM 토픽 미사용 — 비회원 설치자는 받지 않음).
 앱은 **로그인 직후**와 **FCM 토큰이 갱신될 때(`onNewToken`)** 호출한다.
 
+받는 값 3개: 헤더 `Authorization: Bearer <accessToken>`(→ 회원) + body `fcmId` + `device`.
+
 ```json
-{ "token": "<FCM registration token>", "platform": "ANDROID" }
+{ "fcmId": "<FCM registration token>", "device": "ANDROID" }
 ```
 
-- `platform`: `ANDROID` / `IOS` (대소문자 무관). 그 외 → 400.
-- `token` 기준 upsert — 같은 기기에서 다른 계정으로 로그인하면 그 계정으로 옮겨진다(이전 계정은 그 기기에서 더 이상 안 받음).
+**Response** — `data`: `true` 저장/갱신됨, `false` 입력값 오류(`fcmId` 비었음/255자 초과, `device` 가 `IOS`/`ANDROID` 아님 — 400 아님)
+
+```json
+{ "success": true, "data": true }
+```
+
+- `device`: `IOS` / `ANDROID` (대소문자 무관).
+- `fcmId` 기준 upsert — **이미 있는 `fcmId` 면 update**(회원·기기·`last_seen_at` 갱신). 같은 기기에서 다른 계정으로 로그인하면
+  그 계정으로 옮겨진다(이전 계정은 그 기기에서 더 이상 안 받음).
+- access token 이 없거나 만료면 다른 인증 API 와 같이 401.
 - 발송 대상에서 빠지는 경우: 탈퇴 회원, 서비스 알림(`PUSH_SERVICE`)을 **거부**한 회원(미응답은 받음),
   FCM 이 무효(`UNREGISTERED`/`INVALID_ARGUMENT`)라고 한 토큰(발송 중 자동 삭제).
 
-### DELETE `/api/notification/device-token` — 푸시 기기 토큰 해제 (앱)
+### DELETE `/api/notification/fcm-token` — FCM 토큰 해제 (앱)
 
-로그아웃 시 **`/api/member/logout` 보다 먼저** 호출(access token 필요). body `{ "token": "..." }`. 본인 토큰만 삭제된다.
-탈퇴 시에는 서버가 그 회원의 토큰을 모두 지운다.
+로그아웃 시 **`/api/member/logout` 보다 먼저** 호출(access token 필요). body `{ "fcmId": "..." }`. 본인 토큰만 삭제된다.
+`data`: `true` 해제, `false` `fcmId` 없음. 탈퇴 시에는 서버가 그 회원의 토큰을 모두 지운다.
 
 **마이그레이션**: [migrations/2026-10-27_member_device_token.sql](./migrations/2026-10-27_member_device_token.sql) (운영은 배포 전 직접 실행)
 

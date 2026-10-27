@@ -222,7 +222,7 @@ add_header Cache-Control "no-cache" always;
 |---|---|---|
 | `PACELEAGUE_FCM_SERVICE_ACCOUNT_JSON` | Firebase 서비스 계정 키 | `{` 로 시작하는 JSON 문자열이거나, 컨테이너에 마운트한 파일 경로. 미설정이면 `FirebaseConfig` 비활성 + 발송 no-op |
 | `PACELEAGUE_FCM_PROJECT_ID` | (선택) Firebase 프로젝트 ID | 키에 이미 들어 있으면 생략 가능 |
-| `FCM_DAILY_DIGEST_ENABLED` | `true` | 스케줄 잡 활성화. 앱이 기기 토큰 등록(`POST /api/notification/device-token`)을 배포한 뒤에 켤 것 |
+| `FCM_DAILY_DIGEST_ENABLED` | `true` | 스케줄 잡 활성화. 앱이 기기 토큰 등록(`POST /api/notification/fcm-token`)을 배포한 뒤에 켤 것 |
 
 - 키를 JSON 통째로 env 에 넣으면 관리가 번거로우니, EC2 에 `/etc/paceleague/fcm-sa.json`(권한 `600`, owner root) 로 두고
   `.github/ssm-commands.json` 의 `docker run` 에 `-v /etc/paceleague/fcm-sa.json:/etc/paceleague/fcm-sa.json:ro` 를 추가한 뒤

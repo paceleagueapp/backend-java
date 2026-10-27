@@ -18,8 +18,8 @@ public class DeviceTokenPersistenceAdapter implements DeviceTokenRepositoryPort 
     private final DeviceTokenJpaRepository jpaRepository;
 
     @Override
-    public Optional<DeviceToken> findByToken(String token) {
-        return jpaRepository.findByToken(token);
+    public Optional<DeviceToken> findByFcmId(String fcmId) {
+        return jpaRepository.findByFcmId(fcmId);
     }
 
     @Override
@@ -35,15 +35,15 @@ public class DeviceTokenPersistenceAdapter implements DeviceTokenRepositoryPort 
 
     @Override
     @Transactional
-    public void deleteByTokenAndMemberSno(String token, Long memberSno) {
-        jpaRepository.deleteByTokenAndMemberSno(token, memberSno);
+    public void deleteByFcmIdAndMemberSno(String fcmId, Long memberSno) {
+        jpaRepository.deleteByFcmIdAndMemberSno(fcmId, memberSno);
     }
 
     @Override
     @Transactional
-    public void deleteAllByTokenIn(Collection<String> tokens) {
-        if (tokens.isEmpty()) return;
-        jpaRepository.deleteAllByTokenIn(tokens);
+    public void deleteAllByFcmIdIn(Collection<String> fcmIds) {
+        if (fcmIds.isEmpty()) return;
+        jpaRepository.deleteAllByFcmIdIn(fcmIds);
     }
 
     @Override

@@ -40,7 +40,7 @@ public class MemberBroadcastSender {
                     page.stream().map(DeviceToken::getMemberSno).collect(Collectors.toSet()));
             List<String> tokens = page.stream()
                     .filter(d -> receivable.contains(d.getMemberSno()))
-                    .map(DeviceToken::getToken)
+                    .map(DeviceToken::getFcmId)
                     .toList();
 
             if (!tokens.isEmpty()) {
@@ -52,7 +52,7 @@ public class MemberBroadcastSender {
                 success += result.successCount();
                 failure += result.failureCount();
                 if (!result.invalidTokens().isEmpty()) {
-                    deviceTokenRepositoryPort.deleteAllByTokenIn(result.invalidTokens());
+                    deviceTokenRepositoryPort.deleteAllByFcmIdIn(result.invalidTokens());
                     removed += result.invalidTokens().size();
                 }
             }

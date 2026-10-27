@@ -29,7 +29,7 @@ app:
 paceleague:
   fcm:
     daily-digest:
-      enabled: ${FCM_DAILY_DIGEST_ENABLED:false}   # 앱이 기기 토큰 등록(POST /api/notification/device-token)을 배포한 뒤 env 로 켠다
+      enabled: ${FCM_DAILY_DIGEST_ENABLED:false}   # 앱이 기기 토큰 등록(POST /api/notification/fcm-token)을 배포한 뒤 env 로 켠다
       cron: "0 0 9 * * *"                          # 매일 09:00 (스케줄러가 Asia/Seoul 로 발화)
       send-when-zero: false
 

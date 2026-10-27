@@ -10,7 +10,7 @@
 >   `territory.CountTerritoryCapturesPort`, 마이그레이션 `2026-09-09_push_send_log.sql`. 기본 OFF.
 >   유닛 테스트(`DailyDigestWindowTest`, `DailyTerritoryDigestServiceTest`).
 > - **2026-10-27: 토픽(`all`) → 회원 기기 토큰 방식으로 전환** (사용자 요청 — 토픽은 비회원 설치자까지 받음).
->   `member_device_token` 테이블 + `POST/DELETE /api/notification/device-token` + `MemberBroadcastSender`.
+>   `member_device_token` 테이블 + `POST/DELETE /api/notification/fcm-token` (`{fcmId, device}` → `data` true/false) + `MemberBroadcastSender`.
 >   아래 본문의 "v1 토픽" 설명은 당시 설계 기록이며, 현재 동작은 [domains.md](./domains.md#알림notification-도메인--fcm-푸시) 기준.
 > - **미완**: Firebase 프로젝트/서비스계정 키, 앱측(FCM SDK·토큰 등록/해제·알림 권한).
 > - **배포 전**: `push_send_log` 테이블을 운영 MySQL에 먼저 만들어야 함(`ddl-auto: validate`) + `territory.create_at` 저장 TZ 확인(§5).

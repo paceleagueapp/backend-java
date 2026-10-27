@@ -292,7 +292,7 @@ totalScore = baseScore + scaledScore + addScore
 
 ### 기기 토큰 (`member_device_token`, 2026-10-27)
 
-앱이 `POST /api/notification/device-token` 으로 등록(token UNIQUE upsert — 다른 계정으로 로그인하면 회원이 바뀜),
+앱이 `POST /api/notification/fcm-token` `{fcmId, device}` 로 등록(fcm_id UNIQUE upsert, 응답 data=true/false — 다른 계정으로 로그인하면 회원이 바뀜),
 로그아웃 시 `DELETE` 로 해제(본인 토큰만). `DeviceTokenService`(`RegisterDeviceTokenUseCase` + `PurgeMemberDeviceTokensPort`).
 회원 탈퇴 시 `MemberWithdrawService` 가 `notification.PurgeMemberDeviceTokensPort` 로 일괄 삭제. 앱 전용이라 CORS 불필요.
 마이그레이션 [2026-10-27_member_device_token.sql](./migrations/2026-10-27_member_device_token.sql).

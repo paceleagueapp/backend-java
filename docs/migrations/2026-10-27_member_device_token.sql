@@ -3,18 +3,18 @@
 -- 운영은 ddl-auto: validate라 배포 전 이 SQL을 운영 MySQL(paceleague-db)에 직접 실행해야 합니다.
 -- 로컬(ddl-auto: update)은 자동 생성되므로 실행 불필요.
 --
--- 앱이 로그인 직후/토큰 갱신 시 POST /api/notification/device-token 으로 등록(token 기준 upsert — 같은 기기에서
+-- 앱이 로그인 직후/토큰 갱신 시 POST /api/notification/fcm-token 으로 등록(fcm_id 기준 upsert — 같은 기기에서
 -- 다른 계정으로 로그인하면 member_sno 가 바뀐다), 로그아웃 시 DELETE 로 해제. 탈퇴 시 서버가 일괄 삭제.
 -- FCM 이 UNREGISTERED/INVALID_ARGUMENT 로 거절한 토큰은 발송 중 자동 삭제.
 
 CREATE TABLE member_device_token (
     sno          BIGINT       NOT NULL AUTO_INCREMENT,
     member_sno   BIGINT       NOT NULL,
-    token        VARCHAR(255) NOT NULL,
-    platform     VARCHAR(10)  NOT NULL,            -- ANDROID / IOS
+    fcm_id       VARCHAR(255) NOT NULL,            -- FCM registration token
+    device       VARCHAR(10)  NOT NULL,            -- ANDROID / IOS
     last_seen_at DATETIME     NOT NULL,
     created_at   DATETIME     NOT NULL,
     PRIMARY KEY (sno),
-    UNIQUE KEY uq_member_device_token (token),
+    UNIQUE KEY uq_member_device_token_fcm_id (fcm_id),
     KEY idx_member_device_token_member (member_sno)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

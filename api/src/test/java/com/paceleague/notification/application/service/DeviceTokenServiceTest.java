@@ -12,8 +12,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,41 +32,57 @@ class DeviceTokenServiceTest {
     }
 
     @Test
-    void 새_토큰은_새로_저장한다() {
-        when(deviceTokenRepositoryPort.findByToken("tok")).thenReturn(Optional.empty());
+    void 새_fcmId는_저장하고_true() {
+        when(deviceTokenRepositoryPort.findByFcmId("fcm")).thenReturn(Optional.empty());
 
-        service.register(7L, " tok ", "android");
+        boolean result = service.register(7L, " fcm ", "android");
 
+        assertThat(result).isTrue();
         ArgumentCaptor<DeviceToken> saved = ArgumentCaptor.forClass(DeviceToken.class);
         verify(deviceTokenRepositoryPort).save(saved.capture());
         assertThat(saved.getValue().getMemberSno()).isEqualTo(7L);
-        assertThat(saved.getValue().getToken()).isEqualTo("tok");
-        assertThat(saved.getValue().getPlatform()).isEqualTo("ANDROID");
+        assertThat(saved.getValue().getFcmId()).isEqualTo("fcm");
+        assertThat(saved.getValue().getDevice()).isEqualTo("ANDROID");
     }
 
     @Test
-    void 이미_있는_토큰을_다른_계정이_등록하면_그_계정으로_옮겨진다() {
-        DeviceToken existing = DeviceToken.create(7L, "tok", "ANDROID");
-        when(deviceTokenRepositoryPort.findByToken("tok")).thenReturn(Optional.of(existing));
+    void 이미_있는_fcmId면_회원과_기기를_갱신하고_true() {
+        DeviceToken existing = DeviceToken.create(7L, "fcm", "ANDROID");
+        when(deviceTokenRepositoryPort.findByFcmId("fcm")).thenReturn(Optional.of(existing));
 
-        service.register(8L, "tok", "IOS");
+        boolean result = service.register(8L, "fcm", "ios");
 
+        assertThat(result).isTrue();
         assertThat(existing.getMemberSno()).isEqualTo(8L);
-        assertThat(existing.getPlatform()).isEqualTo("IOS");
+        assertThat(existing.getDevice()).isEqualTo("IOS");
         verify(deviceTokenRepositoryPort).save(existing);
     }
 
     @Test
-    void 플랫폼이_ANDROID_IOS가_아니면_400() {
-        assertThatThrownBy(() -> service.register(7L, "tok", "web"))
-                .isInstanceOf(IllegalArgumentException.class);
+    void device가_IOS_ANDROID가_아니면_저장하지_않고_false() {
+        assertThat(service.register(7L, "fcm", "web")).isFalse();
+        assertThat(service.register(7L, "fcm", null)).isFalse();
         verify(deviceTokenRepositoryPort, never()).save(any());
     }
 
     @Test
-    void 해제는_본인_토큰만_지운다() {
-        service.unregister(7L, "tok");
+    void fcmId가_비었으면_저장하지_않고_false() {
+        assertThat(service.register(7L, " ", "IOS")).isFalse();
+        assertThat(service.register(7L, null, "IOS")).isFalse();
+        verify(deviceTokenRepositoryPort, never()).save(any());
+    }
 
-        verify(deviceTokenRepositoryPort).deleteByTokenAndMemberSno("tok", 7L);
+    @Test
+    void 해제는_본인_토큰만_지우고_true() {
+        assertThat(service.unregister(7L, "fcm")).isTrue();
+
+        verify(deviceTokenRepositoryPort).deleteByFcmIdAndMemberSno("fcm", 7L);
+    }
+
+    @Test
+    void 해제때_fcmId가_없으면_false() {
+        assertThat(service.unregister(7L, "")).isFalse();
+
+        verify(deviceTokenRepositoryPort, never()).deleteByFcmIdAndMemberSno(anyString(), anyLong());
     }
 }
