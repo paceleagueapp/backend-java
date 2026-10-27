@@ -304,6 +304,17 @@ totalScore = baseScore + scaledScore + addScore
 앱이 Firebase 프로젝트 등록 + FCM SDK + 알림 권한 + **로그인 시 토큰 등록 / 토큰 갱신 시 재등록 / 로그아웃 시 해제**를
 배포해야 실제 도달된다(토픽 구독은 하지 않는다). 그때까지 `daily-digest.enabled=false` 로 둔다.
 
+## 공지 팝업(Popup) 도메인 — 2026-10-28
+
+`popup` 패키지. 관리자 페이지 **팝업관리**(`/admin/popups`, `/admin/popup-edit`)에서 등록하고, 공개 `GET /api/popup` 이 노출 대상만 내려준다.
+
+- 테이블 `popup` (`docs/migrations/2026-10-28_popup.sql`): `title`, `content`(TEXT, 정제된 HTML), `target`(`WEB`/`APP`/`BOTH`), `start_at`/`end_at`, `active`.
+- **기간은 KST 벽시계 값 그대로 저장**하고 노출 판정도 `LocalDateTime.now(Asia/Seoul)` 과 비교한다(`PopupService`) — JVM 이 UTC 라도 관리자가 입력한 시각과 어긋나지 않게. `start_at <= now < end_at`(종료 시각 미포함).
+- 본문은 게시판 에디터를 그대로 쓰므로 `board.domain.policy.PostContentSanitizer` 로 정제(상태 없는 static 정책 직접 호출 — `RankTierLabelPolicy` 와 같은 예외). 텍스트도 이미지/동영상도 없으면 400.
+- 관리자 API(`admin.adapter.in.web.AdminPopupController` → `popup.AdminPopupUseCase`): `GET/POST /api/admin/popups`, `GET/PUT/DELETE /api/admin/popups/{sno}`, `PUT /api/admin/popups/{sno}/active` `{active}`(목록 토글). 목록 응답의 `visibleNow` = 지금 실제 노출 중.
+- 관리자 에디터의 이미지/동영상 업로드: `AdminMediaController` (`/api/admin/media/uploads`, `/{sno}/complete`, `/{sno}/status`) — `/api/media` 와 같은 presigned + Rekognition 흐름을 관리자 세션으로 쓰고, `media.member_sno` 에는 `MediaUseCase.ADMIN_UPLOADER_SNO`(0)를 넣는다(회원 sno 와 겹치지 않고 탈퇴 정리에도 안 걸림). 웹 쪽은 `createPostEditor` 에 `fetchJson`/`mediaBasePath` 옵션을 넘겨 같은 에디터를 재사용.
+- 웹 노출: `web/js/app.js` `showSitePopups()` 를 홈(`index.html`)에서 호출 — `WEB`/`BOTH` 만, 하나씩, "오늘 하루 보지 않기"는 `localStorage pl_popup_hidden_<sno>` = 오늘 날짜.
+
 ## 회원 탈퇴 (member)
 
 `DELETE /api/member/me` (로그인 필요, body `{ "password" }`). `MemberWithdrawService` — 한 트랜잭션:

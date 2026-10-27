@@ -70,6 +70,8 @@ public class CorsConfig {
         source.registerCorsConfiguration("/api/crew/**", authAndBoard);
         // 알림내역(web/notifications.html) — 로그인 필수 GET 조회라 Authorization 헤더 preflight 허용.
         source.registerCorsConfiguration("/api/notification/**", getWithAuthHeader);
+        // 공지 팝업(홈 화면) — 공개 GET 이지만 로그인 사용자는 apiFetch 가 Authorization 을 붙이므로 getWithAuthHeader.
+        source.registerCorsConfiguration("/api/popup", getWithAuthHeader);
 
         // 관리자 페이지(web/admin/**) — Authorization이 아니라 X-Admin-Session 헤더를 쓴다(AdminSessionFilter).
         // 회원관리/랭킹관리 등에서 조만간 PUT/DELETE도 쓸 게 뻔해서 board와 같은 메서드 셋을 미리 허용.

@@ -60,6 +60,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/territory/map", "/api/territory/ranking").permitAll()
                         // 크루 검색은 비로그인도 가능(크루 상세/내 크루 등 나머지는 로그인 필요).
                         .requestMatchers(HttpMethod.GET, "/api/crew/search").permitAll()
+                        // 공지 팝업(관리자 등록) — 앱/웹 모두 로그인 전에도 띄우므로 공개.
+                        .requestMatchers(HttpMethod.GET, "/api/popup").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception

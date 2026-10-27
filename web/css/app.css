@@ -148,3 +148,15 @@ input:focus, textarea:focus, select:focus, [contenteditable]:focus { outline: no
   .btn.sm { padding: 5px 9px; }
   #lang-select { width: 52px; padding: 5px 4px; font-size: 11px; }
 }
+
+/* 공지 팝업 (app.js showSitePopups — 관리자 팝업관리에서 등록) */
+.site-popup-overlay { position: fixed; inset: 0; background: rgba(20,22,26,.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.site-popup { background: #fff; border-radius: 14px; width: 100%; max-width: 420px; max-height: 86vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+.site-popup-title { padding: 16px 18px 10px; font-size: 16px; font-weight: 800; color: #1c2024; }
+.site-popup-body { padding: 0 18px 16px; overflow-y: auto; font-size: 14px; line-height: 1.6; color: #2b2f35; word-break: break-word; }
+.site-popup-body img, .site-popup-body video { max-width: 100%; border-radius: 8px; display: block; margin: 6px 0; }
+.site-popup-body a { color: #2f6fd6; }
+.site-popup-actions { display: flex; border-top: 1px solid #eceef1; }
+.site-popup-actions button { flex: 1; padding: 13px 8px; background: #fff; border: none; font-size: 13.5px; cursor: pointer; color: #6b7079; }
+.site-popup-actions button + button { border-left: 1px solid #eceef1; color: #1c2024; font-weight: 700; }
+.site-popup-actions button:hover { background: #f6f7f9; }

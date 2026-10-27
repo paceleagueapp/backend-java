@@ -242,7 +242,11 @@ function apiFetch(path, options) {
 // 게시글 작성/수정 에디터(contenteditable) 공통 로직 — index.html(작성 다이얼로그)과 post.html(수정 화면)이
 // 같은 마크업 구조(에디터 div + 툴바 5개 버튼 + 숨긴 파일 input)를 공유하므로 여기서 한 번만 구현한다.
 // opts: { editorEl, fileInputEl, boldBtn, italicBtn, linkBtn, imageBtn, videoBtn }
+//   + 선택: fetchJson(path, options) → Promise<json>, mediaBasePath — 관리자 팝업관리 화면이 회원 JWT 대신
+//     관리자 세션(/api/admin/media)으로 같은 업로드 흐름을 쓰려고 넘긴다. 생략하면 apiFetch + /api/media.
 function createPostEditor(opts) {
+  var fetchJson = opts.fetchJson || apiFetch;
+  var mediaBasePath = opts.mediaBasePath || '/api/media';
   var mediaPlaceholderSeq = 0;
   var mediaPlaceholderPollTimers = {};
 
@@ -351,7 +355,7 @@ function createPostEditor(opts) {
       var span = document.getElementById(placeholderId);
       if (span) span.textContent = t('attachMediaModerating');
       mediaPlaceholderPollTimers[placeholderId] = setInterval(function () {
-        apiFetch('/api/media/' + statusData.mediaSno + '/status').then(function (json) {
+        fetchJson(mediaBasePath + '/' + statusData.mediaSno + '/status').then(function (json) {
           if (!json.success || json.data.status === 'PENDING') return;
           clearInterval(mediaPlaceholderPollTimers[placeholderId]);
           delete mediaPlaceholderPollTimers[placeholderId];
@@ -380,7 +384,7 @@ function createPostEditor(opts) {
     var placeholderId = insertMediaPlaceholder(t('attachMediaUploading'));
     var mediaSno = null;
 
-    apiFetch('/api/media/uploads', {
+    fetchJson(mediaBasePath + '/uploads', {
       method: 'POST',
       body: { type: kind.toUpperCase(), mimeType: file.type, fileSizeBytes: file.size }
     }).then(function (json) {
@@ -392,7 +396,7 @@ function createPostEditor(opts) {
       if (!putRes.ok) { throw new Error('s3 put failed'); }
       var span = document.getElementById(placeholderId);
       if (span) span.textContent = t('attachMediaModerating');
-      return apiFetch('/api/media/' + mediaSno + '/complete', { method: 'POST' });
+      return fetchJson(mediaBasePath + '/' + mediaSno + '/complete', { method: 'POST' });
     }).then(function (json) {
       if (!json.success) { throw new Error(json.message || 'complete failed'); }
       applyMediaStatus(placeholderId, kind, json.data);
@@ -469,6 +473,56 @@ function loadRecordOptions(selectEl, selectedRecordSno, extraRecord) {
       selectEl.innerHTML += '<option value="' + r.recordSno + '"' + selected + '>' + escapeHtml(label) + '</option>';
     });
   });
+}
+
+// 관리자가 등록한 공지 팝업(GET /api/popup — 서버가 활성+기간 안인 것만 준다) 중 웹 대상(WEB/BOTH)을
+// 하나씩 띄운다. "오늘 하루 보지 않기"는 팝업별로 오늘 날짜를 localStorage 에 적어 두고 같은 날엔 건너뛴다.
+// content 는 서버에서 정제된 HTML 이라 innerHTML 로 넣는다(post.html 본문과 같은 신뢰 경계).
+function popupHiddenKey(sno) { return 'pl_popup_hidden_' + sno; }
+
+function todayLocalDate() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function isPopupHiddenToday(sno) {
+  try { return localStorage.getItem(popupHiddenKey(sno)) === todayLocalDate(); } catch (e) { return false; }
+}
+
+function showSitePopups() {
+  return apiFetch('/api/popup').then(function (json) {
+    var queue = ((json && json.data) || []).filter(function (p) {
+      return (p.target === 'WEB' || p.target === 'BOTH') && !isPopupHiddenToday(p.sno);
+    });
+    showNextSitePopup(queue);
+  }).catch(function () { /* 팝업은 부가 기능 — 실패해도 페이지는 그대로 */ });
+}
+
+function showNextSitePopup(queue) {
+  var popup = queue.shift();
+  if (!popup) return;
+  var overlay = document.createElement('div');
+  overlay.className = 'site-popup-overlay';
+  overlay.innerHTML =
+    '<div class="site-popup" role="dialog" aria-modal="true">' +
+      '<div class="site-popup-title"></div>' +
+      '<div class="site-popup-body">' + popup.content + '</div>' +
+      '<div class="site-popup-actions">' +
+        '<button type="button" class="site-popup-hide">' + escapeHtml(t('popupHideToday')) + '</button>' +
+        '<button type="button" class="site-popup-close">' + escapeHtml(t('popupClose')) + '</button>' +
+      '</div>' +
+    '</div>';
+  overlay.querySelector('.site-popup-title').textContent = popup.title;
+  function close() {
+    overlay.remove();
+    showNextSitePopup(queue);
+  }
+  overlay.querySelector('.site-popup-hide').addEventListener('click', function () {
+    try { localStorage.setItem(popupHiddenKey(popup.sno), todayLocalDate()); } catch (e) {}
+    close();
+  });
+  overlay.querySelector('.site-popup-close').addEventListener('click', close);
+  document.body.appendChild(overlay);
 }
 
 function requireLogin() {

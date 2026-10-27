@@ -62,6 +62,16 @@ class CorsConfigTest {
     }
 
     @Test
+    void 공지팝업은_로그인_사용자의_Authorization_프리플라이트를_허용하는_GET만() {
+        CorsConfiguration config = configFor("OPTIONS", "/api/popup");
+
+        assertThat(config).isNotNull();
+        assertThat(config.checkHttpMethod(HttpMethod.GET)).isNotNull();
+        assertThat(config.checkHttpMethod(HttpMethod.POST)).isNull();
+        assertThat(config.checkHeaders(List.of("authorization"))).contains("authorization");
+    }
+
+    @Test
     void 허용되지_않은_오리진은_거부된다() {
         CorsConfiguration config = configFor("GET", "/api/territory/map");
 

@@ -14,6 +14,7 @@ var ADMIN_MENU = [
   { key: 'ranking', label: '랭킹관리', href: '/admin/ranking' },
   { key: 'records', label: '러닝데이터관리', href: '/admin/records' },
   { key: 'territory', label: '랜드잇데이터관리', href: '/admin/territory' },
+  { key: 'popups', label: '팝업관리', href: '/admin/popups' },
   { key: 'settings', label: '설정', href: '/admin/settings' }
 ];
 

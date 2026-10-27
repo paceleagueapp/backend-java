@@ -7,6 +7,10 @@ import com.paceleague.media.application.dto.MediaUploadRequest;
 import java.util.List;
 
 public interface MediaUseCase {
+    // 관리자 화면(팝업 등)에서 올린 미디어의 member_sno — 회원 sno 는 1부터라 겹치지 않고,
+    // 회원 탈퇴 정리(PurgeMemberMediaPort)에도 걸리지 않는다.
+    Long ADMIN_UPLOADER_SNO = 0L;
+
     // presigned PUT URL 발급 + PENDING 상태의 media row 생성
     MediaUploadInitResponse requestUpload(Long memberSno, MediaUploadRequest req);
 

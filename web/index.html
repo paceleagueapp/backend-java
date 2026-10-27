@@ -227,6 +227,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     });
 
     renderHeader();
+    showSitePopups();
     // nav 라벨: i18n 키가 해석되면 번역으로 교체, 아니면 HTML의 한국어 기본값 유지(옛 i18n.js 캐시 대비).
     // 헤더 메뉴(.navlink)와 하단 탭바(.bnav) 둘 다 data-navkey를 갖는다.
     document.querySelectorAll('[data-navkey]').forEach(function (el) {

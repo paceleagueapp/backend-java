@@ -892,6 +892,34 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 **실패**: 해당 `platform`에 대한 정책이 DB에 없음 → 400 `"앱 버전 정책이 존재하지 않습니다. platform=..."`
 
+## Popup API (`/api/popup`) — 공개
+
+관리자 페이지(팝업관리)에서 등록한 공지 팝업. 앱/웹 모두 로그인 전에도 띄울 수 있게 인증 불필요.
+
+### GET `/api/popup` — 노출 중인 팝업 목록
+
+요청값 없음. **활성 상태이면서 지금(한국시간)이 노출 기간 안**(`startAt` 이상, `endAt` 미만)인 팝업만 시작일 최신순으로 내려준다.
+웹/앱 구분 없이 내려주므로 클라이언트가 `target` 으로 거른다 — **앱은 `APP`·`BOTH`, 웹은 `WEB`·`BOTH`**. 없으면 빈 배열.
+
+**Response** `200 OK` — `data`: `PopupResponse[]`
+
+```json
+[
+  {
+    "sno": 3,
+    "title": "11월 러닝 이벤트 안내",
+    "content": "<p><b>11월 한 달간</b> 100km 달성 시 쿠폰 지급!</p><img src=\"https://paceleague-media.s3.ap-northeast-2.amazonaws.com/media/image/0/....png\">",
+    "target": "BOTH",
+    "startAt": "2026-11-01T00:00:00",
+    "endAt": "2026-12-01T00:00:00"
+  }
+]
+```
+
+- `content`: 게시글과 같은 에디터로 쓴 HTML(서버에서 정제됨 — 허용 태그 `p, br, div, b, strong, i, em, a[href], img[src,alt], video[src,controls]`). 앱은 WebView 등 HTML 렌더링으로 표시.
+- `startAt`/`endAt`: 한국시간(KST) 기준, 타임존 표기 없음.
+- 웹(`index.html`)은 하나씩 띄우고 "오늘 하루 보지 않기"(팝업별, 브라우저 localStorage) / "닫기"를 제공한다. 앱의 "다시 보지 않기" 처리는 앱 쪽에서 `sno` 기준으로 한다.
+
 ## Media API (`/api/media`) — 인증 필요
 
 게시글에 첨부할 이미지/동영상/링크를 관리하는 API. S3 presigned URL로 브라우저가 파일을 직접 업로드하고(백엔드는 파일 바이트를 프록시하지 않음), AWS Rekognition으로 유해 콘텐츠 여부를 모더레이션합니다. 인프라(S3 버킷/IAM) 배경은 [infra.md](./infra.md), 스키마는 [database.md](./database.md#media) 참고.
