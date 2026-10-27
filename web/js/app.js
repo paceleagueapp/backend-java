@@ -130,7 +130,7 @@ function join(payload) {
   });
 }
 
-// 로그인 시점에 별도로 확인하는 알림 동의 3종(서비스 알림/마케팅/야간 마케팅) — 회원가입 때는 받지 않는다.
+// 알림 동의 3종(서비스 알림/마케팅/야간 마케팅) — 웹 회원가입 때 선택으로 받고, 답이 없는 계정(앱 가입 등)은 로그인 직후 다시 묻는다.
 var NOTIFICATION_AGREEMENT_TYPES = ['PUSH_SERVICE', 'MARKETING', 'MARKETING_NIGHT'];
 
 function getMemberAgreements() {

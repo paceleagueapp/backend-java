@@ -51,7 +51,8 @@ public class MemberAuthService implements MemberAuthUseCase {
 
     @Transactional
     public AuthTokenInfo join(String memberId, String rawPassword, String nickname, String email,
-                               boolean agreedTerms, boolean agreedPrivacy, boolean agreedLocation) {
+                               boolean agreedTerms, boolean agreedPrivacy, boolean agreedLocation,
+                               Boolean agreedPushService, Boolean agreedMarketing, Boolean agreedMarketingNight) {
 
         // 이용약관/개인정보처리방침/위치정보 수집·이용 — 위치정보는 GPS 기반 핵심 기능(러닝 기록/땅따먹기) 없이는
         // 서비스 자체가 성립하지 않는 앱 특성상 셋 다 필수 동의로 처리(가입 자체를 막음).
@@ -73,7 +74,21 @@ public class MemberAuthService implements MemberAuthUseCase {
         memberAgreementRepositoryPort.save(MemberAgreement.create(memberSno, AgreementType.PRIVACY, true));
         memberAgreementRepositoryPort.save(MemberAgreement.create(memberSno, AgreementType.LOCATION, true));
 
+        // 선택 동의 — 보낸 값만 기록. 야간 수신은 마케팅 수신에 동의했을 때만 의미가 있어 그 외엔 false 로 기록한다.
+        saveOptionalAgreement(memberSno, AgreementType.PUSH_SERVICE, agreedPushService);
+        saveOptionalAgreement(memberSno, AgreementType.MARKETING, agreedMarketing);
+        if (agreedMarketingNight != null) {
+            saveOptionalAgreement(memberSno, AgreementType.MARKETING_NIGHT,
+                    agreedMarketingNight && Boolean.TRUE.equals(agreedMarketing));
+        }
+
         return issueTokens(member);
+    }
+
+    private void saveOptionalAgreement(Long memberSno, AgreementType type, Boolean agreed) {
+        if (agreed != null) {
+            memberAgreementRepositoryPort.save(MemberAgreement.create(memberSno, type, agreed));
+        }
     }
 
     @Transactional(readOnly = true)

@@ -91,16 +91,30 @@
 | 필드 | 타입 | 필수 | 제약 |
 |---|---|---|---|
 | memberId | string | Y | not blank, max 50자 |
-| password | string | Y | not blank, 4~100자 |
+| password | string | Y | not blank, 8~100자 |
 | nickname | string | N | max 50자 |
 | email | string | N | max 50자 |
+| agreedTerms | boolean | Y | 이용약관 동의 — `true` 여야 가입 |
+| agreedPrivacy | boolean | Y | 개인정보 처리방침 동의 — `true` 여야 가입 |
+| agreedLocation | boolean | Y | 위치정보 수집·이용 동의 — `true` 여야 가입 |
+| agreedPushService | boolean | N | [선택] 서비스 알림 수신 동의 |
+| agreedMarketing | boolean | N | [선택] 마케팅(광고성) 정보 수신 동의 |
+| agreedMarketingNight | boolean | N | [선택] 야간(21~08시) 마케팅 수신 동의 — `agreedMarketing` 이 `true` 가 아니면 `false` 로 기록 |
+
+선택 동의 3종은 보낸 값만 `member_agreement` 에 기록된다. 생략(`null`)하면 기록하지 않으며, 이 경우 `GET /api/member/agreements` 의 `answered=false` 로 남아 첫 로그인 때 알림 동의 화면에서 다시 묻는다(값을 보내지 않는 기존 앱도 그대로 동작). 가입 후 변경은 `PUT /api/member/agreements`.
 
 ```json
 {
   "memberId": "runner01",
   "password": "pass1234",
   "nickname": "러너01",
-  "email": "runner01@example.com"
+  "email": "runner01@example.com",
+  "agreedTerms": true,
+  "agreedPrivacy": true,
+  "agreedLocation": true,
+  "agreedPushService": true,
+  "agreedMarketing": false,
+  "agreedMarketingNight": false
 }
 ```
 
@@ -108,7 +122,8 @@
 
 **실패**
 - `memberId`가 이미 존재 → 400 `"이미 존재하는 아이디입니다."`
-- validation 실패(예: password 4자 미만) → 400 (Spring `@Valid` 바인딩 에러)
+- 필수 동의 3종 중 하나라도 `true` 가 아님 → 400
+- validation 실패(예: password 8자 미만) → 400 (Spring `@Valid` 바인딩 에러)
 
 ### POST `/api/member/login` — 로그인 (공개)
 

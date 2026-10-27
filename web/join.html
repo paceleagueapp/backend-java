@@ -40,6 +40,9 @@
     .agree-row a { color: #1c2024; text-decoration: underline; margin-left: auto; white-space: nowrap; }
     .agree-all { font-weight: 700; color: #1c2024; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
     .agree-note { font-size: 12px; color: #8a8e96; margin-top: -2px; }
+    .agree-optional-first { border-top: 1px solid #e5e7eb; padding-top: 8px; }
+    .agree-sub { padding-left: 24px; font-size: 13px; }
+    .agree-row input:disabled + span { color: #b0b4ba; }
     .agree-hint { font-size: 12.5px; color: #c62828; text-align: center; margin-top: 2px; }
     .agree-hint[hidden] { display: none; }
     .agree-box.highlight { border-color: #e5342f; box-shadow: 0 0 0 3px rgba(229,52,47,0.12); }
@@ -83,6 +86,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <a href="/ko/location-terms" target="_blank" rel="noopener" id="agree-location-link"></a>
       </label>
       <div class="agree-note" id="agree-note"></div>
+      <!-- 선택 동의(알림 3종) — 계정설정에서 언제든 바꿀 수 있다 -->
+      <label class="agree-row agree-optional-first">
+        <input type="checkbox" id="agree-push" class="agree-optional">
+        <span id="agree-push-label"></span>
+      </label>
+      <label class="agree-row">
+        <input type="checkbox" id="agree-marketing" class="agree-optional">
+        <span id="agree-marketing-label"></span>
+      </label>
+      <label class="agree-row agree-sub">
+        <input type="checkbox" id="agree-marketing-night" class="agree-optional" disabled>
+        <span id="agree-marketing-night-label"></span>
+      </label>
     </div>
 
     <div class="error" id="error"></div>
@@ -108,6 +124,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     document.getElementById('agree-location-label').textContent = t('agreeLocation');
     document.getElementById('agree-location-link').textContent = t('viewDoc');
     document.getElementById('agree-note').textContent = t('agreeLocationNote');
+    document.getElementById('agree-push-label').textContent = t('agreeOptionalTag') + ' ' + t('ncPushTitle');
+    document.getElementById('agree-marketing-label').textContent = t('agreeOptionalTag') + ' ' + t('ncMarketingTitle');
+    document.getElementById('agree-marketing-night-label').textContent = t('agreeOptionalTag') + ' ' + t('ncMarketingNightTitle');
     document.getElementById('join-submit').textContent = t('joinSubmit');
     document.getElementById('back-link').textContent = t('backToLogin');
     document.getElementById('agree-hint').textContent = t('joinAgreeHint');
@@ -118,6 +137,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     });
 
     var requiredBoxes = Array.prototype.slice.call(document.querySelectorAll('.agree-required'));
+    var optionalBoxes = Array.prototype.slice.call(document.querySelectorAll('.agree-optional'));
+    var allBoxes = requiredBoxes.concat(optionalBoxes);
+    var marketingBox = document.getElementById('agree-marketing');
+    var marketingNightBox = document.getElementById('agree-marketing-night');
     var allBox = document.getElementById('agree-all');
     var submitBtn = document.getElementById('join-submit');
 
@@ -134,13 +157,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       hintEl.hidden = ok;
       if (ok) agreeBox.classList.remove('highlight');
     }
+    // 야간 수신은 마케팅 수신에 동의했을 때만 켤 수 있다
+    function syncMarketingNight() {
+      marketingNightBox.disabled = !marketingBox.checked;
+      if (!marketingBox.checked) marketingNightBox.checked = false;
+    }
+    // 전체 동의 = 필수 + 선택 모두. 가입 버튼 잠금은 필수 3개만 본다.
     allBox.addEventListener('change', function () {
-      requiredBoxes.forEach(function (b) { b.checked = allBox.checked; });
+      allBoxes.forEach(function (b) { b.checked = allBox.checked; });
+      syncMarketingNight();
       updateSubmitState();
     });
-    requiredBoxes.forEach(function (b) {
+    allBoxes.forEach(function (b) {
       b.addEventListener('change', function () {
-        allBox.checked = requiredBoxes.every(function (x) { return x.checked; });
+        if (b === marketingBox) syncMarketingNight();
+        allBox.checked = allBoxes.every(function (x) { return x.checked; });
         updateSubmitState();
       });
     });
@@ -163,7 +194,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         email: document.getElementById('email').value.trim() || null,
         agreedTerms: document.getElementById('agree-terms').checked,
         agreedPrivacy: document.getElementById('agree-privacy').checked,
-        agreedLocation: document.getElementById('agree-location').checked
+        agreedLocation: document.getElementById('agree-location').checked,
+        agreedPushService: document.getElementById('agree-push').checked,
+        agreedMarketing: marketingBox.checked,
+        agreedMarketingNight: marketingNightBox.checked
       })
         .then(function (data) {
           storeAuth(data);

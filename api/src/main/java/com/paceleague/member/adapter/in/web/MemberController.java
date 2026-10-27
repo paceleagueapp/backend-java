@@ -58,7 +58,8 @@ public class MemberController {
         return ResponseApi.success(searchMembersPort.search(q, 20));
     }
 
-    @Operation(summary = "회원가입", description = "이용약관/개인정보처리방침/위치정보 수집·이용에 모두 동의해야 가입 가능. 회원가입 후 access/refresh token 발급")
+    @Operation(summary = "회원가입", description = "이용약관/개인정보처리방침/위치정보 수집·이용에 모두 동의해야 가입 가능. "
+            + "서비스 알림/마케팅/야간 마케팅 수신 동의는 선택(생략하면 첫 로그인 때 다시 물음, 야간은 마케팅 동의 시에만 유효). 회원가입 후 access/refresh token 발급")
     @ApiResponse(responseCode = "200", description = "회원가입 성공")
     @PostMapping("/join")
     public ResponseEntity<ResponseApi<TokenResponse>> join(@Valid @RequestBody JoinRequest req) {
@@ -70,7 +71,10 @@ public class MemberController {
                 req.email(),
                 req.agreedTerms(),
                 req.agreedPrivacy(),
-                req.agreedLocation()
+                req.agreedLocation(),
+                req.agreedPushService(),
+                req.agreedMarketing(),
+                req.agreedMarketingNight()
         );
 
         return ResponseEntity.ok(
