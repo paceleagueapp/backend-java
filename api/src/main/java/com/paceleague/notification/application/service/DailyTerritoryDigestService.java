@@ -2,9 +2,11 @@ package com.paceleague.notification.application.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.paceleague.notification.application.port.in.SendDailyTerritoryDigestUseCase;
+import com.paceleague.notification.application.port.out.NotificationHistoryRepositoryPort;
 import com.paceleague.notification.application.port.out.PushSendLogRepositoryPort;
 import com.paceleague.notification.application.port.out.SendPushPort;
 import com.paceleague.notification.config.FcmProperties;
+import com.paceleague.notification.domain.entity.NotificationHistory;
 import com.paceleague.notification.domain.entity.PushSendLog;
 import com.paceleague.notification.domain.policy.DailyDigestWindow;
 import com.paceleague.territory.application.dto.TerritoryCaptureCount;
@@ -26,10 +28,12 @@ public class DailyTerritoryDigestService implements SendDailyTerritoryDigestUseC
 
     private static final Logger log = LoggerFactory.getLogger(DailyTerritoryDigestService.class);
     static final String KIND = "DAILY_TERRITORY_DIGEST";
+    private static final String DEEPLINK = "paceleague://territory";
 
     private final CountTerritoryCapturesPort countTerritoryCapturesPort;
     private final SendPushPort sendPushPort;
     private final PushSendLogRepositoryPort pushSendLogPort;
+    private final NotificationHistoryRepositoryPort notificationHistoryPort;
     private final FcmProperties fcmProperties;
     private final ObjectMapper objectMapper;
 
@@ -70,7 +74,7 @@ public class DailyTerritoryDigestService implements SendDailyTerritoryDigestUseC
         data.put("date", targetDate.toString());
         data.put("capturedTerritories", String.valueOf(count.capturedTerritories()));
         data.put("distinctOwners", String.valueOf(count.distinctOwners()));
-        data.put("deeplink", "paceleague://territory");
+        data.put("deeplink", DEEPLINK);
         String payloadJson = toJson(data);
 
         try {
@@ -88,6 +92,19 @@ public class DailyTerritoryDigestService implements SendDailyTerritoryDigestUseC
             log.error("일간 땅따먹기 다이제스트: {} 발송 실패", targetDate, e);
         }
         pushSendLogPort.save(logRow);
+
+        if (PushSendLog.STATUS_SENT.equals(logRow.getStatus())) {
+            saveHistory(title, body);
+        }
+    }
+
+    // 실제 발송된 것만 알림내역에 남긴다. 저장 실패가 발송 결과(push_send_log)를 되돌리면 안 되므로 로그만.
+    private void saveHistory(String title, String body) {
+        try {
+            notificationHistoryPort.save(NotificationHistory.broadcast(KIND, title, body, DEEPLINK));
+        } catch (RuntimeException e) {
+            log.error("일간 땅따먹기 다이제스트: 알림내역 저장 실패", e);
+        }
     }
 
     private String toJson(Map<String, String> data) {

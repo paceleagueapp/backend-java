@@ -59,7 +59,7 @@ HEAD = """<!DOCTYPE html>
   <link rel="canonical" href="{site}{path}">
 {alternates}  <link rel="icon" type="image/png" href="/img/favicon.png">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2124974034690240" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="/css/app.css?v=20261026">
+  <link rel="stylesheet" href="/css/app.css?v=20261027">
   <link rel="stylesheet" href="/css/guide.css?v=20260930c">
 {extra_head}  <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){{w[l]=w[l]||[];w[l].push({{'gtm.start':
@@ -114,8 +114,8 @@ FOOT = """  </main>
     </a>
   </nav>
 
-  <script src="/js/app.js?v=20261026"></script>
-  <script src="/js/i18n.js?v=20261026"></script>
+  <script src="/js/app.js?v=20261027"></script>
+  <script src="/js/i18n.js?v=20261027"></script>
   <script>
     document.querySelectorAll('[data-navkey]').forEach(function (el) {{
       var key = el.getAttribute('data-navkey');

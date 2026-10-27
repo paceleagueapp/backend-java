@@ -615,6 +615,40 @@ join/login/reissue가 공통으로 반환하는 구조:
 
 ---
 
+## Notification API (`/api/notification`) — 인증 필요
+
+### GET `/api/notification` — 내 알림내역 (더보기 커서 페이지)
+
+발송된 푸시 알림 목록, 최신순. 웹(`/notifications`)과 앱이 같은 API를 쓴다 — 둘 다 5개씩 보여주고 "더보기"로 다음 5개.
+
+| 파라미터 | 필수 | 설명 |
+|---|---|---|
+| `cursor` | X | 이전 응답의 `nextCursor`. 첫 페이지는 생략 |
+| `size` | X | 기본 5, 1~50으로 보정 |
+
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      { "sno": 12, "kind": "DAILY_TERRITORY_DIGEST", "title": "땅따먹기 어제 요약",
+        "body": "어제 42명이 128개의 땅을 점령했어요 🏴", "deeplink": "paceleague://territory",
+        "createdAt": "2026-10-27T00:00:03" }
+    ],
+    "hasMore": true,
+    "nextCursor": 8
+  }
+}
+```
+
+- `hasMore=false` 면 마지막 페이지(`nextCursor=null`). 앱은 `deeplink` 로 화면 이동.
+- 전체 발송(토픽) 알림은 **가입 이후 발송분만** 포함. 개인 알림(`member_sno` 지정)은 아직 발송처 없음(향후 쿠폰 등).
+- `createdAt` 은 다른 API와 같은 UTC(타임존 표기 없음) 문자열.
+
+**마이그레이션**: [migrations/2026-10-27_notification_history.sql](./migrations/2026-10-27_notification_history.sql) (운영은 배포 전 직접 실행)
+
+---
+
 ## Rank API (`/api/rank`) — 인증 필요
 
 "내 점수/티어"를 조회하는 개인 관점 API. 리더보드는 [Ranking API](#ranking-api-apiranking--인증-필요) 참고.

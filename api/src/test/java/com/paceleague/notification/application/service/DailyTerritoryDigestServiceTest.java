@@ -1,9 +1,11 @@
 package com.paceleague.notification.application.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paceleague.notification.application.port.out.NotificationHistoryRepositoryPort;
 import com.paceleague.notification.application.port.out.PushSendLogRepositoryPort;
 import com.paceleague.notification.application.port.out.SendPushPort;
 import com.paceleague.notification.config.FcmProperties;
+import com.paceleague.notification.domain.entity.NotificationHistory;
 import com.paceleague.notification.domain.entity.PushSendLog;
 import com.paceleague.territory.application.dto.TerritoryCaptureCount;
 import com.paceleague.territory.application.port.in.shared.CountTerritoryCapturesPort;
@@ -36,6 +38,7 @@ class DailyTerritoryDigestServiceTest {
     @Mock CountTerritoryCapturesPort countTerritoryCapturesPort;
     @Mock SendPushPort sendPushPort;
     @Mock PushSendLogRepositoryPort pushSendLogPort;
+    @Mock NotificationHistoryRepositoryPort notificationHistoryPort;
 
     DailyTerritoryDigestService service;
 
@@ -46,7 +49,7 @@ class DailyTerritoryDigestServiceTest {
     void setUp() {
         FcmProperties props = new FcmProperties(null, null, null, null); // sendWhenZero=false, topic=all
         service = new DailyTerritoryDigestService(
-                countTerritoryCapturesPort, sendPushPort, pushSendLogPort, props, new ObjectMapper());
+                countTerritoryCapturesPort, sendPushPort, pushSendLogPort, notificationHistoryPort, props, new ObjectMapper());
 
         reservedLog = PushSendLog.reserve(DailyTerritoryDigestService.KIND, targetDate);
         when(pushSendLogPort.tryReserve(eq(DailyTerritoryDigestService.KIND), eq(targetDate)))
@@ -68,6 +71,40 @@ class DailyTerritoryDigestServiceTest {
 
         assertThat(reservedLog.getStatus()).isEqualTo(PushSendLog.STATUS_SENT);
         assertThat(reservedLog.getFcmMessageId()).isEqualTo("projects/x/messages/abc");
+        verify(pushSendLogPort).save(reservedLog);
+
+        // 실제 발송된 건은 전체 발송(memberSno=null) 알림내역으로 남는다
+        ArgumentCaptor<NotificationHistory> history = ArgumentCaptor.forClass(NotificationHistory.class);
+        verify(notificationHistoryPort).save(history.capture());
+        assertThat(history.getValue().getMemberSno()).isNull();
+        assertThat(history.getValue().getTitle()).isEqualTo("땅따먹기 어제 요약");
+        assertThat(history.getValue().getBody()).contains("42명").contains("128개");
+        assertThat(history.getValue().getDeeplink()).isEqualTo("paceleague://territory");
+    }
+
+    @Test
+    void 발송되지_않은_건은_알림내역에_남기지_않는다() {
+        when(countTerritoryCapturesPort.countBetween(any(), any()))
+                .thenReturn(new TerritoryCaptureCount(10, 5));
+        when(sendPushPort.sendToAll(anyString(), anyString(), anyMap()))
+                .thenReturn(SendPushPort.PushResult.skipped("FCM 미설정"));
+
+        service.sendForDate(targetDate);
+
+        verify(notificationHistoryPort, never()).save(any());
+    }
+
+    @Test
+    void 알림내역_저장이_실패해도_발송기록은_SENT로_남고_예외를_삼킨다() {
+        when(countTerritoryCapturesPort.countBetween(any(), any()))
+                .thenReturn(new TerritoryCaptureCount(10, 5));
+        when(sendPushPort.sendToAll(anyString(), anyString(), anyMap()))
+                .thenReturn(SendPushPort.PushResult.sent("m1"));
+        when(notificationHistoryPort.save(any())).thenThrow(new RuntimeException("db down"));
+
+        service.sendForDate(targetDate); // no throw
+
+        assertThat(reservedLog.getStatus()).isEqualTo(PushSendLog.STATUS_SENT);
         verify(pushSendLogPort).save(reservedLog);
     }
 
@@ -126,7 +163,7 @@ class DailyTerritoryDigestServiceTest {
         FcmProperties props = new FcmProperties(null, null, null,
                 new FcmProperties.DailyDigest(true, null, true));
         service = new DailyTerritoryDigestService(
-                countTerritoryCapturesPort, sendPushPort, pushSendLogPort, props, new ObjectMapper());
+                countTerritoryCapturesPort, sendPushPort, pushSendLogPort, notificationHistoryPort, props, new ObjectMapper());
         when(pushSendLogPort.tryReserve(anyString(), any())).thenReturn(Optional.of(reservedLog));
         when(countTerritoryCapturesPort.countBetween(any(), any()))
                 .thenReturn(new TerritoryCaptureCount(0, 0));

@@ -4,6 +4,7 @@ import com.paceleague.member.application.dto.AdminMemberDetail;
 import com.paceleague.member.application.dto.AdminMemberSummary;
 import com.paceleague.member.application.dto.MemberSearchResult;
 import com.paceleague.member.application.port.in.shared.AdminMemberQueryPort;
+import com.paceleague.member.application.port.in.shared.GetMemberJoinedAtPort;
 import com.paceleague.member.application.port.in.shared.GetMemberNicknamePort;
 import com.paceleague.member.application.port.in.SearchMembersPort;
 import com.paceleague.member.application.port.out.MemberAgreementRepositoryPort;
@@ -17,12 +18,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class MemberQueryService implements GetMemberNicknamePort, SearchMembersPort, AdminMemberQueryPort {
+public class MemberQueryService implements GetMemberNicknamePort, SearchMembersPort, AdminMemberQueryPort, GetMemberJoinedAtPort {
 
     private final MemberRepositoryPort memberRepositoryPort;
     private final MemberAgreementRepositoryPort memberAgreementRepositoryPort;
@@ -74,5 +77,10 @@ public class MemberQueryService implements GetMemberNicknamePort, SearchMembersP
                 pushAgreement.map(a -> a.isAgreed()).orElse(false),
                 pushAgreement.isPresent()
         );
+    }
+
+    @Override
+    public Optional<Instant> getJoinedAt(Long memberSno) {
+        return memberRepositoryPort.findBySno(memberSno).map(Member::getCreatedAt);
     }
 }

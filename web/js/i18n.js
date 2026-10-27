@@ -344,7 +344,8 @@ var ACCOUNT_STRINGS = {
     accountHeading: '계정설정', accountBack: '← 메인으로',
     accountNotifTitle: '알림 설정', accountSaveBtn: '저장', accountSaved: '저장되었습니다.',
     accountSaveFailed: '저장에 실패했습니다.', accountLoadFailed: '설정을 불러오지 못했습니다.',
-    accountLink: '계정설정', androidApp: '앱 다운로드'
+    accountLink: '계정설정', androidApp: '앱 다운로드',
+    notifLink: '알림', notifHeading: '알림내역', notifEmpty: '받은 알림이 없습니다.', notifMore: '더보기', notifLoadFailed: '알림내역을 불러오지 못했습니다.'
   },
   en: {
     goToJoin: 'Sign up', backToLogin: '← Back to login',
@@ -362,7 +363,8 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'Account settings', accountBack: '← Back to home',
     accountNotifTitle: 'Notifications', accountSaveBtn: 'Save', accountSaved: 'Saved.',
     accountSaveFailed: 'Failed to save.', accountLoadFailed: 'Failed to load settings.',
-    accountLink: 'Account', androidApp: 'Get the app'
+    accountLink: 'Account', androidApp: 'Get the app',
+    notifLink: 'Notifications', notifHeading: 'Notifications', notifEmpty: 'No notifications yet.', notifMore: 'Load more', notifLoadFailed: 'Failed to load notifications.'
   },
   ja: {
     goToJoin: '新規登録', backToLogin: '← ログインへ',
@@ -380,7 +382,8 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'アカウント設定', accountBack: '← ホームへ',
     accountNotifTitle: '通知設定', accountSaveBtn: '保存', accountSaved: '保存しました。',
     accountSaveFailed: '保存に失敗しました。', accountLoadFailed: '設定を読み込めませんでした。',
-    accountLink: 'アカウント設定', androidApp: 'アプリ'
+    accountLink: 'アカウント設定', androidApp: 'アプリ',
+    notifLink: '通知', notifHeading: '通知履歴', notifEmpty: '通知はまだありません。', notifMore: 'もっと見る', notifLoadFailed: '通知履歴を読み込めませんでした。'
   },
   zh: {
     goToJoin: '注册', backToLogin: '← 返回登录',
@@ -398,7 +401,8 @@ var ACCOUNT_STRINGS = {
     accountHeading: '账户设置', accountBack: '← 返回首页',
     accountNotifTitle: '通知设置', accountSaveBtn: '保存', accountSaved: '已保存。',
     accountSaveFailed: '保存失败。', accountLoadFailed: '无法加载设置。',
-    accountLink: '账户设置', androidApp: '下载应用'
+    accountLink: '账户设置', androidApp: '下载应用',
+    notifLink: '通知', notifHeading: '通知记录', notifEmpty: '暂无通知。', notifMore: '加载更多', notifLoadFailed: '无法加载通知记录。'
   },
   es: {
     goToJoin: 'Registrarse', backToLogin: '← Volver a iniciar sesión',
@@ -416,7 +420,8 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'Configuración de la cuenta', accountBack: '← Volver al inicio',
     accountNotifTitle: 'Notificaciones', accountSaveBtn: 'Guardar', accountSaved: 'Guardado.',
     accountSaveFailed: 'No se pudo guardar.', accountLoadFailed: 'No se pudo cargar la configuración.',
-    accountLink: 'Cuenta', androidApp: 'Descargar app'
+    accountLink: 'Cuenta', androidApp: 'Descargar app',
+    notifLink: 'Notificaciones', notifHeading: 'Notificaciones', notifEmpty: 'Aún no hay notificaciones.', notifMore: 'Ver más', notifLoadFailed: 'No se pudieron cargar las notificaciones.'
   },
   fr: {
     goToJoin: "S'inscrire", backToLogin: '← Retour à la connexion',
@@ -434,7 +439,8 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'Paramètres du compte', accountBack: "← Retour à l'accueil",
     accountNotifTitle: 'Notifications', accountSaveBtn: 'Enregistrer', accountSaved: 'Enregistré.',
     accountSaveFailed: "Échec de l'enregistrement.", accountLoadFailed: 'Impossible de charger les paramètres.',
-    accountLink: 'Compte', androidApp: "Télécharger l’app"
+    accountLink: 'Compte', androidApp: "Télécharger l’app",
+    notifLink: 'Notifications', notifHeading: 'Notifications', notifEmpty: 'Aucune notification pour le moment.', notifMore: 'Voir plus', notifLoadFailed: 'Impossible de charger les notifications.'
   },
   de: {
     goToJoin: 'Registrieren', backToLogin: '← Zurück zur Anmeldung',
@@ -452,7 +458,8 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'Kontoeinstellungen', accountBack: '← Zur Startseite',
     accountNotifTitle: 'Benachrichtigungen', accountSaveBtn: 'Speichern', accountSaved: 'Gespeichert.',
     accountSaveFailed: 'Speichern fehlgeschlagen.', accountLoadFailed: 'Einstellungen konnten nicht geladen werden.',
-    accountLink: 'Konto', androidApp: 'App laden'
+    accountLink: 'Konto', androidApp: 'App laden',
+    notifLink: 'Benachrichtigungen', notifHeading: 'Benachrichtigungen', notifEmpty: 'Noch keine Benachrichtigungen.', notifMore: 'Mehr anzeigen', notifLoadFailed: 'Benachrichtigungen konnten nicht geladen werden.'
   },
   pt: {
     goToJoin: 'Cadastrar-se', backToLogin: '← Voltar ao login',
@@ -470,7 +477,8 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'Configurações da conta', accountBack: '← Voltar ao início',
     accountNotifTitle: 'Notificações', accountSaveBtn: 'Salvar', accountSaved: 'Salvo.',
     accountSaveFailed: 'Falha ao salvar.', accountLoadFailed: 'Não foi possível carregar as configurações.',
-    accountLink: 'Conta', androidApp: 'Baixar app'
+    accountLink: 'Conta', androidApp: 'Baixar app',
+    notifLink: 'Notificações', notifHeading: 'Notificações', notifEmpty: 'Nenhuma notificação ainda.', notifMore: 'Ver mais', notifLoadFailed: 'Não foi possível carregar as notificações.'
   },
   vi: {
     goToJoin: 'Đăng ký', backToLogin: '← Quay lại đăng nhập',
@@ -488,7 +496,8 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'Cài đặt tài khoản', accountBack: '← Về trang chủ',
     accountNotifTitle: 'Thông báo', accountSaveBtn: 'Lưu', accountSaved: 'Đã lưu.',
     accountSaveFailed: 'Lưu thất bại.', accountLoadFailed: 'Không thể tải cài đặt.',
-    accountLink: 'Tài khoản', androidApp: 'Tải ứng dụng'
+    accountLink: 'Tài khoản', androidApp: 'Tải ứng dụng',
+    notifLink: 'Thông báo', notifHeading: 'Lịch sử thông báo', notifEmpty: 'Chưa có thông báo nào.', notifMore: 'Xem thêm', notifLoadFailed: 'Không thể tải thông báo.'
   },
   th: {
     goToJoin: 'สมัครสมาชิก', backToLogin: '← กลับไปเข้าสู่ระบบ',
@@ -506,7 +515,8 @@ var ACCOUNT_STRINGS = {
     accountHeading: 'การตั้งค่าบัญชี', accountBack: '← กลับหน้าหลัก',
     accountNotifTitle: 'การแจ้งเตือน', accountSaveBtn: 'บันทึก', accountSaved: 'บันทึกแล้ว',
     accountSaveFailed: 'บันทึกไม่สำเร็จ', accountLoadFailed: 'ไม่สามารถโหลดการตั้งค่าได้',
-    accountLink: 'บัญชี', androidApp: 'ดาวน์โหลดแอป'
+    accountLink: 'บัญชี', androidApp: 'ดาวน์โหลดแอป',
+    notifLink: 'การแจ้งเตือน', notifHeading: 'ประวัติการแจ้งเตือน', notifEmpty: 'ยังไม่มีการแจ้งเตือน', notifMore: 'ดูเพิ่มเติม', notifLoadFailed: 'ไม่สามารถโหลดการแจ้งเตือนได้'
   }
 };
 Object.keys(ACCOUNT_STRINGS).forEach(function (code) {

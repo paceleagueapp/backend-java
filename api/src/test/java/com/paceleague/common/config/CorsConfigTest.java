@@ -51,6 +51,17 @@ class CorsConfigTest {
     }
 
     @Test
+    void 알림내역은_Authorization_헤더_GET만_허용한다() {
+        CorsConfiguration config = configFor("OPTIONS", "/api/notification");
+
+        assertThat(config).isNotNull();
+        assertThat(config.checkOrigin("https://paceleague.co.kr")).isEqualTo("https://paceleague.co.kr");
+        assertThat(config.checkHttpMethod(HttpMethod.GET)).isNotNull();
+        assertThat(config.checkHttpMethod(HttpMethod.POST)).isNull();
+        assertThat(config.checkHeaders(List.of("authorization"))).contains("authorization");
+    }
+
+    @Test
     void 허용되지_않은_오리진은_거부된다() {
         CorsConfiguration config = configFor("GET", "/api/territory/map");
 

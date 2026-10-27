@@ -498,7 +498,14 @@ function renderHeaderAuth(el, extraHtml) {
   if (isLoggedIn()) {
     var nick = localStorage.getItem('pl_nickname') || '';
     html += (nick ? '<span class="header-nick">' + escapeHtml(nick) + '</span>' : '')
-      + '<a class="btn ghost" href="/account">' + t('accountLink') + '</a>'
+      + '<a class="btn ghost icon-btn" href="/notifications" aria-label="' + escapeHtml(t('notifLink')) + '" title="' + escapeHtml(t('notifLink')) + '">'
+      + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+      + '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></a>'
+      // 계정설정: 1024px 이하에선 글자 대신 톱니 아이콘만 (CSS .acct-icon/.acct-label)
+      + '<a class="btn ghost acct-btn" href="/account" aria-label="' + escapeHtml(t('accountLink')) + '">'
+      + '<svg class="acct-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+      + '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>'
+      + '<span class="acct-label">' + t('accountLink') + '</span></a>'
       + '<button class="btn ghost" type="button" data-header-logout>' + t('logout') + '</button>';
   } else {
     html += '<a class="btn ghost" href="/join">' + t('goToJoin') + '</a>'

@@ -68,6 +68,8 @@ public class CorsConfig {
         source.registerCorsConfiguration("/api/territory/ranking", getWithAuthHeader);
         // 크루 페이지(web/crew.html)가 호출하는 크루 API — board와 같은 shape(GET/POST/PUT/DELETE + 헤더).
         source.registerCorsConfiguration("/api/crew/**", authAndBoard);
+        // 알림내역(web/notifications.html) — 로그인 필수 GET 조회라 Authorization 헤더 preflight 허용.
+        source.registerCorsConfiguration("/api/notification/**", getWithAuthHeader);
 
         // 관리자 페이지(web/admin/**) — Authorization이 아니라 X-Admin-Session 헤더를 쓴다(AdminSessionFilter).
         // 회원관리/랭킹관리 등에서 조만간 PUT/DELETE도 쓸 게 뻔해서 board와 같은 메서드 셋을 미리 허용.

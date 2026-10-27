@@ -276,6 +276,16 @@ totalScore = baseScore + scaledScore + addScore
 `push_send_log` — 마이그레이션 [2026-09-09_push_send_log.sql](./migrations/2026-09-09_push_send_log.sql).
 운영은 `ddl-auto: validate` 라 **배포 전 이 테이블을 만들지 않으면 앱이 뜨지 않는다**(PushSendLog 엔티티 매핑 검증 실패).
 
+### 알림내역 (`notification_history`, 2026-10-27)
+
+실제로 발송된(`SENT`) 푸시 1건 = 1행. `DailyTerritoryDigestService` 가 SENT 직후 `NotificationHistory.broadcast(...)`
+(`member_sno = NULL` = 전체 발송)를 저장 — 저장 실패는 로그만 남기고 `push_send_log` 결과엔 영향 없음.
+조회는 `GET /api/notification`(`NotificationController` → `NotificationHistoryQueryService`): 본인 개인 알림 +
+**가입 이후** 전체 발송분(`member.GetMemberJoinedAtPort`, 가입 시각을 서버 TZ `LocalDateTime` 으로 바꿔 `created_at` 과 비교),
+`sno` 내림차순 커서(`cursor`=이전 `nextCursor`), `size+1` 건 조회로 `hasMore` 판단. 웹은 `web/notifications.html`
+(헤더 종 아이콘, 로그인 시만). 개인 알림 행(`member_sno` 지정)을 만드는 곳은 아직 없음 — 생기면 회원 탈퇴 purge 대상에 추가할 것.
+마이그레이션 [2026-10-27_notification_history.sql](./migrations/2026-10-27_notification_history.sql).
+
 ### 앱 의존성 (미완)
 
 앱이 Firebase 프로젝트 등록 + FCM SDK + `all` 토픽 구독 + 알림 권한을 배포해야 실제 도달된다.
