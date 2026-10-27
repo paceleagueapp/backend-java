@@ -18,8 +18,8 @@ public class PushConfig {
 
     @Bean
     @ConditionalOnProperty(name = "paceleague.fcm.service-account-json")
-    public SendPushPort fcmPushPort(FirebaseMessaging firebaseMessaging, FcmProperties props) {
-        return new FcmPushAdapter(firebaseMessaging, props);
+    public SendPushPort fcmPushPort(FirebaseMessaging firebaseMessaging) {
+        return new FcmPushAdapter(firebaseMessaging);
     }
 
     @Bean

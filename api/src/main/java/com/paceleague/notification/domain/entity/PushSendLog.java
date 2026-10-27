@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 // 전체 발송 푸시 1건의 이력. (kind, target_date) 유니크가 "하루 1회" 를 강제해 재시작/다중 인스턴스에서
 // 중복 발송을 막는 가드이자 감사 로그.
 //  - RESERVED: 발송 시도를 선점함(집계·발송 전)
-//  - SENT: FCM 발송 성공 (fcmMessageId 채워짐)
+//  - SENT: FCM 발송 성공 (detail 에 대상 토큰/성공/실패 건수)
 //  - SKIPPED: 발송 안 함 (0건인 날 / FCM 미설정 등, detail 에 사유)
 //  - FAILED: 발송 시도했으나 실패 (detail 에 사유). 같은 target_date 재시도 시 다시 RESERVED 로 되돌려 준다.
 @Entity
@@ -79,13 +79,14 @@ public class PushSendLog {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void markSent(String title, String body, String payloadJson, String fcmMessageId) {
+    // 토큰 발송은 messageId 가 하나로 나오지 않아 fcmMessageId=null, detail 에 성공/실패 건수를 남긴다.
+    public void markSent(String title, String body, String payloadJson, String fcmMessageId, String detail) {
         this.status = STATUS_SENT;
         this.title = title;
         this.body = body;
         this.payloadJson = payloadJson;
         this.fcmMessageId = fcmMessageId;
-        this.detail = null;
+        this.detail = detail;
         this.updatedAt = LocalDateTime.now();
     }
 

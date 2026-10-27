@@ -113,4 +113,14 @@ class MemberQueryServiceTest {
         assertThatThrownBy(() -> service.getDetail(99L))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void 푸시_대상은_탈퇴하지_않고_서비스알림을_거부하지_않은_회원만() {
+        when(memberRepositoryPort.findActiveSnosIn(any())).thenReturn(java.util.List.of(1L, 2L, 3L)); // 4 = 탈퇴
+        when(memberAgreementRepositoryPort.findDeclinedMemberSnos(
+                org.mockito.ArgumentMatchers.eq(com.paceleague.member.domain.entity.AgreementType.PUSH_SERVICE), any()))
+                .thenReturn(java.util.List.of(2L)); // 2 = 거부, 3 = 미응답(받음)
+
+        assertThat(service.filterReceivable(java.util.Set.of(1L, 2L, 3L, 4L))).containsExactlyInAnyOrder(1L, 3L);
+    }
 }

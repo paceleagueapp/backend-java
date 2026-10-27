@@ -6,6 +6,7 @@ import com.paceleague.member.domain.entity.MemberAgreement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,5 +26,10 @@ public class MemberAgreementPersistenceAdapter implements MemberAgreementReposit
 
     public MemberAgreement save(MemberAgreement agreement) {
         return memberAgreementJpaRepository.save(agreement);
+    }
+
+    public List<Long> findDeclinedMemberSnos(AgreementType agreementType, Collection<Long> memberSnos) {
+        if (memberSnos.isEmpty()) return List.of();
+        return memberAgreementJpaRepository.findDeclinedMemberSnos(agreementType, memberSnos);
     }
 }

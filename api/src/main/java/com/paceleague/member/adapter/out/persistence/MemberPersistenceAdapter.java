@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,5 +40,10 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
 
     public Page<Member> searchForAdmin(String query, Pageable pageable) {
         return memberJpaRepository.searchForAdmin(query, pageable);
+    }
+
+    public List<Long> findActiveSnosIn(Collection<Long> snos) {
+        if (snos.isEmpty()) return List.of();
+        return memberJpaRepository.findActiveSnosIn(snos).stream().map(Number::longValue).toList();
     }
 }

@@ -3,7 +3,6 @@ package com.paceleague.notification.application.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.paceleague.notification.application.port.out.NotificationHistoryRepositoryPort;
 import com.paceleague.notification.application.port.out.PushSendLogRepositoryPort;
-import com.paceleague.notification.application.port.out.SendPushPort;
 import com.paceleague.notification.config.FcmProperties;
 import com.paceleague.notification.domain.entity.NotificationHistory;
 import com.paceleague.notification.domain.entity.PushSendLog;
@@ -36,7 +35,7 @@ import static org.mockito.Mockito.when;
 class DailyTerritoryDigestServiceTest {
 
     @Mock CountTerritoryCapturesPort countTerritoryCapturesPort;
-    @Mock SendPushPort sendPushPort;
+    @Mock MemberBroadcastSender memberBroadcastSender;
     @Mock PushSendLogRepositoryPort pushSendLogPort;
     @Mock NotificationHistoryRepositoryPort notificationHistoryPort;
 
@@ -47,9 +46,9 @@ class DailyTerritoryDigestServiceTest {
 
     @BeforeEach
     void setUp() {
-        FcmProperties props = new FcmProperties(null, null, null, null); // sendWhenZero=false, topic=all
+        FcmProperties props = new FcmProperties(null, null, null); // sendWhenZero=false
         service = new DailyTerritoryDigestService(
-                countTerritoryCapturesPort, sendPushPort, pushSendLogPort, notificationHistoryPort, props, new ObjectMapper());
+                countTerritoryCapturesPort, memberBroadcastSender, pushSendLogPort, notificationHistoryPort, props, new ObjectMapper());
 
         reservedLog = PushSendLog.reserve(DailyTerritoryDigestService.KIND, targetDate);
         when(pushSendLogPort.tryReserve(eq(DailyTerritoryDigestService.KIND), eq(targetDate)))
@@ -57,20 +56,20 @@ class DailyTerritoryDigestServiceTest {
     }
 
     @Test
-    void 점령이_있으면_유저수_땅수를_문구로_만들어_토픽_발송하고_SENT로_기록한다() {
+    void 점령이_있으면_유저수_땅수를_문구로_만들어_전체_회원에게_발송하고_SENT로_기록한다() {
         when(countTerritoryCapturesPort.countBetween(any(), any()))
                 .thenReturn(new TerritoryCaptureCount(128, 42));
-        when(sendPushPort.sendToAll(anyString(), anyString(), anyMap()))
-                .thenReturn(SendPushPort.PushResult.sent("projects/x/messages/abc"));
+        when(memberBroadcastSender.sendToAllMembers(anyString(), anyString(), anyMap()))
+                .thenReturn(MemberBroadcastSender.BroadcastResult.sent("tokens=3 success=3 failure=0 removed=0"));
 
         service.sendForDate(targetDate);
 
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(sendPushPort).sendToAll(eq("땅따먹기 어제 요약"), body.capture(), anyMap());
+        verify(memberBroadcastSender).sendToAllMembers(eq("땅따먹기 어제 요약"), body.capture(), anyMap());
         assertThat(body.getValue()).contains("42명").contains("128개");
 
         assertThat(reservedLog.getStatus()).isEqualTo(PushSendLog.STATUS_SENT);
-        assertThat(reservedLog.getFcmMessageId()).isEqualTo("projects/x/messages/abc");
+        assertThat(reservedLog.getDetail()).isEqualTo("tokens=3 success=3 failure=0 removed=0");
         verify(pushSendLogPort).save(reservedLog);
 
         // 실제 발송된 건은 전체 발송(memberSno=null) 알림내역으로 남는다
@@ -86,8 +85,8 @@ class DailyTerritoryDigestServiceTest {
     void 발송되지_않은_건은_알림내역에_남기지_않는다() {
         when(countTerritoryCapturesPort.countBetween(any(), any()))
                 .thenReturn(new TerritoryCaptureCount(10, 5));
-        when(sendPushPort.sendToAll(anyString(), anyString(), anyMap()))
-                .thenReturn(SendPushPort.PushResult.skipped("FCM 미설정"));
+        when(memberBroadcastSender.sendToAllMembers(anyString(), anyString(), anyMap()))
+                .thenReturn(MemberBroadcastSender.BroadcastResult.skipped("FCM 미설정"));
 
         service.sendForDate(targetDate);
 
@@ -98,8 +97,8 @@ class DailyTerritoryDigestServiceTest {
     void 알림내역_저장이_실패해도_발송기록은_SENT로_남고_예외를_삼킨다() {
         when(countTerritoryCapturesPort.countBetween(any(), any()))
                 .thenReturn(new TerritoryCaptureCount(10, 5));
-        when(sendPushPort.sendToAll(anyString(), anyString(), anyMap()))
-                .thenReturn(SendPushPort.PushResult.sent("m1"));
+        when(memberBroadcastSender.sendToAllMembers(anyString(), anyString(), anyMap()))
+                .thenReturn(MemberBroadcastSender.BroadcastResult.sent("m1"));
         when(notificationHistoryPort.save(any())).thenThrow(new RuntimeException("db down"));
 
         service.sendForDate(targetDate); // no throw
@@ -115,7 +114,7 @@ class DailyTerritoryDigestServiceTest {
 
         service.sendForDate(targetDate);
 
-        verify(sendPushPort, never()).sendToAll(anyString(), anyString(), anyMap());
+        verify(memberBroadcastSender, never()).sendToAllMembers(anyString(), anyString(), anyMap());
         assertThat(reservedLog.getStatus()).isEqualTo(PushSendLog.STATUS_SKIPPED);
         assertThat(reservedLog.getDetail()).isEqualTo("0 captures");
     }
@@ -127,7 +126,7 @@ class DailyTerritoryDigestServiceTest {
         service.sendForDate(targetDate);
 
         verify(countTerritoryCapturesPort, never()).countBetween(any(), any());
-        verify(sendPushPort, never()).sendToAll(anyString(), anyString(), anyMap());
+        verify(memberBroadcastSender, never()).sendToAllMembers(anyString(), anyString(), anyMap());
         verify(pushSendLogPort, never()).save(any());
     }
 
@@ -135,7 +134,7 @@ class DailyTerritoryDigestServiceTest {
     void 발송이_예외로_실패하면_FAILED로_기록하고_예외를_삼킨다() {
         when(countTerritoryCapturesPort.countBetween(any(), any()))
                 .thenReturn(new TerritoryCaptureCount(10, 5));
-        when(sendPushPort.sendToAll(anyString(), anyString(), anyMap()))
+        when(memberBroadcastSender.sendToAllMembers(anyString(), anyString(), anyMap()))
                 .thenThrow(new RuntimeException("FCM down"));
 
         service.sendForDate(targetDate); // no throw
@@ -149,8 +148,8 @@ class DailyTerritoryDigestServiceTest {
     void 어댑터가_미전송_결과를_주면_SKIPPED로_기록한다() {
         when(countTerritoryCapturesPort.countBetween(any(), any()))
                 .thenReturn(new TerritoryCaptureCount(10, 5));
-        when(sendPushPort.sendToAll(anyString(), anyString(), anyMap()))
-                .thenReturn(SendPushPort.PushResult.skipped("FCM 미설정"));
+        when(memberBroadcastSender.sendToAllMembers(anyString(), anyString(), anyMap()))
+                .thenReturn(MemberBroadcastSender.BroadcastResult.skipped("FCM 미설정"));
 
         service.sendForDate(targetDate);
 
@@ -160,19 +159,19 @@ class DailyTerritoryDigestServiceTest {
 
     @Test
     void sendWhenZero_true면_0건에도_안내_문구로_발송한다() {
-        FcmProperties props = new FcmProperties(null, null, null,
+        FcmProperties props = new FcmProperties(null, null,
                 new FcmProperties.DailyDigest(true, null, true));
         service = new DailyTerritoryDigestService(
-                countTerritoryCapturesPort, sendPushPort, pushSendLogPort, notificationHistoryPort, props, new ObjectMapper());
+                countTerritoryCapturesPort, memberBroadcastSender, pushSendLogPort, notificationHistoryPort, props, new ObjectMapper());
         when(pushSendLogPort.tryReserve(anyString(), any())).thenReturn(Optional.of(reservedLog));
         when(countTerritoryCapturesPort.countBetween(any(), any()))
                 .thenReturn(new TerritoryCaptureCount(0, 0));
-        when(sendPushPort.sendToAll(anyString(), anyString(), anyMap()))
-                .thenReturn(SendPushPort.PushResult.sent("m1"));
+        when(memberBroadcastSender.sendToAllMembers(anyString(), anyString(), anyMap()))
+                .thenReturn(MemberBroadcastSender.BroadcastResult.sent("m1"));
 
         service.sendForDate(targetDate);
 
-        verify(sendPushPort).sendToAll(anyString(), anyString(), anyMap());
+        verify(memberBroadcastSender).sendToAllMembers(anyString(), anyString(), anyMap());
         assertThat(reservedLog.getStatus()).isEqualTo(PushSendLog.STATUS_SENT);
     }
 
@@ -180,8 +179,8 @@ class DailyTerritoryDigestServiceTest {
     void 집계_구간은_KST_전날을_저장TZ로_변환한_값이다() {
         when(countTerritoryCapturesPort.countBetween(any(), any()))
                 .thenReturn(new TerritoryCaptureCount(1, 1));
-        when(sendPushPort.sendToAll(anyString(), anyString(), anyMap()))
-                .thenReturn(SendPushPort.PushResult.sent("m"));
+        when(memberBroadcastSender.sendToAllMembers(anyString(), anyString(), anyMap()))
+                .thenReturn(MemberBroadcastSender.BroadcastResult.sent("m"));
 
         service.sendForDate(targetDate);
 

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.paceleague.notification.application.port.in.SendDailyTerritoryDigestUseCase;
 import com.paceleague.notification.application.port.out.NotificationHistoryRepositoryPort;
 import com.paceleague.notification.application.port.out.PushSendLogRepositoryPort;
-import com.paceleague.notification.application.port.out.SendPushPort;
 import com.paceleague.notification.config.FcmProperties;
 import com.paceleague.notification.domain.entity.NotificationHistory;
 import com.paceleague.notification.domain.entity.PushSendLog;
@@ -31,7 +30,7 @@ public class DailyTerritoryDigestService implements SendDailyTerritoryDigestUseC
     private static final String DEEPLINK = "paceleague://territory";
 
     private final CountTerritoryCapturesPort countTerritoryCapturesPort;
-    private final SendPushPort sendPushPort;
+    private final MemberBroadcastSender memberBroadcastSender;
     private final PushSendLogRepositoryPort pushSendLogPort;
     private final NotificationHistoryRepositoryPort notificationHistoryPort;
     private final FcmProperties fcmProperties;
@@ -78,11 +77,11 @@ public class DailyTerritoryDigestService implements SendDailyTerritoryDigestUseC
         String payloadJson = toJson(data);
 
         try {
-            SendPushPort.PushResult result = sendPushPort.sendToAll(title, body, data);
+            MemberBroadcastSender.BroadcastResult result = memberBroadcastSender.sendToAllMembers(title, body, data);
             if (result.delivered()) {
-                logRow.markSent(title, body, payloadJson, result.messageId());
-                log.info("일간 땅따먹기 다이제스트: {} 발송 완료 messageId={} 땅={} 유저={}",
-                        targetDate, result.messageId(), count.capturedTerritories(), count.distinctOwners());
+                logRow.markSent(title, body, payloadJson, null, result.detail());
+                log.info("일간 땅따먹기 다이제스트: {} 발송 완료 {} 땅={} 유저={}",
+                        targetDate, result.detail(), count.capturedTerritories(), count.distinctOwners());
             } else {
                 logRow.markSkipped(title, body, result.detail());
                 log.warn("일간 땅따먹기 다이제스트: {} 발송 스킵 — {}", targetDate, result.detail());

@@ -261,15 +261,19 @@ totalScore = baseScore + scaledScore + addScore
      `DailyDigestWindow.forDate(date, ZoneId.systemDefault())` 가 "KST 어제 00:00~24:00" 을 그 순간(instant)으로
      잡아 `systemDefault` 로 다시 표현해 쿼리 파라미터로 넘긴다. **운영 배포 전 실제 `create_at` 저장 TZ 확인 권장**.
 3. 0건 + `send-when-zero=false`(기본) → 발송 안 하고 로그만 (`SKIPPED`).
-4. 문구: `"어제 %d명이 %d개의 땅을 점령했어요 🏴"`. `SendPushPort.sendToAll` → FCM 토픽(`paceleague.fcm.topic`, 기본 `all`) 브로드캐스트.
-5. 결과를 `push_send_log` 에 `SENT`(+ messageId) / `SKIPPED` / `FAILED` 로 기록. 예외는 삼켜 다음 날 재시도 가능.
+4. 문구: `"어제 %d명이 %d개의 땅을 점령했어요 🏴"`. `MemberBroadcastSender.sendToAllMembers` → **회원 기기 토큰**(`member_device_token`)
+   으로 발송(2026-10-27: FCM 토픽 `all` → 토큰 방식으로 변경 — 토픽은 비회원 설치자까지 받기 때문). 토큰을 `sno` 순 500개씩 읽어
+   `member.FilterPushReceivableMembersPort` 로 탈퇴/서비스 알림(`PUSH_SERVICE`) **거부** 회원을 빼고(미응답은 받음)
+   `SendPushPort.sendToTokens`(FCM `sendEachForMulticast`)로 보낸다. FCM 이 `UNREGISTERED`/`INVALID_ARGUMENT` 로 거절한 토큰은 그 자리에서 삭제.
+   보낼 토큰이 0개면 `SKIPPED`("no receivable device tokens"), 전부 실패면 `FAILED`.
+5. 결과를 `push_send_log` 에 `SENT`(detail = `tokens=… success=… failure=… removed=…`) / `SKIPPED` / `FAILED` 로 기록. 예외는 삼켜 다음 날 재시도 가능.
 
 ### FCM 설정 (`FcmProperties`, `paceleague.fcm.*`)
 
 - `service-account-json`: Firebase 서비스 계정 키. `{` 로 시작하면 JSON 문자열, 아니면 파일 경로. **yml/git 금지**,
   운영 env `PACELEAGUE_FCM_SERVICE_ACCOUNT_JSON` 로만. **미설정이면** `FirebaseConfig` 비활성 +
   `PushConfig` 가 `NoopPushAdapter`(발송 스킵)를 `SendPushPort` 로 등록 → 로컬/CI/앱 미배포 단계에서 무해.
-- `topic`(기본 `all`), `daily-digest.enabled`/`cron`/`send-when-zero`.
+- `daily-digest.enabled`/`cron`/`send-when-zero`. (토픽 설정 `topic` 은 2026-10-27 토큰 방식 전환으로 제거)
 
 ### 스키마
 
@@ -286,10 +290,17 @@ totalScore = baseScore + scaledScore + addScore
 (헤더 종 아이콘, 로그인 시만). 개인 알림 행(`member_sno` 지정)을 만드는 곳은 아직 없음 — 생기면 회원 탈퇴 purge 대상에 추가할 것.
 마이그레이션 [2026-10-27_notification_history.sql](./migrations/2026-10-27_notification_history.sql).
 
+### 기기 토큰 (`member_device_token`, 2026-10-27)
+
+앱이 `POST /api/notification/device-token` 으로 등록(token UNIQUE upsert — 다른 계정으로 로그인하면 회원이 바뀜),
+로그아웃 시 `DELETE` 로 해제(본인 토큰만). `DeviceTokenService`(`RegisterDeviceTokenUseCase` + `PurgeMemberDeviceTokensPort`).
+회원 탈퇴 시 `MemberWithdrawService` 가 `notification.PurgeMemberDeviceTokensPort` 로 일괄 삭제. 앱 전용이라 CORS 불필요.
+마이그레이션 [2026-10-27_member_device_token.sql](./migrations/2026-10-27_member_device_token.sql).
+
 ### 앱 의존성 (미완)
 
-앱이 Firebase 프로젝트 등록 + FCM SDK + `all` 토픽 구독 + 알림 권한을 배포해야 실제 도달된다.
-그때까지 `daily-digest.enabled=false` 로 둔다. 개인 알림(토큰 대상)은 phase 2 — `member_device_token` 테이블 필요.
+앱이 Firebase 프로젝트 등록 + FCM SDK + 알림 권한 + **로그인 시 토큰 등록 / 토큰 갱신 시 재등록 / 로그아웃 시 해제**를
+배포해야 실제 도달된다(토픽 구독은 하지 않는다). 그때까지 `daily-digest.enabled=false` 로 둔다.
 
 ## 회원 탈퇴 (member)
 

@@ -6,6 +6,7 @@ import com.paceleague.media.application.port.in.shared.PurgeMemberMediaPort;
 import com.paceleague.member.application.port.out.MemberBlockRepositoryPort;
 import com.paceleague.member.application.port.out.MemberRepositoryPort;
 import com.paceleague.member.domain.entity.Member;
+import com.paceleague.notification.application.port.in.shared.PurgeMemberDeviceTokensPort;
 import com.paceleague.rank.application.port.in.shared.PurgeMemberRankPort;
 import com.paceleague.record.application.port.in.shared.PurgeMemberRecordsPort;
 import com.paceleague.territory.application.port.in.shared.PurgeMemberTerritoryPort;
@@ -42,6 +43,7 @@ class MemberWithdrawServiceTest {
     @Mock PurgeMemberTerritoryPort purgeMemberTerritoryPort;
     @Mock PurgeMemberMediaPort purgeMemberMediaPort;
     @Mock PurgeMemberBoardPort purgeMemberBoardPort;
+    @Mock PurgeMemberDeviceTokensPort purgeMemberDeviceTokensPort;
 
     MemberWithdrawService service;
     Member member;
@@ -50,7 +52,7 @@ class MemberWithdrawServiceTest {
     void setUp() {
         service = new MemberWithdrawService(memberRepositoryPort, memberBlockRepositoryPort, passwordEncoder,
                 leaveCrewOnWithdrawPort, purgeMemberRecordsPort, purgeMemberRankPort, purgeMemberTerritoryPort,
-                purgeMemberMediaPort, purgeMemberBoardPort);
+                purgeMemberMediaPort, purgeMemberBoardPort, purgeMemberDeviceTokensPort);
         member = Member.create("runner1", "HASH", "달리는곰", "a@b.com");
         ReflectionTestUtils.setField(member, "sno", 42);
         when(memberRepositoryPort.findBySno(42L)).thenReturn(Optional.of(member));
@@ -67,6 +69,7 @@ class MemberWithdrawServiceTest {
         verify(purgeMemberTerritoryPort).purge(42L);
         verify(purgeMemberMediaPort).purge(42L);
         verify(purgeMemberBoardPort).purge(42L);
+        verify(purgeMemberDeviceTokensPort).purge(42L);
         verify(memberRepositoryPort).save(member);
 
         assertThat(member.isActive()).isFalse();

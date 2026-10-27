@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,4 +43,7 @@ public interface MemberJpaRepository extends JpaRepository<Member, Long> {
                or lower(m.nickname) like lower(concat('%', :q, '%'))
             """)
     Page<Member> searchForAdmin(@Param("q") String q, Pageable pageable);
+
+    @Query(value = "select sno from member where status = 'ACTIVE' and sno in (:snos)", nativeQuery = true)
+    List<Number> findActiveSnosIn(@Param("snos") Collection<Long> snos);
 }

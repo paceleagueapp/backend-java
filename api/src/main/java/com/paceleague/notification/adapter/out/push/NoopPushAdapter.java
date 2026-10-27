@@ -4,6 +4,7 @@ import com.paceleague.notification.application.port.out.SendPushPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 
 // FCM 미설정(paceleague.fcm.service-account-json 없음) 환경에서 SendPushPort 자리를 채우는 no-op.
@@ -13,8 +14,8 @@ public class NoopPushAdapter implements SendPushPort {
     private static final Logger log = LoggerFactory.getLogger(NoopPushAdapter.class);
 
     @Override
-    public PushResult sendToAll(String title, String body, Map<String, String> data) {
-        log.info("FCM 미설정 — 푸시 발송 스킵. title=\"{}\" body=\"{}\"", title, body);
-        return PushResult.skipped("FCM 미설정(paceleague.fcm.service-account-json 없음)");
+    public MulticastResult sendToTokens(List<String> tokens, String title, String body, Map<String, String> data) {
+        log.info("FCM 미설정 — 푸시 발송 스킵. tokens={} title=\"{}\" body=\"{}\"", tokens.size(), title, body);
+        return MulticastResult.skipped("FCM 미설정(paceleague.fcm.service-account-json 없음)");
     }
 }

@@ -4,6 +4,7 @@ import com.paceleague.member.application.dto.AdminMemberDetail;
 import com.paceleague.member.application.dto.AdminMemberSummary;
 import com.paceleague.member.application.dto.MemberSearchResult;
 import com.paceleague.member.application.port.in.shared.AdminMemberQueryPort;
+import com.paceleague.member.application.port.in.shared.FilterPushReceivableMembersPort;
 import com.paceleague.member.application.port.in.shared.GetMemberJoinedAtPort;
 import com.paceleague.member.application.port.in.shared.GetMemberNicknamePort;
 import com.paceleague.member.application.port.in.SearchMembersPort;
@@ -19,13 +20,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class MemberQueryService implements GetMemberNicknamePort, SearchMembersPort, AdminMemberQueryPort, GetMemberJoinedAtPort {
+public class MemberQueryService implements GetMemberNicknamePort, SearchMembersPort, AdminMemberQueryPort, GetMemberJoinedAtPort,
+        FilterPushReceivableMembersPort {
 
     private final MemberRepositoryPort memberRepositoryPort;
     private final MemberAgreementRepositoryPort memberAgreementRepositoryPort;
@@ -82,5 +87,16 @@ public class MemberQueryService implements GetMemberNicknamePort, SearchMembersP
     @Override
     public Optional<Instant> getJoinedAt(Long memberSno) {
         return memberRepositoryPort.findBySno(memberSno).map(Member::getCreatedAt);
+    }
+
+    @Override
+    public Set<Long> filterReceivable(Collection<Long> memberSnos) {
+        if (memberSnos.isEmpty()) return Set.of();
+        Set<Long> receivable = new HashSet<>(memberRepositoryPort.findActiveSnosIn(memberSnos));
+        if (!receivable.isEmpty()) {
+            memberAgreementRepositoryPort.findDeclinedMemberSnos(AgreementType.PUSH_SERVICE, receivable)
+                    .forEach(receivable::remove);
+        }
+        return receivable;
     }
 }

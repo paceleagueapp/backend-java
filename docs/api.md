@@ -657,10 +657,31 @@ join/login/reissue가 공통으로 반환하는 구조:
 ```
 
 - `hasMore=false` 면 마지막 페이지(`nextCursor=null`). 앱은 `deeplink` 로 화면 이동.
-- 전체 발송(토픽) 알림은 **가입 이후 발송분만** 포함. 개인 알림(`member_sno` 지정)은 아직 발송처 없음(향후 쿠폰 등).
+- 전체 회원 발송 알림은 **가입 이후 발송분만** 포함. 개인 알림(`member_sno` 지정)은 아직 발송처 없음(향후 쿠폰 등).
 - `createdAt` 은 다른 API와 같은 UTC(타임존 표기 없음) 문자열.
 
 **마이그레이션**: [migrations/2026-10-27_notification_history.sql](./migrations/2026-10-27_notification_history.sql) (운영은 배포 전 직접 실행)
+
+### POST `/api/notification/device-token` — 푸시 기기 토큰 등록 (앱)
+
+전체 회원 푸시(매일 아침 땅따먹기 요약 등)는 **여기 등록된 토큰으로만** 발송된다(FCM 토픽 미사용 — 비회원 설치자는 받지 않음).
+앱은 **로그인 직후**와 **FCM 토큰이 갱신될 때(`onNewToken`)** 호출한다.
+
+```json
+{ "token": "<FCM registration token>", "platform": "ANDROID" }
+```
+
+- `platform`: `ANDROID` / `IOS` (대소문자 무관). 그 외 → 400.
+- `token` 기준 upsert — 같은 기기에서 다른 계정으로 로그인하면 그 계정으로 옮겨진다(이전 계정은 그 기기에서 더 이상 안 받음).
+- 발송 대상에서 빠지는 경우: 탈퇴 회원, 서비스 알림(`PUSH_SERVICE`)을 **거부**한 회원(미응답은 받음),
+  FCM 이 무효(`UNREGISTERED`/`INVALID_ARGUMENT`)라고 한 토큰(발송 중 자동 삭제).
+
+### DELETE `/api/notification/device-token` — 푸시 기기 토큰 해제 (앱)
+
+로그아웃 시 **`/api/member/logout` 보다 먼저** 호출(access token 필요). body `{ "token": "..." }`. 본인 토큰만 삭제된다.
+탈퇴 시에는 서버가 그 회원의 토큰을 모두 지운다.
+
+**마이그레이션**: [migrations/2026-10-27_member_device_token.sql](./migrations/2026-10-27_member_device_token.sql) (운영은 배포 전 직접 실행)
 
 ---
 

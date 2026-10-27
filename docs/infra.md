@@ -211,7 +211,7 @@ add_header Cache-Control "no-cache" always;
 
 ## FCM 푸시 (notification 도메인) — 2026-09-09 추가, 미프로비저닝
 
-`notification` 도메인이 매일 09:00(KST) "어제 땅따먹기 요약" 을 FCM 토픽(`all`)으로 브로드캐스트한다.
+`notification` 도메인이 매일 09:00(KST) "어제 땅따먹기 요약" 을 회원 기기 토큰(`member_device_token`)으로 전체 회원에게 발송한다(2026-10-27 토픽 → 토큰 방식).
 설계·흐름: [daily-territory-push-plan.md](./daily-territory-push-plan.md), [domains.md](./domains.md#알림notification-도메인--fcm-푸시).
 
 **아직 아무것도 프로비저닝 안 됨. 코드는 기본 OFF 라 배포해도 무해.**
@@ -222,7 +222,7 @@ add_header Cache-Control "no-cache" always;
 |---|---|---|
 | `PACELEAGUE_FCM_SERVICE_ACCOUNT_JSON` | Firebase 서비스 계정 키 | `{` 로 시작하는 JSON 문자열이거나, 컨테이너에 마운트한 파일 경로. 미설정이면 `FirebaseConfig` 비활성 + 발송 no-op |
 | `PACELEAGUE_FCM_PROJECT_ID` | (선택) Firebase 프로젝트 ID | 키에 이미 들어 있으면 생략 가능 |
-| `FCM_DAILY_DIGEST_ENABLED` | `true` | 스케줄 잡 활성화. 앱이 `all` 토픽 구독을 배포한 뒤에 켤 것 |
+| `FCM_DAILY_DIGEST_ENABLED` | `true` | 스케줄 잡 활성화. 앱이 기기 토큰 등록(`POST /api/notification/device-token`)을 배포한 뒤에 켤 것 |
 
 - 키를 JSON 통째로 env 에 넣으면 관리가 번거로우니, EC2 에 `/etc/paceleague/fcm-sa.json`(권한 `600`, owner root) 로 두고
   `.github/ssm-commands.json` 의 `docker run` 에 `-v /etc/paceleague/fcm-sa.json:/etc/paceleague/fcm-sa.json:ro` 를 추가한 뒤

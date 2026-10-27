@@ -2,7 +2,7 @@
 -- 운영은 ddl-auto: validate라 배포 전 이 SQL을 운영 MySQL(paceleague-db)에 직접 실행해야 합니다.
 -- 로컬(ddl-auto: update)은 자동 생성되므로 실행 불필요.
 --
--- member_sno NULL = 전체 발송(FCM 토픽 브로드캐스트, 예: 매일 아침 땅따먹기 요약) — 모든 회원의 내역에 보이되
+-- member_sno NULL = 전체 회원 발송(예: 매일 아침 땅따먹기 요약) — 모든 회원의 내역에 보이되
 -- 가입 이후 발송분만 보인다(조회 쿼리에서 created_at >= 가입시각). member_sno 값이 있으면 그 회원 개인 알림.
 
 CREATE TABLE notification_history (
