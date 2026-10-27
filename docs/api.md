@@ -245,6 +245,44 @@ join/login/reissue가 공통으로 반환하는 구조:
 [ { "memberSno": 77, "nickname": "차단된유저" } ]
 ```
 
+### GET `/api/member/agreements` — 내 동의 상태 조회 (인증 필요)
+
+약관/개인정보/위치정보 + 알림 3종(서비스 알림/마케팅/야간 마케팅) 동의 상태를 6개 모두 반환한다.
+
+**Response** `200 OK` — `data`: `AgreementStatusResponse[]`
+
+```json
+[
+  { "agreementType": "TERMS", "answered": true, "agreed": true, "version": "2026-11-02" },
+  { "agreementType": "PUSH_SERVICE", "answered": true, "agreed": true, "version": "2026-09-10" },
+  { "agreementType": "MARKETING", "answered": false, "agreed": false, "version": "2026-09-10" }
+]
+```
+
+- `agreementType`: `TERMS` / `PRIVACY` / `LOCATION` / `PUSH_SERVICE`(서비스 알림) / `MARKETING`(마케팅 정보 수신) / `MARKETING_NIGHT`(야간 21~08시 마케팅 수신).
+- `answered=false` = 아직 응답 기록이 없음(가입 때 알림 동의를 보내지 않은 경우). 앱은 알림 3종 중 하나라도 `answered=false` 면
+  로그인 직후 알림 동의 화면을 띄우면 된다(웹은 그렇게 동작).
+- `version`: 응답했으면 동의한 시점의 문서 버전, 아니면 현재 버전.
+
+### PUT `/api/member/agreements` — 동의 저장/변경 (인증 필요)
+
+로그인 직후 알림 동의 화면, 계정설정 화면에서 알림 3종을 저장/변경할 때 사용. 보낸 항목만 저장(upsert)된다.
+
+```json
+{
+  "agreements": [
+    { "agreementType": "PUSH_SERVICE", "agreed": true },
+    { "agreementType": "MARKETING", "agreed": true },
+    { "agreementType": "MARKETING_NIGHT", "agreed": false }
+  ]
+}
+```
+
+**Response** `200 OK` — `data`: `"저장되었습니다."`
+
+- 서비스 알림(`PUSH_SERVICE`)을 `false` 로 저장하면 전체 회원 푸시(매일 아침 땅따먹기 요약 등) 발송 대상에서 빠진다.
+- `MARKETING_NIGHT` 는 `MARKETING` 이 `true` 일 때만 의미가 있다(화면에서 마케팅을 끄면 야간도 함께 `false` 로 보낼 것).
+
 ---
 
 ## Record API (`/api/record`) — 인증 필요
