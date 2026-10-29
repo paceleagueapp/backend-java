@@ -19,6 +19,12 @@
     .badge-yes { background: #e6f4ea; color: #1c8a4a; }
     .badge-no { background: #fbeaea; color: #d02b22; }
     .badge-unset { background: #f2f3f5; color: #8a8e96; }
+    .token-list { margin-top: 18px; }
+    .token-list h2 { font-size: 15px; margin: 0 0 8px; }
+    .token-item { border: 1px solid #f0f1f3; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; }
+    .token-meta { color: #8a8e96; margin-bottom: 4px; }
+    .token-id { font-family: monospace; font-size: 12px; word-break: break-all; color: #1c2024; }
+    .token-empty { color: #8a8e96; font-size: 13px; }
   </style>
 </head>
 <body>
@@ -47,6 +53,24 @@
         : '<span class="badge badge-no">동의 안 함</span>';
     }
 
+    function formatDateTime(v) {
+      return v ? String(v).replace('T', ' ').slice(0, 16) : '-';
+    }
+
+    function tokenSection(tokens) {
+      tokens = tokens || [];
+      var body = tokens.length === 0
+        ? '<div class="token-empty">등록된 FCM 토큰이 없습니다. (이 회원에게는 푸시가 가지 않습니다)</div>'
+        : tokens.map(function (t) {
+            return '<div class="token-item">' +
+              '<div class="token-meta">' + escapeHtmlAdmin(t.device) + ' · 마지막 등록 ' + formatDateTime(t.lastSeenAt) +
+                ' · 최초 등록 ' + formatDateTime(t.createdAt) + '</div>' +
+              '<div class="token-id">' + escapeHtmlAdmin(t.fcmId) + '</div>' +
+            '</div>';
+          }).join('');
+      return '<div class="token-list"><h2>FCM 토큰 (' + tokens.length + ')</h2>' + body + '</div>';
+    }
+
     function escapeHtmlAdmin(str) {
       return String(str)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -71,7 +95,8 @@
           '<div class="detail-row"><span class="detail-label">상태</span><span class="detail-value">' + statusLabel(d.status) + '</span></div>' +
           '<div class="detail-row"><span class="detail-label">가입일</span><span class="detail-value">' + String(d.createdAt || '').slice(0, 10) + '</span></div>' +
           (d.withdrawnAt ? '<div class="detail-row"><span class="detail-label">탈퇴일</span><span class="detail-value">' + String(d.withdrawnAt).slice(0, 10) + '</span></div>' : '') +
-          '<div class="detail-row"><span class="detail-label">푸시 알림 동의</span><span class="detail-value">' + pushBadge(d) + '</span></div>';
+          '<div class="detail-row"><span class="detail-label">푸시 알림 동의</span><span class="detail-value">' + pushBadge(d) + '</span></div>' +
+          tokenSection(d.deviceTokens);
       }).catch(function () {
         card.innerHTML = '회원 정보를 불러오지 못했습니다.';
       });

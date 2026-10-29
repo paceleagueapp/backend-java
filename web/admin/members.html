@@ -24,6 +24,8 @@
     .status-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 700; }
     .status-ACTIVE { background: #e6f4ea; color: #1c8a4a; }
     .status-WITHDRAWN { background: #f2f3f5; color: #8a8e96; }
+    .fcm-yes { background: #e6f4ea; color: #1c8a4a; }
+    .fcm-no { background: #f2f3f5; color: #8a8e96; }
     .pagination { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
     .pagination button {
       background: #fff; border: 1px solid #d7dade; padding: 6px 14px; border-radius: 8px;
@@ -54,6 +56,7 @@
             <th>닉네임</th>
             <th>이메일</th>
             <th>상태</th>
+            <th>FCM</th>
             <th>가입일</th>
           </tr>
         </thead>
@@ -85,20 +88,20 @@
 
     function loadMembers() {
       var tbody = document.getElementById('member-tbody');
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">불러오는 중...</td></tr>';
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">불러오는 중...</td></tr>';
 
       var qs = 'page=' + currentPage + '&size=' + PAGE_SIZE + (currentQuery ? '&q=' + encodeURIComponent(currentQuery) : '');
 
       adminApiFetch('/api/admin/members?' + qs).then(function (result) {
         if (!result.ok || !result.json.success) {
-          tbody.innerHTML = '<tr class="empty-row"><td colspan="6">목록을 불러오지 못했습니다.</td></tr>';
+          tbody.innerHTML = '<tr class="empty-row"><td colspan="7">목록을 불러오지 못했습니다.</td></tr>';
           return;
         }
         var pageData = result.json.data;
         var members = pageData.content || [];
 
         if (members.length === 0) {
-          tbody.innerHTML = '<tr class="empty-row"><td colspan="6">회원이 없습니다.</td></tr>';
+          tbody.innerHTML = '<tr class="empty-row"><td colspan="7">회원이 없습니다.</td></tr>';
         } else {
           tbody.innerHTML = members.map(function (m) {
             return '<tr data-sno="' + m.sno + '">' +
@@ -107,6 +110,7 @@
               '<td>' + escapeHtmlAdmin(m.nickname || '-') + '</td>' +
               '<td>' + escapeHtmlAdmin(m.email || '-') + '</td>' +
               '<td><span class="status-pill status-' + m.status + '">' + statusLabel(m.status) + '</span></td>' +
+              '<td><span class="status-pill ' + (m.hasFcmToken ? 'fcm-yes">등록' : 'fcm-no">없음') + '</span></td>' +
               '<td>' + formatDate(m.createdAt) + '</td>' +
             '</tr>';
           }).join('');
@@ -123,7 +127,7 @@
         document.getElementById('prev-btn').disabled = currentPage <= 0;
         document.getElementById('next-btn').disabled = currentPage >= pageData.totalPages - 1;
       }).catch(function () {
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="6">목록을 불러오지 못했습니다.</td></tr>';
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="7">목록을 불러오지 못했습니다.</td></tr>';
       });
     }
 

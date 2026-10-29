@@ -12,6 +12,7 @@ import com.paceleague.member.application.port.out.MemberAgreementRepositoryPort;
 import com.paceleague.member.application.port.out.MemberRepositoryPort;
 import com.paceleague.member.domain.entity.AgreementType;
 import com.paceleague.member.domain.entity.Member;
+import com.paceleague.notification.application.port.in.shared.AdminDeviceTokenQueryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -34,6 +35,7 @@ public class MemberQueryService implements GetMemberNicknamePort, SearchMembersP
 
     private final MemberRepositoryPort memberRepositoryPort;
     private final MemberAgreementRepositoryPort memberAgreementRepositoryPort;
+    private final AdminDeviceTokenQueryPort adminDeviceTokenQueryPort;
 
     // 탈퇴 회원(WITHDRAWN)은 닉네임이 지워져 있으므로 "탈퇴한 사용자"로 표시한다.
     // 이 한 곳만으로 board(작성자/댓글) · territory(지도) · ranking 전부에 반영된다.
@@ -62,11 +64,14 @@ public class MemberQueryService implements GetMemberNicknamePort, SearchMembersP
         int safeSize = Math.min(Math.max(size, 1), 100);
         var pageable = PageRequest.of(Math.max(page, 0), safeSize, Sort.by(Sort.Direction.DESC, "sno"));
 
-        return memberRepositoryPort.searchForAdmin(q, pageable)
-                .map(m -> new AdminMemberSummary(
-                        m.getSno().longValue(), m.getMemberId(), m.getNickname(), m.getEmail(),
-                        m.getStatus(), m.getCreatedAt()
-                ));
+        Page<Member> members = memberRepositoryPort.searchForAdmin(q, pageable);
+        Set<Long> withToken = adminDeviceTokenQueryPort.findMemberSnosWithToken(
+                members.getContent().stream().map(m -> m.getSno().longValue()).toList());
+
+        return members.map(m -> new AdminMemberSummary(
+                m.getSno().longValue(), m.getMemberId(), m.getNickname(), m.getEmail(),
+                m.getStatus(), m.getCreatedAt(), withToken.contains(m.getSno().longValue())
+        ));
     }
 
     @Override
@@ -80,7 +85,8 @@ public class MemberQueryService implements GetMemberNicknamePort, SearchMembersP
                 m.getSno().longValue(), m.getMemberId(), m.getNickname(), m.getEmail(),
                 m.getStatus(), m.getCreatedAt(), m.getWithdrawnAt(),
                 pushAgreement.map(a -> a.isAgreed()).orElse(false),
-                pushAgreement.isPresent()
+                pushAgreement.isPresent(),
+                adminDeviceTokenQueryPort.findByMemberSno(memberSno)
         );
     }
 

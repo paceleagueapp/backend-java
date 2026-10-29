@@ -1,6 +1,8 @@
 package com.paceleague.notification.application.service;
 
+import com.paceleague.notification.application.dto.AdminDeviceTokenView;
 import com.paceleague.notification.application.port.in.RegisterDeviceTokenUseCase;
+import com.paceleague.notification.application.port.in.shared.AdminDeviceTokenQueryPort;
 import com.paceleague.notification.application.port.in.shared.PurgeMemberDeviceTokensPort;
 import com.paceleague.notification.application.port.out.DeviceTokenRepositoryPort;
 import com.paceleague.notification.domain.entity.DeviceToken;
@@ -8,11 +10,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
-public class DeviceTokenService implements RegisterDeviceTokenUseCase, PurgeMemberDeviceTokensPort {
+public class DeviceTokenService implements RegisterDeviceTokenUseCase, PurgeMemberDeviceTokensPort, AdminDeviceTokenQueryPort {
 
     private static final Set<String> DEVICES = Set.of("ANDROID", "IOS");
     private static final int FCM_ID_MAX_LENGTH = 255;
@@ -53,5 +58,19 @@ public class DeviceTokenService implements RegisterDeviceTokenUseCase, PurgeMemb
     @Transactional
     public void purge(Long memberSno) {
         deviceTokenRepositoryPort.deleteAllByMemberSno(memberSno);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<Long> findMemberSnosWithToken(Collection<Long> memberSnos) {
+        return new HashSet<>(deviceTokenRepositoryPort.findMemberSnosIn(memberSnos));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AdminDeviceTokenView> findByMemberSno(Long memberSno) {
+        return deviceTokenRepositoryPort.findAllByMemberSno(memberSno).stream()
+                .map(AdminDeviceTokenView::from)
+                .toList();
     }
 }

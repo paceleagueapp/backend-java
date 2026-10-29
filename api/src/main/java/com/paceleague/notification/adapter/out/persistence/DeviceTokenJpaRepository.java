@@ -18,6 +18,11 @@ public interface DeviceTokenJpaRepository extends JpaRepository<DeviceToken, Lon
     @Query("select d from DeviceToken d where (:afterSno is null or d.sno > :afterSno) order by d.sno asc")
     List<DeviceToken> findPageAfter(@Param("afterSno") Long afterSno, Pageable pageable);
 
+    @Query("select distinct d.memberSno from DeviceToken d where d.memberSno in :memberSnos")
+    List<Long> findMemberSnosIn(@Param("memberSnos") Collection<Long> memberSnos);
+
+    List<DeviceToken> findAllByMemberSnoOrderByLastSeenAtDesc(Long memberSno);
+
     @Modifying
     @Query("delete from DeviceToken d where d.fcmId = :fcmId and d.memberSno = :memberSno")
     void deleteByFcmIdAndMemberSno(@Param("fcmId") String fcmId, @Param("memberSno") Long memberSno);

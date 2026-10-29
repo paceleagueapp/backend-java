@@ -15,6 +15,10 @@ public interface DeviceTokenRepositoryPort {
     // 전체 회원 발송용 — sno 오름차순으로 afterSno 다음부터 limit 개(첫 페이지는 afterSno=null).
     List<DeviceToken> findPageAfter(Long afterSno, int limit);
 
+    List<Long> findMemberSnosIn(Collection<Long> memberSnos);
+
+    List<DeviceToken> findAllByMemberSno(Long memberSno);
+
     void deleteByFcmIdAndMemberSno(String fcmId, Long memberSno);
 
     void deleteAllByFcmIdIn(Collection<String> fcmIds);

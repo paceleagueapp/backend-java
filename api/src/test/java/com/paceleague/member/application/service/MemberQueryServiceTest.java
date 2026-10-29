@@ -5,6 +5,8 @@ import com.paceleague.member.application.port.out.MemberRepositoryPort;
 import com.paceleague.member.domain.entity.AgreementType;
 import com.paceleague.member.domain.entity.Member;
 import com.paceleague.member.domain.entity.MemberAgreement;
+import com.paceleague.notification.application.dto.AdminDeviceTokenView;
+import com.paceleague.notification.application.port.in.shared.AdminDeviceTokenQueryPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,6 +35,7 @@ class MemberQueryServiceTest {
 
     @Mock MemberRepositoryPort memberRepositoryPort;
     @Mock MemberAgreementRepositoryPort memberAgreementRepositoryPort;
+    @Mock AdminDeviceTokenQueryPort adminDeviceTokenQueryPort;
     @InjectMocks MemberQueryService service;
 
     private Member member(int sno, String nick, boolean withdrawn) {
@@ -104,6 +107,31 @@ class MemberQueryServiceTest {
 
         assertThat(detail.pushNotificationAnswered()).isTrue();
         assertThat(detail.pushNotificationAgreed()).isTrue();
+    }
+
+    @Test
+    void 관리자_회원목록은_FCM_토큰_등록여부를_표시한다() {
+        Page<Member> page = new PageImpl<>(List.of(member(1, "토큰있음", false), member(2, "토큰없음", false)), PageRequest.of(0, 20), 2);
+        when(memberRepositoryPort.searchForAdmin(anyString(), any())).thenReturn(page);
+        when(adminDeviceTokenQueryPort.findMemberSnosWithToken(any())).thenReturn(java.util.Set.of(1L));
+
+        var content = service.search("", 0, 20).getContent();
+
+        assertThat(content.get(0).hasFcmToken()).isTrue();
+        assertThat(content.get(1).hasFcmToken()).isFalse();
+    }
+
+    @Test
+    void 관리자_회원상세는_등록된_FCM_토큰을_포함한다() {
+        when(memberRepositoryPort.findBySno(1L)).thenReturn(Optional.of(member(1, "달리는곰", false)));
+        when(memberAgreementRepositoryPort.findByMemberSnoAndAgreementType(1L, AgreementType.PUSH_SERVICE))
+                .thenReturn(Optional.empty());
+        when(adminDeviceTokenQueryPort.findByMemberSno(1L))
+                .thenReturn(List.of(new AdminDeviceTokenView("ANDROID", "tok-1", null, null)));
+
+        var detail = service.getDetail(1L);
+
+        assertThat(detail.deviceTokens()).extracting(AdminDeviceTokenView::fcmId).containsExactly("tok-1");
     }
 
     @Test

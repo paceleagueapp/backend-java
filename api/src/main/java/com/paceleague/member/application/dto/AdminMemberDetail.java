@@ -1,7 +1,10 @@
 package com.paceleague.member.application.dto;
 
+import com.paceleague.notification.application.dto.AdminDeviceTokenView;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record AdminMemberDetail(
         Long sno,
@@ -14,5 +17,7 @@ public record AdminMemberDetail(
         // 푸시(서비스) 알림 동의 여부 — member_agreement의 PUSH_SERVICE 행 기준.
         boolean pushNotificationAgreed,
         // 아직 한 번도 응답한 적 없으면(로그인 동의 화면을 거치지 않은 경우) false.
-        boolean pushNotificationAnswered
+        boolean pushNotificationAnswered,
+        // 등록된 FCM 기기 토큰 — 비어 있으면 이 회원에게는 푸시가 갈 수 없다.
+        List<AdminDeviceTokenView> deviceTokens
 ) {}

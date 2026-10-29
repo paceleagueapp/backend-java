@@ -34,6 +34,17 @@ public class DeviceTokenPersistenceAdapter implements DeviceTokenRepositoryPort 
     }
 
     @Override
+    public List<Long> findMemberSnosIn(Collection<Long> memberSnos) {
+        if (memberSnos.isEmpty()) return List.of();
+        return jpaRepository.findMemberSnosIn(memberSnos);
+    }
+
+    @Override
+    public List<DeviceToken> findAllByMemberSno(Long memberSno) {
+        return jpaRepository.findAllByMemberSnoOrderByLastSeenAtDesc(memberSno);
+    }
+
+    @Override
     @Transactional
     public void deleteByFcmIdAndMemberSno(String fcmId, Long memberSno) {
         jpaRepository.deleteByFcmIdAndMemberSno(fcmId, memberSno);
