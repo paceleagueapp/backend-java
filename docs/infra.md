@@ -214,7 +214,11 @@ add_header Cache-Control "no-cache" always;
 `notification` 도메인이 매일 09:00(KST) "어제 땅따먹기 요약" 을 회원 기기 토큰(`member_device_token`)으로 전체 회원에게 발송한다(2026-10-27 토픽 → 토큰 방식).
 설계·흐름: [daily-territory-push-plan.md](./daily-territory-push-plan.md), [domains.md](./domains.md#알림notification-도메인--fcm-푸시).
 
-**아직 아무것도 프로비저닝 안 됨. 코드는 기본 OFF 라 배포해도 무해.**
+**2026-10-29: 키 파일 업로드됨** — 앱 서버에 `/etc/paceleague/fcm-sa.json` 이 있고 `.env` 에 `PACELEAGUE_FCM_SERVICE_ACCOUNT_JSON`·`FCM_DAILY_DIGEST_ENABLED` 가 들어갔다.
+`.github/ssm-commands.json` 의 `docker run` 에 이 파일의 읽기 전용 마운트(`-v ...:ro`)를 추가했다.
+**주의**: 컨테이너는 비root `app` 유저로 돈다(Dockerfile `USER app`). 그래서 호스트 파일이 `root 600` 이면 컨테이너가 읽지 못하고 `FirebaseConfig` 가 실패해 **앱이 안 뜬다.**
+배포 전에 `chmod 644 /etc/paceleague/fcm-sa.json` 이 필요하다. `/opt/paceleague/.env` 도 644 라 이 단일 용도 호스트에서는 같은 수준이다.
+**마운트가 없는 이미지/명령으로 재시작하면, env 가 경로를 가리키는 한 앱이 안 뜬다** — 마운트와 env 는 항상 함께 다룰 것.
 
 켜려면 앱 서버(`paceleague`)의 `/opt/paceleague/.env`(컨테이너가 `--env-file` 로 읽음)에:
 
