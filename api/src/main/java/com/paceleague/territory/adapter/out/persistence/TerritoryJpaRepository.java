@@ -70,6 +70,8 @@ public interface TerritoryJpaRepository extends JpaRepository<Territory, Long> {
     // 관리자 랜드잇데이터관리 화면 — 전체 ACTIVE 땅 목록, 최신순.
     Page<Territory> findByStatusOrderByCreateAtDesc(String status, Pageable pageable);
 
+    List<Territory> findBySourceRecordSnoAndStatus(Long sourceRecordSno, String status);
+
     // territory_hex 행이 하나도 없는 ACTIVE 땅 — TerritoryHex와 JPA 연관관계는 없지만 JPQL 서브쿼리는
     // 엔티티 간 연관관계 없이도 사용할 수 있다.
     @Query("""

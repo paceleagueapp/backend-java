@@ -103,6 +103,27 @@ class TerritoryQueryServiceTest {
         assertThat(res.territories().get(0).hexes()).hasSize(1);
     }
 
+    @Test
+    void 기록번호로_그_러닝이_만든_땅의_헥사곤_경계를_반환한다() {
+        when(territoryRepositoryPort.findActiveBySourceRecordSno(100L)).thenReturn(List.of(territoryWithSno(10L, 1L)));
+        long hex = H3TerritoryGrid.coverRing(h3Core, TINY_BOUNDS_RING, 12).get(0);
+        when(territoryHexRepositoryPort.findByTerritorySnoIn(List.of(10L)))
+                .thenReturn(List.of(TerritoryHex.of(hex, 10L, 1L)));
+
+        List<double[][]> rings = service.getHexBoundaries(100L);
+
+        assertThat(rings).hasSize(1);
+        assertThat(rings.get(0)[0]).isEqualTo(rings.get(0)[rings.get(0).length - 1]); // 닫힌 링
+    }
+
+    @Test
+    void 기록번호에_연결된_땅이_없으면_헥사곤은_빈_배열() {
+        when(territoryRepositoryPort.findActiveBySourceRecordSno(100L)).thenReturn(List.of());
+
+        assertThat(service.getHexBoundaries(100L)).isEmpty();
+        verifyNoHexLookup();
+    }
+
     private void verifyNoHexLookup() {
         verify(territoryHexRepositoryPort, never()).findByTerritorySnoIn(any());
     }

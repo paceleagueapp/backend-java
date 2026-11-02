@@ -465,10 +465,19 @@ join/login/reissue가 공통으로 반환하는 구조:
   "points": [
     { "sequence": 1, "recordedAt": "2026-09-07T21:30:00Z", "latitude": 37.1234, "longitude": 127.5678,
       "altitudeMeters": 42.0, "accuracyMeters": 4.5, "rawLatitude": 37.1234, "rawLongitude": 127.5678 }
+  ],
+  "hexes": [
+    [[37.12341, 127.56781], [37.12355, 127.56802], [37.12348, 127.56826], [37.12327, 127.56829],
+     [37.12313, 127.56808], [37.1232, 127.56784], [37.12341, 127.56781]]
   ]
 }
 ```
 
+- `hexes`(2026-11-02 추가): 이 러닝으로 얻어 **지금도 남아 있는** 땅의 헥사곤 경계 링 목록입니다. 형식은 지도 API의 `territories[].hexes`와 같습니다(헥사곤 1개 = `[lat, lng]` 닫힌 링).
+  - 연결 기준은 `territory.source_record_sno = recordSno`인 ACTIVE 땅의 `territory_hex`입니다.
+  - 이후 다른 사람이 빼앗은 셀은 빠지고, 이 러닝 전부터 이미 내 땅이던 셀도 들어가지 않습니다(그 셀들은 원래 땅에 남아 있음).
+  - 땅따먹기 모드가 아니었거나, 땅을 얻지 못했거나, 전부 빼앗겼으면 `[]`입니다.
+  - 지도 API와 달리 줌 조건이 없어서, 큰 루프면 셀이 수천 개(응답 수백 KB 이상)일 수 있습니다.
 - `startedAt`/`endedAt`/`recordedAt`은 UTC(`record_track`은 UTC wall-clock 저장). `status`는 `FINISHED`(정상 완주) 또는 `ABANDONED`(스위퍼가 자동 폐기).
 - `points`의 각 원소는 앱이 `POST /api/record/gps`로 올린 좌표 형태 그대로입니다.
 

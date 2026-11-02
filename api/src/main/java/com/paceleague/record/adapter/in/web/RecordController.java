@@ -135,7 +135,7 @@ public class RecordController {
     }
 
     // 5) 러닝 1건의 GPS 트랙 전체
-    @Operation(summary = "러닝 1건의 GPS 트랙 조회", description = "본인 소유 러닝 1건의 GPS 좌표 배열 전체(record_track.points_json)와 트랙 메타를 반환합니다. 남의 러닝이거나 GPS 없이 수동 저장된 러닝이면 400.")
+    @Operation(summary = "러닝 1건의 GPS 트랙 조회", description = "본인 소유 러닝 1건의 GPS 좌표 배열 전체(record_track.points_json)와 트랙 메타, 이 러닝으로 얻어 현재 남아 있는 땅의 헥사곤 경계(hexes — 지도 API territories[].hexes 와 같은 형식)를 반환합니다. 남의 러닝이거나 GPS 없이 수동 저장된 러닝이면 400.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{recordSno}/gps")
     public ResponseApi<RecordGpsTrackResponse> getGpsTrack(@MemberSno Long memberSno,

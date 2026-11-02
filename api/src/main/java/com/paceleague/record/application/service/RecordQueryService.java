@@ -23,6 +23,7 @@ import com.paceleague.record.application.port.out.RecordTrackRepositoryPort;
 import com.paceleague.record.domain.entity.Record;
 import com.paceleague.record.domain.entity.RecordTrack;
 import com.paceleague.record.domain.policy.RecordSummaryCalculator;
+import com.paceleague.territory.application.port.in.shared.GetRecordTerritoryHexesPort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -44,15 +45,18 @@ public class RecordQueryService implements RecordQueryUseCase, GetRecordSummaryP
     private final RecordRepositoryPort recordRepositoryPort;
     private final RecordTrackRepositoryPort recordTrackRepositoryPort;
     private final GetMemberNicknamePort getMemberNicknamePort;
+    private final GetRecordTerritoryHexesPort getRecordTerritoryHexesPort;
     private final ObjectMapper objectMapper;
 
     public RecordQueryService(RecordRepositoryPort recordRepositoryPort,
                               RecordTrackRepositoryPort recordTrackRepositoryPort,
                               GetMemberNicknamePort getMemberNicknamePort,
+                              GetRecordTerritoryHexesPort getRecordTerritoryHexesPort,
                               ObjectMapper objectMapper) {
         this.recordRepositoryPort = recordRepositoryPort;
         this.recordTrackRepositoryPort = recordTrackRepositoryPort;
         this.getMemberNicknamePort = getMemberNicknamePort;
+        this.getRecordTerritoryHexesPort = getRecordTerritoryHexesPort;
         this.objectMapper = objectMapper;
     }
 
@@ -148,7 +152,8 @@ public class RecordQueryService implements RecordQueryUseCase, GetRecordSummaryP
                 track.getEndedAt(),
                 track.getDistanceMeters(),
                 track.getPointCount() == null ? points.size() : track.getPointCount(),
-                points
+                points,
+                getRecordTerritoryHexesPort.getHexBoundaries(recordSno)
         );
     }
 

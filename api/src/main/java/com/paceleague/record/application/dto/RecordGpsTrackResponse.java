@@ -18,6 +18,9 @@ public record RecordGpsTrackResponse(
         LocalDateTime endedAt,    // 마지막 좌표 시각(UTC)
         BigDecimal distanceMeters,
         int pointCount,
-        List<GpsPoint> points
+        List<GpsPoint> points,
+        // 이 러닝으로 얻어 지금도 남아 있는 땅의 헥사곤 경계 링 목록(지도 API territories[].hexes 와 같은 형식).
+        // 땅따먹기로 땅을 얻지 못했거나 전부 뺏겼으면 빈 배열.
+        List<double[][]> hexes
 ) {
 }

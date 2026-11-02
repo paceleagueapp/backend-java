@@ -17,6 +17,7 @@ import com.paceleague.territory.application.dto.TerritoryView;
 import com.paceleague.territory.application.port.in.GetTerritoryMapUseCase;
 import com.paceleague.territory.application.port.in.GetTerritoryRankingUseCase;
 import com.paceleague.territory.application.port.in.shared.AdminTerritoryQueryPort;
+import com.paceleague.territory.application.port.in.shared.GetRecordTerritoryHexesPort;
 import com.paceleague.territory.application.port.out.TerritoryHexRepositoryPort;
 import com.paceleague.territory.application.port.out.TerritoryRepositoryPort;
 import com.paceleague.territory.config.TerritoryProperties;
@@ -44,7 +45,8 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class TerritoryQueryService implements GetTerritoryMapUseCase, GetTerritoryRankingUseCase, AdminTerritoryQueryPort {
+public class TerritoryQueryService implements GetTerritoryMapUseCase, GetTerritoryRankingUseCase, AdminTerritoryQueryPort,
+        GetRecordTerritoryHexesPort {
 
     private final TerritoryRepositoryPort territoryRepositoryPort;
     private final TerritoryHexRepositoryPort territoryHexRepositoryPort;
@@ -140,6 +142,20 @@ public class TerritoryQueryService implements GetTerritoryMapUseCase, GetTerrito
             byTerritory.computeIfAbsent(hex.getTerritorySno(), k -> new ArrayList<>()).add(hex.getH3Index());
         }
         return byTerritory;
+    }
+
+    @Override
+    public List<double[][]> getHexBoundaries(Long recordSno) {
+        List<Long> territorySnos = territoryRepositoryPort.findActiveBySourceRecordSno(recordSno).stream()
+                .map(Territory::getSno)
+                .toList();
+        if (territorySnos.isEmpty()) {
+            return List.of();
+        }
+        List<Long> hexIndexes = territoryHexRepositoryPort.findByTerritorySnoIn(territorySnos).stream()
+                .map(TerritoryHex::getH3Index)
+                .toList();
+        return hexBoundariesOf(hexIndexes);
     }
 
     private List<double[][]> hexBoundariesOf(List<Long> hexIndexes) {

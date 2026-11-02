@@ -9,6 +9,7 @@ import com.paceleague.record.application.port.out.RecordRepositoryPort;
 import com.paceleague.record.application.port.out.RecordTrackRepositoryPort;
 import com.paceleague.record.domain.entity.Record;
 import com.paceleague.record.domain.entity.RecordTrack;
+import com.paceleague.territory.application.port.in.shared.GetRecordTerritoryHexesPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -33,9 +34,10 @@ class RecordQueryServiceTest {
     @Mock RecordRepositoryPort recordRepositoryPort;
     @Mock RecordTrackRepositoryPort recordTrackRepositoryPort;
     @Mock GetMemberNicknamePort getMemberNicknamePort;
+    @Mock GetRecordTerritoryHexesPort getRecordTerritoryHexesPort;
 
     RecordQueryService service() {
-        return new RecordQueryService(recordRepositoryPort, recordTrackRepositoryPort, getMemberNicknamePort,
+        return new RecordQueryService(recordRepositoryPort, recordTrackRepositoryPort, getMemberNicknamePort, getRecordTerritoryHexesPort,
                 new ObjectMapper().registerModule(new JavaTimeModule()));
     }
 
@@ -94,6 +96,18 @@ class RecordQueryServiceTest {
         assertThat(res.points()).hasSize(2);
         assertThat(res.points().get(0).latitude()).isEqualTo(37.1);
         assertThat(res.points().get(1).longitude()).isEqualTo(127.21);
+    }
+
+    @Test
+    void GPS_트랙_조회는_그_러닝으로_얻은_헥사곤_경계를_함께_내려준다() {
+        double[][] ring = {{37.1, 127.2}, {37.1, 127.3}, {37.2, 127.3}, {37.1, 127.2}};
+        when(recordRepositoryPort.findBySnoAndUno(100L, 7L)).thenReturn(Optional.of(record(100L, 7L)));
+        when(recordTrackRepositoryPort.findByRecordSno(100L)).thenReturn(Optional.of(track(55L, 100L, "[]", 0)));
+        when(getRecordTerritoryHexesPort.getHexBoundaries(100L)).thenReturn(List.<double[][]>of(ring));
+
+        RecordGpsTrackResponse res = service().getGpsTrack(7L, 100L);
+
+        assertThat(res.hexes()).containsExactly(ring);
     }
 
     @Test

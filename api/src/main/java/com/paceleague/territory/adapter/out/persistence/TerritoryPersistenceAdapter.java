@@ -67,6 +67,10 @@ public class TerritoryPersistenceAdapter implements TerritoryRepositoryPort {
         return territoryJpaRepository.findByStatusOrderByCreateAtDesc(Territory.STATUS_ACTIVE, pageable);
     }
 
+    public List<Territory> findActiveBySourceRecordSno(Long recordSno) {
+        return territoryJpaRepository.findBySourceRecordSnoAndStatus(recordSno, Territory.STATUS_ACTIVE);
+    }
+
     public List<Territory> findActiveMissingHex() {
         return territoryJpaRepository.findActiveMissingHex();
     }

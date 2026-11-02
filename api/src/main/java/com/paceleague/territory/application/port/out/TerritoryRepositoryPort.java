@@ -37,6 +37,9 @@ public interface TerritoryRepositoryPort {
     // 관리자 랜드잇데이터관리 화면 — 전체 ACTIVE 땅 목록, 최신순 페이지네이션.
     Page<Territory> findAllActiveForAdmin(Pageable pageable);
 
+    // 기록 GPS 조회용 — 그 러닝(source_record_sno)으로 생긴 ACTIVE 땅.
+    List<Territory> findActiveBySourceRecordSno(Long recordSno);
+
     // 일간 요약 푸시용 — create_at 이 [from, to) 인 territory 개수 / 서로 다른 소유자 수.
     TerritoryCaptureCount countCapturesBetween(LocalDateTime fromInclusive, LocalDateTime toExclusive);
 
