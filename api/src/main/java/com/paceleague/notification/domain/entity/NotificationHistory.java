@@ -50,4 +50,8 @@ public class NotificationHistory {
     public static NotificationHistory broadcast(String kind, String title, String body, String deeplink) {
         return new NotificationHistory(null, kind, title, body, deeplink);
     }
+
+    public static NotificationHistory personal(Long memberSno, String kind, String title, String body, String deeplink) {
+        return new NotificationHistory(memberSno, kind, title, body, deeplink);
+    }
 }

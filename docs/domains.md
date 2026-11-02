@@ -315,6 +315,24 @@ totalScore = baseScore + scaledScore + addScore
 - 관리자 에디터의 이미지/동영상 업로드: `AdminMediaController` (`/api/admin/media/uploads`, `/{sno}/complete`, `/{sno}/status`) — `/api/media` 와 같은 presigned + Rekognition 흐름을 관리자 세션으로 쓰고, `media.member_sno` 에는 `MediaUseCase.ADMIN_UPLOADER_SNO`(0)를 넣는다(회원 sno 와 겹치지 않고 탈퇴 정리에도 안 걸림). 웹 쪽은 `createPostEditor` 에 `fetchJson`/`mediaBasePath` 옵션을 넘겨 같은 에디터를 재사용.
 - 웹 노출: `web/js/app.js` `showSitePopups()` 를 홈(`index.html`)에서 호출 — `WEB`/`BOTH` 만, 하나씩, "오늘 하루 보지 않기"는 `localStorage pl_popup_hidden_<sno>` = 오늘 날짜.
 
+## 쿠폰(Coupon) 도메인 — 2026-11-02
+
+관리자가 회원 상세 화면(`/admin/member-detail`)에서 회원 1명에게 **기프티콘 이미지 쿠폰**을 지급하고, 회원은 앱 쿠폰함에서 확인·사용 완료 표시한다.
+
+- **이미지**: 브라우저가 `POST /api/admin/coupons/upload-url`로 받은 presigned PUT URL에 직접 올린다(JPEG/PNG/WEBP, 10MB 이하).
+  - 경로는 S3 `paceleague-media` 버킷의 **비공개 `coupon/<uuid>.<ext>`**다. 바코드가 곧 돈이라 공개 `media/` 경로를 쓰지 않는다.
+  - 조회 응답의 `imageUrl`은 10분짜리 presigned GET URL이다.
+  - EC2 역할에 `coupon/*` 권한이 필요하다(`docs/infra.md`).
+- **지급**(`POST /api/admin/coupons`): 활성 회원에게만 지급한다. `imageKey` 형식, 업로드 여부, 크기, 중복을 검증한 뒤 `coupon` 행을 만든다.
+  - 커밋 후 `notification.SendMemberPushPort`로 **개인 푸시**를 보낸다(kind `COUPON`, deeplink `paceleague://coupons`).
+  - 탈퇴, 서비스 알림 거부, 등록 토큰 없음이면 푸시는 생략된다.
+  - 실제로 발송되면 `notification_history`에 개인 알림(`member_sno` 지정)으로 남는다.
+  - 푸시 실패는 지급을 되돌리지 않는다.
+- **사용**: 회원이 `POST /api/coupon/{sno}/use`로 직접 사용 완료 표시한다. 기프티콘은 서버에서 실제 사용을 검증할 수 없다.
+  - 이미 사용했거나 만료(`expires_at` < 오늘 KST)된 쿠폰은 400이다.
+- **삭제/탈퇴**: 관리자 삭제와 회원 탈퇴(`PurgeMemberCouponsPort`) 모두 행을 지우고, 커밋 후 S3 이미지를 best-effort로 삭제한다.
+- 마이그레이션: [2026-11-02_coupon.sql](./migrations/2026-11-02_coupon.sql). 앱 전용 API라 CORS는 없다(관리자 API는 기존 `/api/admin/**` CORS).
+
 ## 회원 탈퇴 (member)
 
 `DELETE /api/member/me` (로그인 필요, body `{ "password" }`). `MemberWithdrawService` — 한 트랜잭션:

@@ -704,7 +704,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 ```
 
 - `hasMore=false` 면 마지막 페이지(`nextCursor=null`). 앱은 `deeplink` 로 화면 이동.
-- 전체 회원 발송 알림은 **가입 이후 발송분만** 포함. 개인 알림(`member_sno` 지정)은 아직 발송처 없음(향후 쿠폰 등).
+- 전체 회원 발송 알림은 **가입 이후 발송분만** 포함. 개인 알림(`member_sno` 지정)은 쿠폰 지급(kind `COUPON`)이 발송처.
 - `createdAt` 은 다른 API와 같은 UTC(타임존 표기 없음) 문자열.
 
 **마이그레이션**: [migrations/2026-10-27_notification_history.sql](./migrations/2026-10-27_notification_history.sql) (운영은 배포 전 직접 실행)
@@ -900,6 +900,38 @@ join/login/reissue가 공통으로 반환하는 구조:
 - 그 외 → `NONE`
 
 **실패**: 해당 `platform`에 대한 정책이 DB에 없음 → 400 `"앱 버전 정책이 존재하지 않습니다. platform=..."`
+
+## Coupon API (`/api/coupon`) — 인증 필요
+
+관리자가 지급한 기프티콘 쿠폰함. 모바일 앱 전용(CORS 없음). 지급 시 개인 푸시(`data.type = "coupon"`, `data.couponSno`, deeplink `paceleague://coupons`)가 가고 알림내역에도 남는다.
+
+### GET `/api/coupon/me` — 내 쿠폰 목록
+
+최근 지급순. **`imageUrl`은 10분간 유효한 presigned URL**이라 저장하지 말고 쿠폰함을 열 때마다 다시 받는다.
+
+```json
+[
+  {
+    "sno": 12,
+    "name": "스타벅스 아메리카노 T",
+    "imageUrl": "https://paceleague-media.s3.ap-northeast-2.amazonaws.com/coupon/....png?X-Amz-...",
+    "expiresAt": "2026-12-31",
+    "status": "ISSUED",
+    "expired": false,
+    "usedAt": null,
+    "createdAt": "2026-11-02T10:15:00"
+  }
+]
+```
+
+- `expiresAt`: 이 날짜(KST)까지 사용 가능. `expired`: 오늘(KST)이 그 날짜를 지났으면 `true`.
+- `status`: `ISSUED`(미사용) / `USED`(사용 완료).
+
+### POST `/api/coupon/{couponSno}/use` — 사용 완료 표시
+
+회원이 직접 사용 완료로 표시. 응답은 갱신된 쿠폰 1건(위와 같은 형태).
+
+**실패(400)**: 본인 쿠폰이 아님 `"Coupon not found."`, 이미 사용 `"Coupon has already been used."`, 만료 `"Coupon has expired."`
 
 ## Popup API (`/api/popup`) — 공개
 

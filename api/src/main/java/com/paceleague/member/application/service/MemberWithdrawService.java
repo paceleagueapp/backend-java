@@ -8,6 +8,7 @@ import com.paceleague.member.application.port.out.MemberBlockRepositoryPort;
 import com.paceleague.member.application.port.out.MemberRepositoryPort;
 import com.paceleague.member.domain.entity.Member;
 import com.paceleague.notification.application.port.in.shared.PurgeMemberDeviceTokensPort;
+import com.paceleague.coupon.application.port.in.shared.PurgeMemberCouponsPort;
 import com.paceleague.rank.application.port.in.shared.PurgeMemberRankPort;
 import com.paceleague.record.application.port.in.shared.PurgeMemberRecordsPort;
 import com.paceleague.territory.application.port.in.shared.PurgeMemberTerritoryPort;
@@ -34,6 +35,7 @@ public class MemberWithdrawService implements MemberWithdrawUseCase {
     private final PurgeMemberMediaPort purgeMemberMediaPort;
     private final PurgeMemberBoardPort purgeMemberBoardPort;
     private final PurgeMemberDeviceTokensPort purgeMemberDeviceTokensPort;
+    private final PurgeMemberCouponsPort purgeMemberCouponsPort;
 
     @Override
     @Transactional
@@ -57,6 +59,7 @@ public class MemberWithdrawService implements MemberWithdrawUseCase {
         purgeMemberMediaPort.purge(memberSno);
         purgeMemberBoardPort.purge(memberSno);
         purgeMemberDeviceTokensPort.purge(memberSno); // 탈퇴 후 푸시가 가지 않게
+        purgeMemberCouponsPort.purge(memberSno);
         memberBlockRepositoryPort.deleteAllByMember(memberSno);
 
         member.withdraw();

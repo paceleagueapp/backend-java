@@ -207,6 +207,18 @@ add_header Cache-Control "no-cache" always;
 }
 ```
 
+**2026-11-02 쿠폰(기프티콘) 이미지 — 추가 권한 필요.** 쿠폰 이미지는 같은 버킷의 **비공개 `coupon/` 경로**에 둔다.
+버킷 정책은 `media/*`만 공개하므로 `coupon/*`는 공개되지 않는다. 앱/관리자에게는 10분짜리 presigned GET URL만 내려준다.
+대신 EC2 역할의 위 인라인 정책 `MediaS3` 문의 `Resource`에 아래 줄을 **사용자가 AWS 콘솔에서 추가**해야 한다
+(`github-actions-deploy`에는 `iam:PutRolePolicy`가 없다):
+
+```json
+"Resource": ["arn:aws:s3:::paceleague-media/media/*", "arn:aws:s3:::paceleague-media/coupon/*"]
+```
+
+추가 전에는 관리자 쿠폰 지급이 "이미지가 업로드되지 않음"(HeadObject 403) 오류로 실패하고, 쿠폰 이미지도 열리지 않는다.
+브라우저 PUT 은 기존 버킷 CORS(버킷 전체 적용)로 이미 허용된다.
+
 이 정책이 붙기 전까지는 EC2에서 실행 중인 앱이 S3 업로드 완료 처리(`/api/media/{id}/complete`)나 Rekognition 모더레이션 호출 시 `AccessDenied`로 실패합니다 — 코드 배포 자체는 문제없이 되지만 미디어 첨부 기능만 이 정책이 붙을 때까지 동작하지 않습니다. Rekognition 리전 지원 여부는 `ap-northeast-2`로 확인됨(읽기 전용 API 호출 시 `AccessDeniedException`이 떴을 뿐 엔드포인트 자체는 인식됨 — 리전 미지원이었다면 다른 종류의 에러가 났을 것).
 
 ## FCM 푸시 (notification 도메인) — 2026-09-09 추가, 미프로비저닝
