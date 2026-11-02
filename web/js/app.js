@@ -535,20 +535,29 @@ function requireLogin() {
 // 상단 헤더 우측 계정 버튼 — 모든 페이지 공통.
 // 로그아웃 상태: 회원가입 · 로그인 / 로그인 상태: 닉네임(모바일에선 숨김) · 계정설정 · 로그아웃.
 // extraHtml 은 페이지 전용 버튼(예: 커뮤니티의 글쓰기)으로, 계정 버튼 뒤에 붙는다.
-// 맨 앞에는 로그인 여부와 무관하게 Android 앱(Google Play) 다운로드 버튼 — 모바일에선 아이콘만.
+// 맨 앞에는 로그인 여부와 무관하게 Android(Google Play) · iOS(App Store) 앱 다운로드 버튼 — 좁은 폭에선 아이콘만.
 var ANDROID_APP_URL = 'https://play.google.com/store/apps/details?id=com.paceleague.app';
+var IOS_APP_URL = 'https://apps.apple.com/kr/app/paceleague/id6788461504';
 
-function androidAppButtonHtml() {
-  var label = t('androidApp');
-  return '<a class="btn app-dl" href="' + ANDROID_APP_URL + '" target="_blank" rel="noopener"'
-    + ' aria-label="' + escapeHtml(label) + ' (Android)" title="' + escapeHtml(label) + ' (Android)">'
-    + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-    + '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>'
-    + '<span class="app-dl-label">' + escapeHtml(label) + '</span></a>';
+var ANDROID_ICON_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+  + '<path d="M17.6 9.48l1.84-3.18a.38.38 0 0 0-.66-.38l-1.86 3.22A11.4 11.4 0 0 0 12 8.08c-1.77 0-3.43.39-4.92 1.06L5.22 5.92a.38.38 0 0 0-.66.38L6.4 9.48A10.8 10.8 0 0 0 1 18h22a10.8 10.8 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg>';
+var APPLE_ICON_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+  + '<path d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.83-.81-3-.79-1.55.02-2.97.9-3.77 2.28-1.6 2.79-.41 6.91 1.16 9.17.76 1.1 1.67 2.35 2.87 2.3 1.15-.04 1.59-.74 2.98-.74 1.39 0 1.78.74 3 .72 1.24-.02 2.03-1.13 2.79-2.24.88-1.28 1.24-2.52 1.26-2.58-.03-.01-2.42-.93-2.45-3.69zM14.1 5.86c.64-.77 1.07-1.85.95-2.92-.92.04-2.03.61-2.69 1.38-.59.68-1.11 1.77-.97 2.82 1.03.08 2.07-.52 2.71-1.28z"/></svg>';
+
+function appStoreButtonHtml(url, iconSvg, label, platform) {
+  var full = label + ' (' + platform + ')';
+  return '<a class="btn app-dl" href="' + url + '" target="_blank" rel="noopener"'
+    + ' aria-label="' + escapeHtml(full) + '" title="' + escapeHtml(full) + '">'
+    + iconSvg + '<span class="app-dl-label">' + escapeHtml(label) + '</span></a>';
+}
+
+function appDownloadButtonsHtml() {
+  return appStoreButtonHtml(ANDROID_APP_URL, ANDROID_ICON_SVG, t('androidApp'), 'Google Play')
+    + appStoreButtonHtml(IOS_APP_URL, APPLE_ICON_SVG, t('iosApp'), 'App Store');
 }
 
 function renderHeaderAuth(el, extraHtml) {
-  var html = androidAppButtonHtml();
+  var html = appDownloadButtonsHtml();
   if (isLoggedIn()) {
     var nick = localStorage.getItem('pl_nickname') || '';
     html += (nick ? '<span class="header-nick">' + escapeHtml(nick) + '</span>' : '')

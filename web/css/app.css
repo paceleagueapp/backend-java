@@ -24,7 +24,7 @@ a:hover { color: #b8281f; }
 .navlink.active { color: #14161a; background: #fff; font-weight: 700; }
 .header-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .header-nick { color: #c8cbd0; font-size: 13px; margin-right: 2px; }
-/* Android 앱(Google Play) 다운로드 — 다크 헤더 위 흰 버튼, 모바일에선 아이콘만 */
+/* Android(Google Play) · iOS(App Store) 앱 다운로드 — 다크 헤더 위 흰 버튼, 좁은 폭에선 아이콘만 */
 .btn.app-dl { display: inline-flex; align-items: center; gap: 6px; background: #fff; color: #14161a; white-space: nowrap; }
 .btn.app-dl:hover { background: #e6e7e9; color: #14161a; }
 /* 아이콘만 있는 헤더 버튼(알림내역 등) */
@@ -33,6 +33,8 @@ a:hover { color: #b8281f; }
 /* 데스크톱이지만 로그인 헤더 버튼이 많아 두 줄로 넘치는 폭 — 닉네임 숨기고 메뉴 간격을 줄인다 */
 @media (max-width: 1180px) {
   .header-nick { display: none; }
+  .app-dl-label { display: none; }
+  .btn.app-dl { padding: 7px 9px; }
   .topbar-inner { gap: 14px; }
   .navlink { padding: 8px 11px; }
 }
