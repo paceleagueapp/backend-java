@@ -46,4 +46,10 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
         if (snos.isEmpty()) return List.of();
         return memberJpaRepository.findActiveSnosIn(snos).stream().map(Number::longValue).toList();
     }
+
+    @Override
+    public List<Member> findAllBySnoIn(Collection<Long> snos) {
+        if (snos.isEmpty()) return List.of();
+        return memberJpaRepository.findAllBySnoIn(snos);
+    }
 }

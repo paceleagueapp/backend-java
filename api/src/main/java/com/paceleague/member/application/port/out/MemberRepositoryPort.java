@@ -25,4 +25,7 @@ public interface MemberRepositoryPort {
 
     // 주어진 sno 중 탈퇴하지 않은 회원의 sno.
     List<Long> findActiveSnosIn(Collection<Long> snos);
+
+    // 주어진 sno 의 회원(탈퇴 포함). 없는 sno 는 빠진다.
+    List<Member> findAllBySnoIn(Collection<Long> snos);
 }

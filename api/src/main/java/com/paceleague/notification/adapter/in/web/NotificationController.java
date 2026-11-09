@@ -3,8 +3,10 @@ package com.paceleague.notification.adapter.in.web;
 import com.paceleague.common.response.ResponseApi;
 import com.paceleague.common.web.MemberSno;
 import com.paceleague.notification.application.dto.FcmTokenRequest;
+import com.paceleague.notification.application.dto.NoticeResponse;
 import com.paceleague.notification.application.dto.NotificationHistoryPage;
 import com.paceleague.notification.application.port.in.GetNotificationHistoryUseCase;
+import com.paceleague.notification.application.port.in.GetNoticeUseCase;
 import com.paceleague.notification.application.port.in.RegisterDeviceTokenUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -14,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,6 +31,7 @@ public class NotificationController {
 
     private final GetNotificationHistoryUseCase getNotificationHistoryUseCase;
     private final RegisterDeviceTokenUseCase registerDeviceTokenUseCase;
+    private final GetNoticeUseCase getNoticeUseCase;
 
     @Operation(summary = "내 알림내역",
             description = "최신순. 첫 요청은 cursor 없이, 이후 '더보기'는 응답의 nextCursor 를 cursor 로 넘긴다. "
@@ -40,6 +44,16 @@ public class NotificationController {
             @Parameter(description = "이전 응답의 nextCursor (첫 페이지는 생략)") @RequestParam(required = false) Long cursor,
             @Parameter(description = "한 번에 가져올 개수 (기본 5, 최대 50)") @RequestParam(defaultValue = "5") int size) {
         return ResponseApi.success(getNotificationHistoryUseCase.getHistory(memberSno, cursor, size));
+    }
+
+    @Operation(summary = "관리자 알림 상세 (앱)",
+            description = "관리자가 보낸 알림(kind ADMIN_NOTICE, deeplink paceleague://notifications/{sno})의 제목 + 본문 HTML(이미지 포함). "
+                    + "받는 회원으로 지정된 회원만 조회 가능, 아니면 400.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/notice/{notificationSno}")
+    public ResponseApi<NoticeResponse> getNotice(@MemberSno Long memberSno, @PathVariable Long notificationSno) {
+        return ResponseApi.success(getNoticeUseCase.getNotice(memberSno, notificationSno));
     }
 
     @Operation(summary = "FCM 토큰 등록 (앱)",

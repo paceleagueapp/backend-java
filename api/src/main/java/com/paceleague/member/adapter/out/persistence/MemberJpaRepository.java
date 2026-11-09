@@ -46,4 +46,7 @@ public interface MemberJpaRepository extends JpaRepository<Member, Long> {
 
     @Query(value = "select sno from member where status = 'ACTIVE' and sno in (:snos)", nativeQuery = true)
     List<Number> findActiveSnosIn(@Param("snos") Collection<Long> snos);
+
+    @Query(value = "select * from member where sno in (:snos)", nativeQuery = true)
+    List<Member> findAllBySnoIn(@Param("snos") Collection<Long> snos);
 }

@@ -704,10 +704,31 @@ join/login/reissue가 공통으로 반환하는 구조:
 ```
 
 - `hasMore=false` 면 마지막 페이지(`nextCursor=null`). 앱은 `deeplink` 로 화면 이동.
-- 전체 회원 발송 알림은 **가입 이후 발송분만** 포함. 개인 알림(`member_sno` 지정)은 쿠폰 지급(kind `COUPON`)이 발송처.
+- 전체 회원 발송 알림은 **가입 이후 발송분만** 포함. 개인 알림(`member_sno` 지정)은 쿠폰 지급(kind `COUPON`)과 관리자 알림(kind `ADMIN_NOTICE`)이 발송처.
 - `createdAt` 은 다른 API와 같은 UTC(타임존 표기 없음) 문자열.
 
 **마이그레이션**: [migrations/2026-10-27_notification_history.sql](./migrations/2026-10-27_notification_history.sql) (운영은 배포 전 직접 실행)
+
+### GET `/api/notification/notice/{notificationSno}` — 관리자 알림 상세 (앱)
+
+관리자가 알림관리에서 보낸 알림(kind `ADMIN_NOTICE`)의 전체 내용. 푸시 본문에는 글자 앞부분만 실리므로,
+앱은 푸시나 알림내역의 deeplink `paceleague://notifications/{sno}` 를 받으면 이 API 로 본문을 불러와 보여준다.
+푸시 data: `type = "notice"`, `notificationSno`, `deeplink`.
+
+```json
+{
+  "success": true,
+  "data": {
+    "sno": 3,
+    "title": "11월 이벤트 안내",
+    "content": "<p>이번 달 이벤트...</p><p><img src=\"https://paceleague-media.s3.ap-northeast-2.amazonaws.com/media/....png\"></p>",
+    "createdAt": "2026-11-09T03:00:00"
+  }
+}
+```
+
+- `content` 는 서버에서 정제된 HTML(게시글과 같은 허용 태그: `p, br, div, b, strong, i, em, a, img, video`). WebView 나 HTML 렌더러로 표시.
+- 받는 회원으로 지정되지 않았거나 없는 알림이면 400 `"Notification not found."`.
 
 ### POST `/api/notification/fcm-token` — FCM 토큰 등록 (앱)
 

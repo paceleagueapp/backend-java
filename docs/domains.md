@@ -304,6 +304,20 @@ totalScore = baseScore + scaledScore + addScore
 앱이 Firebase 프로젝트 등록 + FCM SDK + 알림 권한 + **로그인 시 토큰 등록 / 토큰 갱신 시 재등록 / 로그아웃 시 해제**를
 배포해야 실제 도달된다(토픽 구독은 하지 않는다). 그때까지 `daily-digest.enabled=false` 로 둔다.
 
+### 관리자 알림관리 — 2026-11-09
+
+관리자 페이지 **알림관리**(`/admin/notifications` 목록, `/admin/notification-edit` 등록, `/admin/notification-detail` 상세)에서 회원을 골라 개인 푸시를 보낸다.
+
+- 테이블 `admin_notification`(제목, 정제된 HTML 본문, `target_count`/`sent_count`)과 `admin_notification_target`(받는 회원 1명 = 1행, `sent`). 마이그레이션 [2026-11-09_admin_notification.sql](./migrations/2026-11-09_admin_notification.sql).
+- 본문은 게시판·팝업과 같은 에디터(이미지/동영상)이고 `PostContentSanitizer` 로 정제한다. 이미지는 `/api/admin/media` 로 올린다(팝업과 같음).
+- 발송(`AdminNotificationService.send`)은 알림 행을 먼저 저장한 뒤 회원마다 `SendMemberPushPort` 를 부른다(kind `ADMIN_NOTICE`).
+  - 푸시 본문은 HTML 의 평문 앞 150자다. 이미지만 있으면 "새 알림이 도착했어요.".
+  - deeplink `paceleague://notifications/{sno}`, data `type=notice`, `notificationSno`, `deeplink`.
+  - 탈퇴, 서비스 알림 거부, FCM 토큰 없음, 발송 실패는 `sent=false` 로 남는다. 실제로 간 회원만 알림내역에 개인 알림이 생긴다.
+  - 트랜잭션 없이 회원 수만큼 순서대로 FCM 을 호출한다(최대 1000명). 요청 안에서 끝나므로 인원이 많으면 응답이 느리다.
+- 앱은 푸시를 누르면 `GET /api/notification/notice/{sno}` 로 제목 + 본문 HTML 을 받는다. 받는 회원으로 지정된 회원만 조회할 수 있다.
+- 회원 검색은 기존 `GET /api/admin/members` 를 쓴다(탈퇴 회원은 화면에서 선택 불가). 닉네임 표시는 새 `GetMemberNicknamePort.getNicknames`(한 번에 조회).
+
 ## 공지 팝업(Popup) 도메인 — 2026-10-28
 
 `popup` 패키지. 관리자 페이지 **팝업관리**(`/admin/popups`, `/admin/popup-edit`)에서 등록하고, 공개 `GET /api/popup` 이 노출 대상만 내려준다.

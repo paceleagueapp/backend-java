@@ -22,8 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -40,11 +42,27 @@ public class MemberQueryService implements GetMemberNicknamePort, SearchMembersP
     // 탈퇴 회원(WITHDRAWN)은 닉네임이 지워져 있으므로 "탈퇴한 사용자"로 표시한다.
     // 이 한 곳만으로 board(작성자/댓글) · territory(지도) · ranking 전부에 반영된다.
     static final String WITHDRAWN_DISPLAY_NAME = "탈퇴한 사용자";
+    static final String UNKNOWN_DISPLAY_NAME = "알 수 없음";
 
     public String getNickname(Long memberSno) {
         return memberRepositoryPort.findBySno(memberSno)
-                .map(m -> m.isActive() && m.getNickname() != null ? m.getNickname() : WITHDRAWN_DISPLAY_NAME)
-                .orElse("알 수 없음");
+                .map(MemberQueryService::displayName)
+                .orElse(UNKNOWN_DISPLAY_NAME);
+    }
+
+    @Override
+    public Map<Long, String> getNicknames(Collection<Long> memberSnos) {
+        Map<Long, String> result = new HashMap<>();
+        if (memberSnos.isEmpty()) return result;
+        for (Member m : memberRepositoryPort.findAllBySnoIn(new HashSet<>(memberSnos))) {
+            result.put(m.getSno().longValue(), displayName(m));
+        }
+        memberSnos.forEach(sno -> result.putIfAbsent(sno, UNKNOWN_DISPLAY_NAME));
+        return result;
+    }
+
+    private static String displayName(Member m) {
+        return m.isActive() && m.getNickname() != null ? m.getNickname() : WITHDRAWN_DISPLAY_NAME;
     }
 
     public List<MemberSearchResult> search(String query, int limit) {

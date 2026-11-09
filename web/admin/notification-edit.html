@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알림 등록 - Pace League Admin</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <link rel="stylesheet" href="/css/app.css?v=20261102">
+  <link rel="stylesheet" href="/css/admin.css?v=20261028">
+  <style>
+    .form-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 22px; max-width: 760px; }
+    .form-card label.field-label { display: block; font-size: 12.5px; color: #8a8e96; margin: 18px 0 6px; font-weight: 600; }
+    .form-card label.field-label:first-child { margin-top: 0; }
+    .form-card input[type="text"], .form-card input[type="search"] {
+      width: 100%; padding: 9px 10px; border: 1px solid #d7dade; border-radius: 8px; font-size: 14px; background: #fff; color: #1c2024;
+    }
+    .form-card input:focus, .form-card .editor-content:focus { outline: none; border-color: #e5342f; }
+
+    /* 게시판 글쓰기·팝업 등록과 같은 에디터 스타일 */
+    .editor-toolbar { display: flex; gap: 6px; margin-bottom: 6px; }
+    .editor-toolbar button {
+      background: #f4f5f7; border: 1px solid #d7dade; color: #4a4e56; width: 32px; height: 32px;
+      border-radius: 6px; cursor: pointer; font-size: 14px; padding: 0;
+    }
+    .editor-toolbar button:hover { background: #e9ebee; }
+    .editor-content {
+      width: 100%; min-height: 160px; max-height: 420px; overflow-y: auto;
+      background: #fff; border: 1px solid #d7dade; color: #1c2024; padding: 10px; border-radius: 8px;
+      font-size: 14px; line-height: 1.5;
+    }
+    .editor-content.is-empty:before { content: attr(data-placeholder); color: #9aa0a8; }
+    .editor-content img, .editor-content video { max-width: 100%; border-radius: 6px; display: block; margin: 6px 0; }
+    .editor-content a { color: #2f6fd6; }
+    .media-placeholder { display: inline-block; background: #eef0f3; color: #4a52c4; border-radius: 10px; padding: 2px 8px; font-size: 12px; }
+    .media-placeholder.rejected { color: #c0392b; }
+    .hint { font-size: 12px; color: #9aa0a8; margin-top: 6px; }
+
+    /* 받는 회원 선택 */
+    .selected-box { display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px; padding: 6px; border: 1px dashed #d7dade; border-radius: 8px; align-items: center; }
+    .selected-box .none { color: #9aa0a8; font-size: 13px; padding: 0 4px; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; background: #fdeceb; color: #b3261e; border-radius: 14px; padding: 3px 6px 3px 10px; font-size: 12.5px; }
+    .chip button { background: none; border: none; color: #b3261e; cursor: pointer; font-size: 14px; line-height: 1; padding: 0 2px; }
+    .selected-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 13px; color: #4a4e56; }
+    .selected-head button { background: none; border: none; color: #8a8e96; cursor: pointer; font-size: 12.5px; text-decoration: underline; }
+    .search-row { display: flex; gap: 8px; margin-top: 12px; }
+    .search-row button { background: #1c2024; color: #fff; border: none; padding: 0 16px; border-radius: 8px; font-size: 13.5px; cursor: pointer; white-space: nowrap; }
+    table.member-table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+    table.member-table th, table.member-table td { padding: 8px 10px; text-align: left; font-size: 13px; border-bottom: 1px solid #f0f1f3; }
+    table.member-table th { background: #f7f8fa; color: #4a4e56; font-weight: 700; }
+    table.member-table tr.disabled td { color: #b0b4ba; }
+    table.member-table td.check, table.member-table th.check { width: 36px; text-align: center; }
+    table.member-table tbody tr:not(.disabled) { cursor: pointer; }
+    .empty-row td { text-align: center; color: #8a8e96; padding: 20px; }
+    .badge { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11.5px; font-weight: 700; }
+    .badge.yes { background: #e3f5ea; color: #1c8a4a; }
+    .badge.no { background: #f0f1f3; color: #8a8e96; }
+    .pagination { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .pagination button { background: #fff; border: 1px solid #d7dade; padding: 5px 12px; border-radius: 8px; font-size: 12.5px; cursor: pointer; }
+    .pagination button:disabled { opacity: 0.4; cursor: default; }
+    .pagination span { font-size: 12.5px; color: #4a4e56; }
+
+    .actions { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+    .actions button, .actions a { padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; font-size: 14px; text-decoration: none; }
+    .actions .submit { background: #e5342f; color: #fff; }
+    .actions .submit:hover { background: #c62828; }
+    .actions .submit:disabled { opacity: 0.5; cursor: default; }
+    .actions .secondary { background: #eceef1; color: #4a4e56; }
+    .form-msg { font-size: 13px; margin-top: 10px; min-height: 18px; }
+    .form-msg.err { color: #d02b22; }
+    .form-msg.ok { color: #1c8a4a; }
+  </style>
+</head>
+<body>
+  <div id="admin-header"></div>
+  <div class="admin-layout">
+    <div id="admin-sidebar"></div>
+    <main class="admin-content" id="admin-content" hidden>
+      <h1>알림 등록</h1>
+
+      <div class="form-card">
+        <label class="field-label" for="noti-title">알림 제목</label>
+        <input type="text" id="noti-title" maxlength="200" placeholder="푸시 알림 제목">
+
+        <label class="field-label">알림 내용</label>
+        <div class="editor-toolbar">
+          <button type="button" id="fmt-bold" title="굵게"><b>B</b></button>
+          <button type="button" id="fmt-italic" title="기울임"><i>I</i></button>
+          <button type="button" id="fmt-link" title="링크">🔗</button>
+          <button type="button" id="fmt-image" title="이미지">🖼️</button>
+          <button type="button" id="fmt-video" title="동영상">🎬</button>
+        </div>
+        <div id="noti-content" class="editor-content is-empty" contenteditable="true" data-placeholder="알림 내용을 입력하세요"></div>
+        <input type="file" id="noti-media-file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime" style="display:none">
+        <div class="hint">푸시 알림에는 내용의 글자 앞부분(150자)만 표시되고, 앱에서 알림을 누르면 이미지를 포함한 전체 내용이 보입니다.</div>
+
+        <label class="field-label">받는 회원</label>
+        <div class="selected-head">
+          <span id="selected-count">선택한 회원 0명</span>
+          <button type="button" id="clear-selected">전체 해제</button>
+        </div>
+        <div class="selected-box" id="selected-box"><span class="none">아래에서 회원을 검색해 체크하세요.</span></div>
+
+        <div class="search-row">
+          <input type="search" id="member-q" placeholder="아이디 또는 닉네임 검색 (비우면 전체)">
+          <button type="button" id="member-search-btn">검색</button>
+        </div>
+        <table class="member-table">
+          <thead>
+            <tr>
+              <th class="check"><input type="checkbox" id="check-page" title="이 페이지 전체 선택"></th>
+              <th>아이디</th><th>닉네임</th><th>FCM 토큰</th><th>상태</th>
+            </tr>
+          </thead>
+          <tbody id="member-tbody"></tbody>
+        </table>
+        <div class="pagination">
+          <button type="button" id="m-prev">이전</button>
+          <span id="m-page-info"></span>
+          <button type="button" id="m-next">다음</button>
+        </div>
+        <div class="hint">탈퇴 회원은 선택할 수 없습니다. FCM 토큰이 없거나 서비스 알림을 거부한 회원은 발송에서 제외됩니다.</div>
+
+        <div class="form-msg" id="form-msg"></div>
+        <div class="actions">
+          <button type="button" class="submit" id="send-btn">등록 및 발송</button>
+          <a class="secondary" href="/admin/notifications">목록</a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/admin.js?v=20261109"></script>
+  <!-- 게시판 글쓰기와 같은 에디터(createPostEditor)를 쓰려고 공용 스크립트를 함께 로드 -->
+  <script src="/js/app.js?v=20261102"></script>
+  <script src="/js/i18n.js?v=20261102"></script>
+  <script>
+    var MEMBER_PAGE_SIZE = 10;
+    var memberPage = 0;
+    var memberQuery = '';
+    var pageMembers = [];
+    // memberSno → 표시 이름. 검색어/페이지를 바꿔도 선택은 유지된다.
+    var selected = {};
+
+    var editor = createPostEditor({
+      editorEl: document.getElementById('noti-content'),
+      fileInputEl: document.getElementById('noti-media-file'),
+      boldBtn: document.getElementById('fmt-bold'),
+      italicBtn: document.getElementById('fmt-italic'),
+      linkBtn: document.getElementById('fmt-link'),
+      imageBtn: document.getElementById('fmt-image'),
+      videoBtn: document.getElementById('fmt-video'),
+      // 회원 JWT 가 아니라 관리자 세션으로 업로드
+      fetchJson: function (path, options) {
+        return adminApiFetch(path, options).then(function (result) { return result.json; });
+      },
+      mediaBasePath: '/api/admin/media'
+    });
+
+    function escapeHtmlAdmin(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function showMsg(text, ok) {
+      var el = document.getElementById('form-msg');
+      el.className = 'form-msg ' + (ok ? 'ok' : 'err');
+      el.textContent = text;
+    }
+
+    function memberLabel(m) {
+      return (m.nickname || '-') + ' (' + m.memberId + ')';
+    }
+
+    function selectable(m) {
+      return m.status !== 'WITHDRAWN';
+    }
+
+    function renderSelected() {
+      var box = document.getElementById('selected-box');
+      var snos = Object.keys(selected);
+      document.getElementById('selected-count').textContent = '선택한 회원 ' + snos.length + '명';
+      if (snos.length === 0) {
+        box.innerHTML = '<span class="none">아래에서 회원을 검색해 체크하세요.</span>';
+        return;
+      }
+      box.innerHTML = snos.map(function (sno) {
+        return '<span class="chip">' + escapeHtmlAdmin(selected[sno]) +
+          '<button type="button" data-unselect="' + sno + '" title="빼기">×</button></span>';
+      }).join('');
+      Array.prototype.forEach.call(box.querySelectorAll('[data-unselect]'), function (btn) {
+        btn.addEventListener('click', function () {
+          delete selected[btn.getAttribute('data-unselect')];
+          renderSelected();
+          renderMembers();
+        });
+      });
+    }
+
+    function toggleMember(m, on) {
+      if (!selectable(m)) return;
+      if (on) selected[m.sno] = memberLabel(m); else delete selected[m.sno];
+    }
+
+    function renderMembers() {
+      var tbody = document.getElementById('member-tbody');
+      if (pageMembers.length === 0) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="5">검색 결과가 없습니다.</td></tr>';
+      } else {
+        tbody.innerHTML = pageMembers.map(function (m, i) {
+          var ok = selectable(m);
+          return '<tr data-idx="' + i + '"' + (ok ? '' : ' class="disabled"') + '>' +
+            '<td class="check"><input type="checkbox" data-idx="' + i + '"' + (selected[m.sno] ? ' checked' : '') + (ok ? '' : ' disabled') + '></td>' +
+            '<td>' + escapeHtmlAdmin(m.memberId) + '</td>' +
+            '<td>' + escapeHtmlAdmin(m.nickname || '-') + '</td>' +
+            '<td>' + (m.hasFcmToken ? '<span class="badge yes">등록</span>' : '<span class="badge no">없음</span>') + '</td>' +
+            '<td>' + (ok ? '정상' : '탈퇴') + '</td>' +
+          '</tr>';
+        }).join('');
+      }
+      var candidates = pageMembers.filter(selectable);
+      var checkPage = document.getElementById('check-page');
+      checkPage.disabled = candidates.length === 0;
+      checkPage.checked = candidates.length > 0 && candidates.every(function (m) { return selected[m.sno]; });
+    }
+
+    // 체크박스 칸이 아닌 곳을 눌러도 행 단위로 선택되게.
+    document.getElementById('member-tbody').addEventListener('click', function (e) {
+      var tr = e.target.closest('tr[data-idx]');
+      if (!tr) return;
+      var m = pageMembers[Number(tr.getAttribute('data-idx'))];
+      if (!m || !selectable(m)) return;
+      var on = e.target.matches('input[type=checkbox]') ? e.target.checked : !selected[m.sno];
+      toggleMember(m, on);
+      renderSelected();
+      renderMembers();
+    });
+
+    document.getElementById('check-page').addEventListener('change', function (e) {
+      pageMembers.forEach(function (m) { toggleMember(m, e.target.checked); });
+      renderSelected();
+      renderMembers();
+    });
+
+    document.getElementById('clear-selected').addEventListener('click', function () {
+      selected = {};
+      renderSelected();
+      renderMembers();
+    });
+
+    function loadMembers() {
+      var tbody = document.getElementById('member-tbody');
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">불러오는 중...</td></tr>';
+      adminApiFetch('/api/admin/members?q=' + encodeURIComponent(memberQuery) + '&page=' + memberPage + '&size=' + MEMBER_PAGE_SIZE)
+        .then(function (result) {
+          if (!result.ok || !result.json.success) {
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="5">회원 목록을 불러오지 못했습니다.</td></tr>';
+            return;
+          }
+          var pageData = result.json.data;
+          pageMembers = pageData.content || [];
+          renderMembers();
+          document.getElementById('m-page-info').textContent =
+            (pageData.totalElements === 0 ? 0 : memberPage + 1) + ' / ' + Math.max(pageData.totalPages, 1) + ' 페이지 (총 ' + pageData.totalElements + '명)';
+          document.getElementById('m-prev').disabled = memberPage <= 0;
+          document.getElementById('m-next').disabled = memberPage >= pageData.totalPages - 1;
+        }).catch(function () {
+          tbody.innerHTML = '<tr class="empty-row"><td colspan="5">회원 목록을 불러오지 못했습니다.</td></tr>';
+        });
+    }
+
+    function searchMembers() {
+      memberQuery = document.getElementById('member-q').value.trim();
+      memberPage = 0;
+      loadMembers();
+    }
+    document.getElementById('member-search-btn').addEventListener('click', searchMembers);
+    document.getElementById('member-q').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); searchMembers(); }
+    });
+    document.getElementById('m-prev').addEventListener('click', function () {
+      if (memberPage > 0) { memberPage--; loadMembers(); }
+    });
+    document.getElementById('m-next').addEventListener('click', function () {
+      memberPage++; loadMembers();
+    });
+
+    document.getElementById('send-btn').addEventListener('click', function () {
+      var title = document.getElementById('noti-title').value.trim();
+      var memberSnos = Object.keys(selected).map(Number);
+
+      if (!title || editor.isBlank()) { showMsg('제목과 내용을 입력해주세요.', false); return; }
+      if (editor.hasPending()) { showMsg('이미지/동영상 업로드가 끝난 뒤 발송해주세요.', false); return; }
+      if (memberSnos.length === 0) { showMsg('받는 회원을 1명 이상 선택해주세요.', false); return; }
+      if (memberSnos.length > 1000) { showMsg('한 번에 최대 1000명까지 보낼 수 있습니다.', false); return; }
+      if (!confirm(memberSnos.length + '명에게 알림을 발송할까요? 발송 후에는 취소할 수 없습니다.')) return;
+
+      var btn = document.getElementById('send-btn');
+      btn.disabled = true;
+      showMsg('발송 중...', true);
+      adminApiFetch('/api/admin/notifications', {
+        method: 'POST',
+        body: { title: title, content: editor.getContentHtml(), memberSnos: memberSnos }
+      }).then(function (result) {
+        if (!result.ok || !result.json.success) {
+          throw new Error((result.json && result.json.message) || '발송에 실패했습니다.');
+        }
+        editor.clearPollTimers();
+        var d = result.json.data;
+        alert(d.targetCount + '명 중 ' + d.sentCount + '명에게 발송했습니다.' +
+          (d.sentCount < d.targetCount ? '\n(알림 거부·FCM 토큰 없음 회원은 제외)' : ''));
+        window.location.href = '/admin/notification-detail?sno=' + d.sno;
+      }).catch(function (err) {
+        btn.disabled = false;
+        showMsg((err && err.message) || '발송에 실패했습니다.', false);
+      });
+    });
+
+    requireAdminSession(function () {
+      renderAdminLayout('notifications');
+      document.getElementById('admin-content').hidden = false;
+      loadMembers();
+    });
+  </script>
+</body>
+</html>
