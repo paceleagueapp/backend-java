@@ -284,7 +284,7 @@ totalScore = baseScore + scaledScore + addScore
 
 ### 알림내역 (`notification_history`, 2026-10-27)
 
-실제로 발송된(`SENT`) 푸시 1건 = 1행. `DailyTerritoryDigestService` 가 SENT 직후 `NotificationHistory.broadcast(...)`
+전체 발송은 실제로 발송된(`SENT`) 푸시 1건 = 1행. 개인 알림(쿠폰/관리자 알림, `SendMemberPushPort`)은 2026-11-13부터 **푸시가 안 가도(알림 거부/토큰 없음/발송 실패) 항상 1행** 남긴다 — 알림탭에서는 전부 보여야 하므로. `DailyTerritoryDigestService` 가 SENT 직후 `NotificationHistory.broadcast(...)`
 (`member_sno = NULL` = 전체 발송)를 저장 — 저장 실패는 로그만 남기고 `push_send_log` 결과엔 영향 없음.
 조회는 `GET /api/notification`(`NotificationController` → `NotificationHistoryQueryService`): 본인 개인 알림 +
 **가입 이후** 전체 발송분(`member.GetMemberJoinedAtPort`, 가입 시각을 서버 TZ `LocalDateTime` 으로 바꿔 `created_at` 과 비교),
@@ -313,7 +313,7 @@ totalScore = baseScore + scaledScore + addScore
 - 발송(`AdminNotificationService.send`)은 알림 행을 먼저 저장한 뒤 회원마다 `SendMemberPushPort` 를 부른다(kind `ADMIN_NOTICE`).
   - 푸시 본문은 HTML 의 평문 앞 150자다. 이미지만 있으면 "새 알림이 도착했어요.".
   - deeplink `paceleague://notifications/{sno}`, data `type=notice`, `notificationSno`, `deeplink`.
-  - 탈퇴, 서비스 알림 거부, FCM 토큰 없음, 발송 실패는 `sent=false` 로 남는다. 실제로 간 회원만 알림내역에 개인 알림이 생긴다.
+  - 탈퇴, 서비스 알림 거부, FCM 토큰 없음, 발송 실패는 `sent=false` 로 남는다. 알림내역에는 푸시 발송 여부와 상관없이 **대상자 전원**에게 개인 알림이 남는다(알림탭에서 확인 가능).
   - 트랜잭션 없이 회원 수만큼 순서대로 FCM 을 호출한다(최대 1000명). 요청 안에서 끝나므로 인원이 많으면 응답이 느리다.
 - 앱은 푸시를 누르면 `GET /api/notification/notice/{sno}` 로 제목 + 본문 HTML 을 받는다. 받는 회원으로 지정된 회원만 조회할 수 있다.
 - 회원 검색은 기존 `GET /api/admin/members` 를 쓴다(탈퇴 회원은 화면에서 선택 불가). 닉네임 표시는 새 `GetMemberNicknamePort.getNicknames`(한 번에 조회).
@@ -340,7 +340,7 @@ totalScore = baseScore + scaledScore + addScore
 - **지급**(`POST /api/admin/coupons`): 활성 회원에게만 지급한다. `imageKey` 형식, 업로드 여부, 크기, 중복을 검증한 뒤 `coupon` 행을 만든다.
   - 커밋 후 `notification.SendMemberPushPort`로 **개인 푸시**를 보낸다(kind `COUPON`, deeplink `paceleague://coupons`).
   - 탈퇴, 서비스 알림 거부, 등록 토큰 없음이면 푸시는 생략된다.
-  - 실제로 발송되면 `notification_history`에 개인 알림(`member_sno` 지정)으로 남는다.
+  - 푸시 발송 여부와 상관없이 `notification_history`에 개인 알림(`member_sno` 지정)으로 남는다(알림탭에서 확인 가능).
   - 푸시 실패는 지급을 되돌리지 않는다.
 - **사용**: 회원이 `POST /api/coupon/{sno}/use`로 직접 사용 완료 표시한다. 기프티콘은 서버에서 실제 사용을 검증할 수 없다.
   - 이미 사용했거나 만료(`expires_at` < 오늘 KST)된 쿠폰은 400이다.

@@ -704,7 +704,7 @@ join/login/reissue가 공통으로 반환하는 구조:
 ```
 
 - `hasMore=false` 면 마지막 페이지(`nextCursor=null`). 앱은 `deeplink` 로 화면 이동.
-- 전체 회원 발송 알림은 **가입 이후 발송분만** 포함. 개인 알림(`member_sno` 지정)은 쿠폰 지급(kind `COUPON`)과 관리자 알림(kind `ADMIN_NOTICE`)이 발송처.
+- 전체 회원 발송 알림은 **가입 이후 발송분만** 포함. 개인 알림(`member_sno` 지정)은 쿠폰 지급(kind `COUPON`)과 관리자 알림(kind `ADMIN_NOTICE`)이 발송처이며, **푸시 알림을 거부했거나 토큰이 없어 푸시가 안 간 경우에도 여기에는 나온다**.
 - `createdAt` 은 다른 API와 같은 UTC(타임존 표기 없음) 문자열.
 
 **마이그레이션**: [migrations/2026-10-27_notification_history.sql](./migrations/2026-10-27_notification_history.sql) (운영은 배포 전 직접 실행)

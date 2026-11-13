@@ -54,18 +54,27 @@ class MemberPushSenderTest {
     }
 
     @Test
-    void 알림을_거부한_회원에게는_보내지_않는다() {
+    void 알림을_거부한_회원에게는_푸시는_안_보내고_알림내역만_남긴다() {
         when(filterPushReceivableMembersPort.filterReceivable(Set.of(7L))).thenReturn(Set.of());
 
         assertThat(sender.send(7L, "COUPON", "t", "b", null, Map.of())).isFalse();
         verify(sendPushPort, never()).sendToTokens(any(), anyString(), anyString(), anyMap());
+        verify(notificationHistoryRepositoryPort).save(any());
     }
 
     @Test
-    void 발송_예외는_삼키고_false() {
+    void 토큰이_없어도_알림내역은_남긴다() {
+        when(deviceTokenRepositoryPort.findAllByMemberSno(7L)).thenReturn(List.of());
+
+        assertThat(sender.send(7L, "ADMIN_NOTICE", "t", "b", null, Map.of())).isFalse();
+        verify(notificationHistoryRepositoryPort).save(any());
+    }
+
+    @Test
+    void 발송_예외는_삼키고_false_알림내역은_남긴다() {
         when(sendPushPort.sendToTokens(any(), anyString(), anyString(), anyMap())).thenThrow(new RuntimeException("fcm down"));
 
         assertThat(sender.send(7L, "COUPON", "t", "b", null, Map.of())).isFalse();
-        verify(notificationHistoryRepositoryPort, never()).save(any());
+        verify(notificationHistoryRepositoryPort).save(any());
     }
 }

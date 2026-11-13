@@ -16,8 +16,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-// 회원 1명 개인 푸시 — MemberBroadcastSender 의 1인 버전. 트랜잭션을 걸지 않아 실패가 호출측 트랜잭션을
+// 회원 1명 개인 알림 — MemberBroadcastSender 의 1인 버전. 트랜잭션을 걸지 않아 실패가 호출측 트랜잭션을
 // rollback-only 로 만들지 않는다(각 저장/삭제는 어댑터 단위 트랜잭션).
+// 알림내역은 푸시 발송 여부와 상관없이 항상 먼저 남긴다 — 알림 거부/토큰 없음/발송 실패여도 알림탭에서는 보여야 하므로.
+// 반환값은 푸시가 실제로 1대 이상 발송됐는지만 뜻한다.
 @Service
 @RequiredArgsConstructor
 public class MemberPushSender implements SendMemberPushPort {
@@ -31,6 +33,11 @@ public class MemberPushSender implements SendMemberPushPort {
 
     @Override
     public boolean send(Long memberSno, String kind, String title, String body, String deeplink, Map<String, String> data) {
+        try {
+            notificationHistoryRepositoryPort.save(NotificationHistory.personal(memberSno, kind, title, body, deeplink));
+        } catch (RuntimeException e) {
+            log.error("개인 알림내역 저장 실패 memberSno={} kind={}", memberSno, kind, e);
+        }
         try {
             if (!filterPushReceivableMembersPort.filterReceivable(Set.of(memberSno)).contains(memberSno)) {
                 return false;
@@ -46,11 +53,7 @@ public class MemberPushSender implements SendMemberPushPort {
             if (!result.invalidTokens().isEmpty()) {
                 deviceTokenRepositoryPort.deleteAllByFcmIdIn(result.invalidTokens());
             }
-            if (!result.delivered() || result.successCount() == 0) {
-                return false;
-            }
-            notificationHistoryRepositoryPort.save(NotificationHistory.personal(memberSno, kind, title, body, deeplink));
-            return true;
+            return result.delivered() && result.successCount() > 0;
         } catch (RuntimeException e) {
             log.error("개인 푸시 발송 실패 memberSno={} kind={}", memberSno, kind, e);
             return false;

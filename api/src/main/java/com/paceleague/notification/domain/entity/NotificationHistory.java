@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-// 알림내역 1건 = 실제로 발송된 푸시 1건. 웹/앱의 알림내역 리스트가 이 테이블을 읽는다.
+// 알림내역 1건. 웹/앱의 알림내역 리스트가 이 테이블을 읽는다.
+// 전체 발송은 실제로 발송된 푸시 1건 = 1행, 개인 알림(SendMemberPushPort)은 푸시 발송 여부와 상관없이 항상 1행.
 // memberSno == null 이면 전체 회원 발송 — 모든 회원에게 보이되 가입 이후 발송분만 노출.
 @Entity
 @Table(name = "notification_history")
